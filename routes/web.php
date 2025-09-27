@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () { return view('pages.dashboard'); })->name('dashboard'); 
 Route::get('/settings', function () { return view('settings'); })->name('settings'); 
 Route::get('/notulensi', function () { return view('notulensi'); })->name('notulensi'); 
-Route::get('/keuangan', function () { return view('keuangan'); })->name('keuangan'); 
+Route::get('/keuangan', function () { return view('pages.keuangan'); })->name('keuangan'); 
 Route::get('/santri', function () { return view('santri'); })->name('santri'); 
 Route::get('/inventaris', function () { return view('inventaris'); })->name('inventaris'); 
 Route::get('/kepegawaian', function () { return view('kepegawaian'); })->name('kepegawaian');
