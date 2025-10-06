@@ -1,4 +1,4 @@
-<aside class="w-56 h-screen page-bg text-white flex flex-col rounded-e-md">
+<aside class="w-56 h- page-bg text-white flex flex-col rounded-e-md">
     <div class="p-4 text-2xl font-bold border-b border-gray-700">
         {{ $title ?? 'Menu' }}
     </div>

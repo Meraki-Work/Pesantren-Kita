@@ -5,4 +5,7 @@
     <link rel="stylesheet" href="{{ asset('styling/style.css') }}">
     <title>PesantrenKita</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./assets/vendor/apexcharts/dist/apexcharts.css">
+    <script src="./assets/vendor/lodash/lodash.min.js"></script>
+<script src="./assets/vendor/apexcharts/dist/apexcharts.min.js"></script>
 </head>
