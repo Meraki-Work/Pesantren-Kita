@@ -14,5 +14,5 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('index');
+    return 'Hello World dari branch IF-Pagi3A-4 🎉';
 });
