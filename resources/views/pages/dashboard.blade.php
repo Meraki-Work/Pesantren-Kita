@@ -18,8 +18,7 @@
         </div>
 
         <div class="grid grid-cols-4 grid-rows-7 gap-4 text-gray-900 p-4 rounded-lg ">
-            <div class="box-bg col-span-3 row-span-3 col-start-1 bg-white p-6 rounded-lg relative overflow-hidden"
-                style="background-image: url('{{ asset('assets/img/ji.png') }}'); background-size: cover; background-position: center;">
+            <div class="box-bg col-span-3 row-span-3 col-start-1 bg-white p-6 rounded-lg relative overflow-hidden" style="background-image: url('{{ asset('assets/img/ji.png') }}'); background-size: cover; background-position: center;">
                 <p class="font-normal text-1 text-gray-800">Pukul</p>
                 <p class="text-m font-semibold text-4xl ml-1 mt-1">06 : 42 AM</p>
                 <div class="max-w-xs break-words">
