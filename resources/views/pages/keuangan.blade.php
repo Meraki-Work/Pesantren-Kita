@@ -2,193 +2,229 @@
 
 @section('title', 'Keuangan')
 
-
 @section('content')
 <h1>Keuangan</h1>
 @endsection
 
 <div class="flex bg-gray-100">
-    <x-sidemenu title="Admin Panel" />
+    <x-sidemenu title="PesantrenKita" />
 
     <main class="flex-1 p-6">
         {{ $slot ?? '' }}
-        <div class="w-full sm:w-1/3 lg:w-1/4 flex flex-col rounded-e-md box-bg p-4">
-            <div class="flex justify-between">
-                <label class="sm:text-lg md:text-xl lg:text-2xl">
-                    {{$kategori ?? 'Dummy'}}
-                </label>
-                <button class="circle-add flex justify-center items-center">
-                    <a href="">
-                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#fdfdfd">
-                            <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z" />
-                        </svg>
-                    </a>
-                </button>
+
+        {{-- Card Info --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            @foreach ($cards as $card)
+            <div class="flex flex-col rounded-xl box-bg p-4 hover:shadow-md transition">
+                <div class="flex justify-between">
+                    <label class="sm:text-lg md:text-xl lg:text-2xl">
+                        {{ $card['kategori'] }}
+                    </label>
+                    <button class="circle-add flex justify-center items-center">
+                        <a href="#">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"
+                                fill="#fdfdfd">
+                                <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z" />
+                            </svg>
+                        </a>
+                    </button>
+                </div>
+                <div class="my-2">
+                    <span class="font-medium sm:text-lg md:text-xl lg:text-2xl">
+                        Rp. {{ number_format($card['jumlah'], 0, ',', '.') }},00
+                    </span>
+                    <div class="grid">
+                        <span class="text-mint text-[8px] sm:text-[10px] md:text-[12px] lg:text-[17px]">
+                            Sumber
+                        </span>
+                        <span class="text-[8px] sm:text-[10px] md:text-[12px] lg:text-[17px]">
+                            {{ $card['sumber'] }}
+                        </span>
+                    </div>
+                </div>
             </div>
-            <div class="my-2">
-                <span class="font-medium sm:text-lg md:text-xl lg:text-2xl">{{$jumlah ?? "Rp. 000.000,00"}}</span>
-                <div class="grid">
-                    <span class="text-mint text-[8px] sm:text-[10px] md:text-[12px] lg:text-[17px]">
-                        Sumber
-                    </span>
-                    <span class="text-[8px] sm:text-[10px] md:text-[12px] lg:text-[17px]">
-                        Kas Tunai, Donasi
-                    </span>
+            @endforeach
+        </div>
+
+        {{-- Grafik Flex --}}
+        <div class="flex flex-col lg:flex-row gap-2 mt-6">
+            {{-- CASH FLOW --}}
+            <div class="flex-[0.65] box-bg p-6 relative">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-semibold text-gray-800 text-2xl">Cash Flow</h2>
+                    <button class="p-2 rounded-full hover:bg-gray-100 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="22" viewBox="0 -960 960 960" width="22" fill="#1E3932">
+                            <path
+                                d="M480-440q-33 0-56.5-23.5T400-520q0-33 23.5-56.5T480-600q33 0 56.5 23.5T560-520q0 33-23.5 56.5T480-440Zm0 280q-83 0-156-31.5T203-203q-54-54-85.5-127T86-486q0-83 31.5-156T203-757q54-54 127-85.5T486-874q83 0 156 31.5T769-757q54 54 85.5 127T886-474q0 83-31.5 156T769-191q-54 54-127 85.5T486-160Z" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="relative w-full h-[50vh]">
+                    <canvas id="myChart"></canvas>
+                </div>
+            </div>
+
+            {{-- ALOKASI ASSET --}}
+            <div class="flex-[0.35] box-bg p-6 flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-semibold text-gray-800 text-2xl">Alokasi Asset</h2>
+                    <select
+                        class="border border-gray-300 text-gray-700 rounded-lg text-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-mint">
+                        <option>6 months</option>
+                        <option>1 year</option>
+                    </select>
+                </div>
+
+                <div class="relative w-full h-[40vh]">
+                    <canvas id="polarCanvas"></canvas>
+                </div>
+
+                <div class="mt-4 text-center">
+                    <p class="font-semibold text-gray-700">Rp. 40.121.481,00</p>
                 </div>
             </div>
         </div>
-        <label class="font-semibold sm:text-lg md:text-xl lg:text-2xl">Cashflow</label>
 
-        <div class="box-bg p-4 w-full h-[64vh] grid justify-center">
-            <span class="font-semibold m-2 flex justify-between sm:text-lg md:text-xl lg:text-2xl">Alokasi Asset</span>
+        <div class="box-bg p-4 mt-2">
+            <h1 class="text-xl font-bold mb-4">Data Keuangan</h1>
+            <x-dynamic-table :columns="$columns" :rows="$rows" />
 
-            <canvas id="myChart" width="800" height="340vh"></canvas>
-            <div id="tooltip" class="font-semibold box-bg"
-                style="position:absolute; padding:4px 8px; color:#1E3932; font-size:12px; border-radius:4px; display:none;">
-            </div>
+        </div>
+        {{-- Data dari Controller --}}
+        <script type="application/json" id="chart-data">
+            {
+                !!json_encode(['labels' => $labels ?? [], 'values' => $values ?? []]) !!
+            }
+        </script>
 
-            <script>
-                const canvas = document.getElementById("myChart");
-                canvas.width = canvas.clientWidth;
-                canvas.height = canvas.clientHeight;
-                const ctx = canvas.getContext("2d");
-                const tooltip = document.getElementById("tooltip");
+        {{-- Chart.js --}}
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-                // Data
-                const data = [65, 32, 80, 44, 56, 11, 40];
-                const labels = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul"];
-
-                // Chart dimensions
-                const paddingLeft = 60;
-                const paddingBottom = 30;
-                const paddingRight = 40;
-                const chartHeight = canvas.height - paddingBottom - 10;
-                const chartWidth = canvas.width - paddingLeft - paddingRight;
-                const stepX = chartWidth / (data.length - 1);
-                const maxVal = Math.max(...data);
-                const stepY = 20;
-
-                let points = [];
-
-                function formatRupiah(angka) {
-                    return "Rp " + angka.toLocaleString("id-ID", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                    });
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const el = document.getElementById('chart-data');
+                let chartData = {
+                    labels: [],
+                    values: []
+                };
+                try {
+                    chartData = JSON.parse(el.textContent);
+                } catch (e) {
+                    console.warn('Data chart invalid:', e);
                 }
 
-
-                function drawChart() {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    points = [];
-
-                    // Garis data dengan curve
-                    ctx.beginPath();
-                    for (let i = 0; i < data.length; i++) {
-                        const x = paddingLeft + i * stepX;
-                        const y = chartHeight - (data[i] / maxVal) * (chartHeight - 10);
-
-                        points.push({
-                            x,
-                            y,
-                            label: labels[i],
-                            value: data[i]
-                        });
-
-                        if (i === 0) {
-                            ctx.moveTo(x, y);
-                        } else {
-                            const prev = points[i - 1];
-                            const cpX = (prev.x + x) / 2;
-                            ctx.bezierCurveTo(cpX, prev.y, cpX, y, x, y);
+                // ========== CASH FLOW ==========
+                const ctx = document.getElementById('myChart');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+                        datasets: [{
+                            label: 'Total Cash',
+                            data: [15000000, 32000000, 48000000, 62000000, 58000000, 67000000],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16,185,129,0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#10b981',
+                            pointRadius: 5,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                displayColors: false,
+                                backgroundColor: '#fff',
+                                titleColor: '#111',
+                                bodyColor: '#1E3932',
+                                borderColor: '#10b981',
+                                borderWidth: 1,
+                                callbacks: {
+                                    title: (context) => 'Total Kas: ' + context[0].label,
+                                    label: (ctx) => 'Rp ' + ctx.parsed.y.toLocaleString('id-ID') + ',00'
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                grid: {
+                                    color: '#f1f1f1'
+                                },
+                                ticks: {
+                                    color: '#555',
+                                    callback: v => v / 1000 + 'k'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: '#555'
+                                },
+                                grid: {
+                                    display: false
+                                }
+                            }
                         }
-                    }
-                    ctx.strokeStyle = "#2ecc71";
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-
-                    // Label Y kiri
-                    ctx.textAlign = "right";
-                    ctx.textBaseline = "middle";
-                    ctx.fillStyle = "#333";
-                    for (let y = 0; y <= maxVal; y += stepY) {
-                        const yPos = chartHeight - (y / maxVal) * (chartHeight - 10);
-                        ctx.fillText(y, paddingLeft - 5, yPos);
-
-                        // garis bantu horizontal kiri
-                        ctx.beginPath();
-                        ctx.moveTo(paddingLeft, yPos);
-                        // ctx.lineTo(paddingLeft + chartWidth, yPos);
-                        // ctx.strokeStyle = "#eee";
-                        ctx.stroke();
-                    }
-
-                    // Label Y kanan
-                    ctx.textAlign = "left";
-                    for (let y = 0; y <= maxVal; y += stepY) {
-                        const yPos = chartHeight - (y / maxVal) * (chartHeight - 10);
-                        ctx.fillText(y, paddingLeft + chartWidth + 5, yPos);
-                    }
-
-                    // Label X + garis vertikal
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "top";
-                    labels.forEach((label, i) => {
-                        const x = paddingLeft + i * stepX;
-                        ctx.fillText(label, x, chartHeight + 5);
-
-                        // garis vertikal
-                        ctx.beginPath();
-                        ctx.moveTo(x, chartHeight);
-                        ctx.lineTo(x, 20);
-                        ctx.strokeStyle = "#ECECEE";
-                        ctx.stroke();
-                    });
-
-                    // Titik data
-                    points.forEach(p => {
-                        ctx.beginPath();
-                        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-                        ctx.fillStyle = "#2ecc71";
-                        ctx.fill();
-                    });
-                }
-
-                drawChart();
-
-                // Tooltip interaktif
-                canvas.addEventListener("mousemove", (e) => {
-                    const rect = canvas.getBoundingClientRect();
-                    const mouseX = e.clientX - rect.left;
-                    const mouseY = e.clientY - rect.top;
-
-                    let found = null;
-                    points.forEach(p => {
-                        const dx = mouseX - p.x;
-                        const dy = mouseY - p.y;
-                        if (Math.sqrt(dx * dx + dy * dy) < 10) {
-                            found = p;
-                        }
-                    });
-
-                    if (found) {
-                        drawChart();
-                        ctx.beginPath();
-                        ctx.arc(found.x, found.y, 6, 0, Math.PI * 2);
-                        ctx.fillStyle = "red";
-                        ctx.fill();
-
-                        tooltip.style.display = "block";
-                        tooltip.style.left = (e.pageX + 10) + "px";
-                        tooltip.style.top = (e.pageY - 20) + "px";
-                        tooltip.innerHTML = `Total Kas : <br> ${formatRupiah(found.value)}`;
-                    } else {
-                        tooltip.style.display = "none";
                     }
                 });
-            </script>
-        </div>
 
+                // ========== POLAR CHART ==========
+                const ctxPolar = document.getElementById('polarCanvas');
+                new Chart(ctxPolar, {
+                    type: 'polarArea',
+                    data: {
+                        labels: chartData.labels.length ? chartData.labels : ['Pendidikan', 'Aset', 'Inventaris', 'Katering'],
+                        datasets: [{
+                            data: chartData.values.length ? chartData.values : [20, 25, 30, 25],
+                            backgroundColor: [
+                                'rgba(147, 197, 253, 0.8)',
+                                'rgba(110, 231, 183, 0.8)',
+                                'rgba(216, 180, 254, 0.8)',
+                                'rgba(253, 224, 71, 0.8)',
+                            ],
+                            borderColor: [
+                                'rgb(147, 197, 253)',
+                                'rgb(110, 231, 183)',
+                                'rgb(216, 180, 254)',
+                                'rgb(253, 224, 71)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                ticks: {
+                                    display: false
+                                },
+                                grid: {
+                                    color: '#f1f1f1'
+                                },
+                                angleLines: {
+                                    color: '#e5e7eb'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    color: '#444'
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        </script>
     </main>
-
 </div>

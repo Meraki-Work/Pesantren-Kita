@@ -203,6 +203,14 @@
   box-shadow: var(--shadow-soft);
 }
 
+.circle-more {
+  background-color: var(--c-mint);
+  border-radius: 100%;
+  width: 40px;
+  height: 40px;
+  box-shadow: var(--shadow-soft);
+}
+
 /* themed utility classes (optional) */
 .bg-active {
   background: var(--c-mint);
@@ -214,8 +222,22 @@
   color: white;
 }
 
+.bg-mid {
+  background-color: var(--c-mid);
+  color: white;
+}
+
 .text-deep {
   color: var(--c-deep);
+}
+
+.border-y-gray {
+  border-top: 1px solid var(--c-gray);
+  border-bottom: 1px solid var(--c-gray);
+}
+
+.border-grey {
+  border: 1px solid var(--c-gray);
 }
 
 .border-muted {
