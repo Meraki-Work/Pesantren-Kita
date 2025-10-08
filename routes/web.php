@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return 'Hello World dari branch IF-Pagi3A-4';
-});
+
+Route::get('/login', function () {return view('auth.login');})->name('login');
+Route::get('/registrasi', function () {return view('auth.registrasi');})->name('registrasi.index');
+Route::get('/ubahkatasandi', function () {return view('auth.ubahkatasandi');})->name('ubahkatasandi');
+
+
+
+

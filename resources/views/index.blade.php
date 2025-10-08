@@ -7,12 +7,5 @@
     @vite('resources/css/app.css')
 </head>
 
-<body>
-    <div class="">
-        <span class="text-3xl font-bold underline">
-            Hello world!
-        </span>
-    </div>
-</body>
 
 </html>
