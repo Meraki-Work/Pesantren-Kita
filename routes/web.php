@@ -18,6 +18,7 @@ Route::get('/login', function () {return view('auth.login');})->name('login');
 Route::get('/registrasi', function () {return view('auth.registrasi');})->name('registrasi.index');
 Route::get('/ubahkatasandi', function () {return view('auth.ubahkatasandi');})->name('ubahkatasandi');
 Route::get('/landing_utama', function () {return view('landing_utama');})->name('landing_utama');
+Route::get('/landing_about', function () {return view('landing_about');})->name('landing_about');
 
 
 
