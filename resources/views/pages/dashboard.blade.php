@@ -16,7 +16,8 @@
         </div>
 
         <div class="grid grid-cols-4 grid-rows-7 gap-4 text-gray-900 p-4 rounded-lg ">
-            <div class="box-bg col-span-3 row-span-3 col-start-1 bg-white p-6 rounded-lg relative overflow-hidden">
+            <div class="box-bg col-span-3 row-span-3 col-start-1 bg-white p-6 rounded-lg relative overflow-hidden"
+                style="background-image: url('{{ asset('assets/img/ji.png') }}'); background-size: cover; background-position: center;">
                 <p class="font-normal text-1 text-gray-800">Pukul</p>
                 <p class="text-m font-semibold text-4xl ml-1 mt-1">06 : 42 AM</p>
                 <div class="max-w-xs break-words">
@@ -435,7 +436,7 @@
             </script>
 
 
-            <div class="box-bg col-span-2 row-span-15 col-start-3 row-start-5 bg-white p-2 rounded">
+            <div class="box-bg col-span-2 row-span-15 col-start-3 row-start-5 bg-white p-8 rounded">
                 <p class="text-2xl font-bold text-gray-800 mb-4 mt-2 ml-4">Hafalan Terbaik</p>
                 <div class="grid grid-cols-2 gap-4 mb-2 ml-4 mt-1">
                     <div class="bg-gray-100 p-4 rounded-lg shadow break-words">
