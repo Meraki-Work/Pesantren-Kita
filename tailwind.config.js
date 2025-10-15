@@ -2,7 +2,11 @@
 export default {
   content: [],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        magicmint: '#A8E6CF',
+      }
+    },
   },
   plugins: [],
 }

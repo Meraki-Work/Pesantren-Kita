@@ -13,7 +13,7 @@
 <body class="bg-gray-50 text-gray-800">
     {{-- Navbar atau sidebar bisa di sini --}}
     
-    <main class="p-6">
+    <main class="">
         @yield('tes') {{-- ini penting! --}}
     </main>
 
