@@ -3,7 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Models\Ponpes;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -15,36 +17,27 @@ use App\Models\Ponpes;
 |
 */
 
-
-
-
+// Login
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login.form');
 Route::post('/login', [LoginController::class, 'login'])->name('login');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-
-// Halaman form registrasi
+// Registrasi
 Route::get('/registrasi', function () {
     $ponpes = Ponpes::select('id_ponpes', 'nama')->get();
     return view('auth.registrasi', compact('ponpes'));
 })->name('registrasi.index');
-
-// Proses simpan data + kirim OTP
 Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
-
-// Form verifikasi OTP
 Route::get('/verify', [RegisterController::class, 'verifyForm'])->name('verify.form');
-
-// Proses verifikasi OTP
 Route::post('/verify', [RegisterController::class, 'verifyOtp'])->name('verify.otp');
 
+// Lupa kata sandi 
+Route::get('/lupakatasandi', [ResetPasswordController::class, 'showForm'])->name('lupakatasandi');
+Route::post('/lupakatasandi/send-otp', [ResetPasswordController::class, 'sendOtp'])->name('password.sendOtp');
+Route::post('/lupakatasandi/verify-otp', [ResetPasswordController::class, 'verifyOtp'])->name('password.verifyOtp');
+Route::post('/lupakatasandi/update', [ResetPasswordController::class, 'updatePassword'])->name('password.update');
 
-Route::get('/lupakatasandi', function () {return view('auth.lupakatasandi');})->name('lupakatasandi');
+// Landing pages
 Route::get('/landing_utama', function () {return view('landing_utama');})->name('landing_utama');
 Route::get('/landing_about', function () {return view('landing_about');})->name('landing_about');
 Route::get('/landing_al-amal', function () {return view('landing_al-amal');})->name('landing_al-amal');
-
-
-
-
-

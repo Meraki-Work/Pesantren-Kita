@@ -12,69 +12,105 @@ Deskripsi      : Membuat halaman registrasi pengguna dengan form yang terstruktu
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registrasi</title>
+  <title>Registrasi - PesantrenKita</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Poppins', sans-serif;
+    body { font-family: 'Poppins', sans-serif; }
+    .input-custom {
+      font-family: 'Poppins';
+      font-size: 15px;
     }
   </style>
 </head>
 <body class="min-h-screen flex items-center justify-center bg-[#344E41]">
 
-  <div class="bg-[#F8FFF8] w-full max-w-4xl rounded-xl shadow-lg p-8">
-    <h2 class="text-2xl font-bold text-center mb-6">Registrasi Pengguna</h2>
+  <div class="bg-[#F8FFF8] w-full max-w-4xl rounded-xl shadow-lg p-10">
+    <h2 class="text-2xl font-bold text-center mb-8">Registrasi Pengguna</h2>
 
+    @php
+        $inputClass = 'w-full h-[45px] pl-3 pr-10 text-sm placeholder:text-sm bg-gray-100 
+        border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500';
+    @endphp
+
+    {{-- Tampilkan pesan error --}}
     @if ($errors->any())
-        <div>{{ $errors->first() }}</div>
+        <div class="bg-red-100 text-red-700 p-3 rounded mb-4 text-center text-sm">
+            {{ $errors->first() }}
+        </div>
     @endif
-    <form method="POST" action="{{ route('register.store') }}">
+
+    <form method="POST" action="{{ route('register.store') }}" class="grid md:grid-cols-2 gap-6">
       @csrf
 
-      <!-- Kolom kiri -->
-      <div>
-        <label class="block text-sm font-medium mb-1">Nama Pengguna</label>
-        <input type="text" name="username" placeholder="Masukkan Nama Pengguna"
-          class="w-full p-2 rounded-lg border border-gray-300 bg-gray-100 focus:ring-2 focus:ring-green-500 focus:outline-none">
+      {{-- Kolom kiri --}}
+      <div class="space-y-4">
+        <div class="relative">
+          <label class="block text-sm font-medium mb-2">Nama Pengguna</label>
+          <input type="text" name="username" placeholder="Masukkan Nama Pengguna" required class="{{ $inputClass }}">
+          <i class="fa-solid fa-user absolute right-3 top-10 text-gray-500"></i>
+        </div>
 
-        <label class="block text-sm font-medium mt-4 mb-1">Email</label>
-        <input type="email" name="email" placeholder="Masukkan Email"
-          class="w-full p-2 rounded-lg border border-gray-300 bg-gray-100 focus:ring-2 focus:ring-green-500 focus:outline-none">
+        <div class="relative">
+          <label class="block text-sm font-medium mb-2">Email</label>
+          <input type="email" name="email" placeholder="Masukkan Email" required class="{{ $inputClass }}">
+          <i class="fa-solid fa-envelope absolute right-3 top-10 text-gray-500"></i>
+        </div>
 
-        <label class="block text-sm font-medium mt-4 mb-1">Kata Sandi</label>
-        <input type="password" name="password" placeholder="Masukkan Kata Sandi"
-          class="w-full p-2 rounded-lg border border-gray-300 bg-gray-100 focus:ring-2 focus:ring-green-500 focus:outline-none">
+        <div class="relative">
+          <label class="block text-sm font-medium mb-2">Kata Sandi</label>
+          <input type="password" name="password" id="password" placeholder="Masukkan Kata Sandi" required minlength="6" class="{{ $inputClass }}">
+          <i class="fa-solid fa-eye absolute right-3 top-10 text-gray-500 cursor-pointer" onclick="togglePassword('password', this)"></i>
+        </div>
       </div>
 
-      <!-- Kolom kanan -->
-      <div>
-        <label class="block text-sm font-medium mt-4 mb-1">Nama Pondok Pesantren</label>
-        <select name="ponpes_id"
-          class="w-full p-2 rounded-lg border border-gray-300 bg-gray-100 focus:ring-2 focus:ring-green-500 focus:outline-none">
-          <option value="">Pilih Pondok Pesantren</option>
-          @foreach ($ponpes as $p)
-              <option value="{{ $p->id_ponpes }}">{{ $p->nama }}</option>
-          @endforeach
-        </select>
+      {{-- Kolom kanan --}}
+      <div class="space-y-4">
+        <div class="relative">
+          <label class="block text-sm font-medium mb-2">Nama Pondok Pesantren</label>
+          <select name="ponpes_id" required class="{{ $inputClass }}">
+            <option value="">Pilih Pondok Pesantren</option>
+            @foreach ($ponpes as $p)
+                <option value="{{ $p->id_ponpes }}">{{ $p->nama }}</option>
+            @endforeach
+          </select>
+          <i class="fa-solid fa-school absolute right-3 top-10 text-gray-500"></i>
+        </div>
 
-        <label class="block text-sm font-medium mt-4 mb-1">Role</label>
-        <select name="role"
-          class="w-full p-2 rounded-lg border border-gray-300 bg-gray-100 focus:ring-2 focus:ring-green-500 focus:outline-none">
-          <option value="">Pilih Role</option>
-          <option value="Admin">Admin</option>
-          <option value="Pengajar">Pengajar</option>
-        </select>
+        <div class="relative">
+          <label class="block text-sm font-medium mb-2">Role</label>
+          <select name="role" required class="{{ $inputClass }}">
+            <option value="">Pilih Role</option>
+            <option value="Admin">Admin</option>
+            <option value="Pengajar">Pengajar</option>
+          </select>
+          <i class="fa-solid fa-user-tag absolute right-3 top-10 text-gray-500"></i>
+        </div>
       </div>
 
-      <!-- Tombol Registrasi -->
+      {{-- Tombol --}}
       <div class="md:col-span-2 flex justify-center mt-6">
         <button type="submit"
-          class="w-full md:w-[300px] bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition duration-300">
+          class="w-full md:w-[300px] bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg transition duration-300">
           Registrasi
         </button>
       </div>
     </form>
   </div>
+
+  <script>
+    function togglePassword(id, el) {
+      const input = document.getElementById(id);
+      const icon = el;
+      if (input.type === "password") {
+        input.type = "text";
+        icon.classList.replace("fa-eye", "fa-eye-slash");
+      } else {
+        input.type = "password";
+        icon.classList.replace("fa-eye-slash", "fa-eye");
+      }
+    }
+  </script>
 
 </body>
 </html>
