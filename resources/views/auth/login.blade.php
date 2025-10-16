@@ -1,3 +1,10 @@
+{{-- 
+Dikerjakan Oleh: Titho (3312401071) Front-End dan Back-End 
+Dikerjakan Pada: 10 October 2025 
+Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan menarik menggunakan Tailwind CSS.
+                 Form ini mencakup input untuk email dan kata sandi. 
+--}}
+
 @extends('index')
 <!DOCTYPE html>
 <html lang="id">
@@ -55,12 +62,12 @@
       <form action="{{ route('login') }}" method="POST" class="space-y-4 flex flex-col items-center w-full">
           @csrf
 
-          <!-- Input Nama Pengguna -->
-          <div class="relative w-full max-w-[300px]">
-              <h3 class="mb-1 text-sm font-medium">Nama Pengguna</h3>
-              <input type="text" name="nama_pengguna" placeholder="Masukkan Nama Pengguna" class="{{ $inputClass }}" required>
-              <i class="fa-solid fa-user absolute right-3 top-9 text-gray-500"></i>
-          </div>
+          <!-- Input Nama email -->
+            <div class="relative w-full max-w-[300px]">
+              <h3 class="mb-1 text-sm font-medium">Email</h3>
+              <input type="email" name="email" placeholder="Masukkan Email" class="{{ $inputClass }}" required>
+              <i class="fa-solid fa-envelope absolute right-3 top-9 text-gray-500"></i>
+            </div>
 
           <!-- Input Kata Sandi -->
           <div class="relative w-full max-w-[300px]">
@@ -78,12 +85,12 @@
 
       <!-- Link Lupa Kata Sandi -->
       <p class="text-center text-sm text-gray-600 mt-4">
-          <a href="#" class="hover:underline">Lupa Kata Sandi?</a>
+          <a href="{{ route('lupakatasandi') }}" class="hover:underline">Lupa Kata Sandi?</a>
       </p>
 
       <!-- Link Belum punya akun -->
       <p class="text-center text-sm text-gray-600 mt-2">
-          <a href="#" class="hover:underline">Belum punya akun?</a>
+          <a href="{{ route('registrasi.index') }}" class="hover:underline">Belum punya akun?</a>
       </p>
 
     </div>

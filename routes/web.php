@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\LoginController;
 use App\Models\Ponpes;
 /*
 |--------------------------------------------------------------------------
@@ -15,7 +16,12 @@ use App\Models\Ponpes;
 */
 
 
-Route::get('/login', function () {return view('auth.login');})->name('login');
+
+
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login.form');
+Route::post('/login', [LoginController::class, 'login'])->name('login');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
 
 // Halaman form registrasi
 Route::get('/registrasi', function () {
@@ -33,7 +39,7 @@ Route::get('/verify', [RegisterController::class, 'verifyForm'])->name('verify.f
 Route::post('/verify', [RegisterController::class, 'verifyOtp'])->name('verify.otp');
 
 
-Route::get('/ubahkatasandi', function () {return view('auth.ubahkatasandi');})->name('ubahkatasandi');
+Route::get('/lupakatasandi', function () {return view('auth.lupakatasandi');})->name('lupakatasandi');
 Route::get('/landing_utama', function () {return view('landing_utama');})->name('landing_utama');
 Route::get('/landing_about', function () {return view('landing_about');})->name('landing_about');
 Route::get('/landing_al-amal', function () {return view('landing_al-amal');})->name('landing_al-amal');

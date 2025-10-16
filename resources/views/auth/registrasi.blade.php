@@ -1,13 +1,25 @@
 {{-- 
 Dikerjakan Oleh: Titho (3312401071) Front-End
                : Muhammad Rizky Febrian (3312401082) Back-End
-Dikerjakan Pada: 10 October 2025 untuk Front-End & 10 October 2025 untuk Back-End
+Dikerjakan Pada: 8 October 2025 untuk Front-End & 10 October 2025 untuk Back-End
 Deskripsi      : Membuat halaman registrasi pengguna dengan form yang terstruktur dan menarik menggunakan Tailwind CSS.
                  Form ini mencakup input untuk nama pengguna, email, kata sandi, nama pondok pesantren, dan role pengguna. 
 --}}
 
 @extends('index')
-
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrasi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+    }
+  </style>
+</head>
 <body class="min-h-screen flex items-center justify-center bg-[#344E41]">
 
   <div class="bg-[#F8FFF8] w-full max-w-4xl rounded-xl shadow-lg p-8">

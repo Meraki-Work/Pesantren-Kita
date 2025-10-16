@@ -1,10 +1,11 @@
+
+@extends('index')
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ubah Kata Sandi</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Lupa Kata Sandi</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
   <style>
     body {
@@ -15,7 +16,7 @@
 <body class="min-h-screen flex items-center justify-center bg-[#344E41]">
 
   <div class="bg-[#F8FFF8] w-full max-w-md rounded-xl shadow-lg p-8">
-    <h2 class="text-2xl font-bold text-center mb-12">Ubah Kata Sandi</h2>
+    <h2 class="text-2xl font-bold text-center mb-12">Lupa kata sandi</h2>
 
     <form action="#" method="POST">
       <!-- Email -->

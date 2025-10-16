@@ -30,14 +30,14 @@ class RegisterController extends Controller
                 'role'           => $request->role,
                 'ponpes_id'      => $request->ponpes_id,
                 'otp_code'       => $otp,
-                'otp_expired_at' => now()->addMinutes(10),
+                'otp_expired_at' => now()->addMinutes(5),
             ]);
 
             Mail::to($user->email)->send(new OtpMail($otp));
 
             return redirect()->route('verify.form')->with([
                 'email'   => $user->email,
-                'success' => 'Kode OTP telah dikirim ke email Anda. Berlaku 10 menit.'
+                'success' => 'Kode OTP telah dikirim ke email Anda. Berlaku 5 menit.'
             ]);
         } catch (\Throwable $e) {
             dd($e->getMessage());
