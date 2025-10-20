@@ -23,9 +23,18 @@ Deskripsi      : Membuat halaman registrasi pengguna dengan form yang terstruktu
     }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center bg-[#344E41]">
+<body class="min-h-screen flex items-center justify-center relative">
 
-  <div class="bg-[#F8FFF8] w-full max-w-4xl rounded-xl shadow-lg p-10">
+  <!-- Background gambar -->
+  <div class="absolute inset-0 bg-cover bg-center"
+       style="background-image: url('{{ asset('asset/masjid-hd-pc.jpg') }}');">
+  </div>
+
+  <!-- Overlay gelap -->
+  <div class="absolute inset-0 bg-black/30"></div>
+
+  <!-- Konten form -->
+  <div class="relative z-10 bg-[#F8FFF8]/95 w-full max-w-4xl rounded-xl shadow-lg p-10">
     <h2 class="text-2xl font-bold text-center mb-8">Registrasi Pengguna</h2>
 
     @php

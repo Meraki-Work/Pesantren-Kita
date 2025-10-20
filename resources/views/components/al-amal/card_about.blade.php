@@ -17,7 +17,7 @@
         </p>
       </div>
       <div>
-        <img src="{{ asset('asset/FotoMesjid.png') }}" 
+        <img src="{{ asset('asset/foto_masjid2.png') }}" 
              class="rounded-lg shadow-lg w-full h-[320px] object-cover">
       </div>
     </div>
@@ -25,7 +25,7 @@
     <!-- Blok 2 -->
     <div class="grid md:grid-cols-2 gap-10 items-start">
       <div>
-        <img src="{{ asset('asset/FotoMesjid.png') }}" 
+        <img src="{{ asset('asset/foto_masjid2.png') }}" 
              class="rounded-lg shadow-lg w-full h-[320px] object-cover">
       </div>
       <div>

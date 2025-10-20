@@ -21,6 +21,7 @@
             kota="29424 Batam"
             provinsi="Sumatera"
             gambar="{{ asset('asset/carousel_utama.png') }}"
+            link="{{ url('/landing_al-amal') }}"
         />
 
         <x-card_about

@@ -20,9 +20,15 @@ Deskripsi      : Membuat halaman verify-otp pengguna dengan form yang terstruktu
     }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center bg-[#344E41]">
+<body class="min-h-screen flex items-center justify-center relative">
+  
+  <!-- Background gambar -->
+  <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ asset('asset/masjid-hd-pc.jpg') }}');"></div>
 
-  <div class="bg-[#F8FFF8] w-full max-w-md rounded-xl shadow-lg p-8">
+  <!-- Overlay gelap -->
+  <div class="absolute inset-0 bg-black/30"></div>
+  
+  <div class="relative z-10 bg-[#F8FFF8]/95 w-full max-w-md rounded-xl shadow-lg p-8">
     <h2 class="text-2xl font-bold text-center mb-12">Verifikasi Kode OTP</h2>
 
     @if(session('success'))

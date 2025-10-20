@@ -25,7 +25,7 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
 
   <!-- Kiri: Background Masjid -->
   <div class="w-1/2 relative hidden md:block">
-    <img src="{{ asset('asset/FotoMesjid.png') }}" alt="Background Masjid" class="absolute inset-0 w-full h-full object-cover">
+    <img src="{{ asset('asset/foto_masjid2.png') }}" alt="Background Masjid" class="absolute inset-0 w-full h-full object-cover">
     <div class="absolute inset-0 bg-black/40"></div>
     <div class="relative z-10 flex flex-col items-center justify-center h-full text-white">
       <img src="{{ asset('asset/Frame 40.png') }}" alt="Logo" class="w-24 mb-4">
@@ -69,11 +69,11 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
               <i class="fa-solid fa-envelope absolute right-3 top-9 text-gray-500"></i>
             </div>
 
-          <!-- Input Kata Sandi -->
+          <!-- Input Kata Sandi dengan Toggle -->
           <div class="relative w-full max-w-[300px]">
               <h3 class="mb-1 text-sm font-medium">Kata Sandi</h3>
-              <input type="password" name="kata_sandi" placeholder="Masukkan Kata Sandi" class="{{ $inputClass }}" required>
-              <i class="fa-solid fa-lock absolute right-3 top-9 text-gray-500"></i>
+              <input type="password" id="kataSandi" name="kata_sandi" placeholder="Masukkan Kata Sandi" class="{{ $inputClass }}" required>
+              <i class="fa-solid fa-eye toggle-icon absolute right-3 top-9 text-gray-500" id="togglePassword"></i>
           </div>
 
           <!-- Tombol Masuk -->
@@ -95,6 +95,17 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
 
     </div>
   </div>
+<!-- Script Toggle Password -->
+  <script>
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('kataSandi');
 
+    togglePassword.addEventListener('click', () => {
+      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordInput.setAttribute('type', type);
+      togglePassword.classList.toggle('fa-eye');
+      togglePassword.classList.toggle('fa-eye-slash');
+    });
+  </script>
 </body>
 </html>

@@ -23,9 +23,15 @@ Deskripsi      : Membuat halaman Lupa Kata Sandi dengan form yang terstruktur da
     }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center bg-[#344E41]">
+<body class="min-h-screen flex items-center justify-center relative">
 
-  <div class="bg-[#F8FFF8] w-full max-w-md rounded-xl shadow-lg p-8">
+  <!-- Background gambar -->
+  <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ asset('asset/masjid-hd-pc.jpg') }}');"></div>
+
+  <!-- Overlay gelap -->
+  <div class="absolute inset-0 bg-black/30"></div>
+
+  <div class="relative z-10 bg-[#F8FFF8]/95 w-full max-w-md rounded-xl shadow-lg p-8">
     <h2 class="text-2xl font-bold text-center mb-10">Lupa Kata Sandi</h2>
 
     @php

@@ -29,7 +29,7 @@ class LoginController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect()->intended('/landing_utama')->with('success', 'Login berhasil');
+            return redirect()->intended('/#')->with('success', 'Login berhasil'); // isi di sini untuk diredirect ke halaman dashboard
         }
 
         return back()->withErrors([
