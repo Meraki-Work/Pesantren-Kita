@@ -1,0 +1,62 @@
+[
+    {
+        "model-name": "keuangan",
+        "resource-file": "keuangans.json",
+        "table-name": "keuangans"
+    },
+    {
+        "model-name": "Keuangan",
+        "resource-file": "keuangans.json",
+        "table-name": "keuangan"
+    },
+    {
+        "model-name": "Kelas",
+        "resource-file": "kelas.json",
+        "table-name": "kelas"
+    },
+    {
+        "model-name": "Absensi",
+        "resource-file": "absensis.json",
+        "table-name": "absensi"
+    },
+    {
+        "model-name": "Inventaris",
+        "resource-file": "inventaris.json",
+        "table-name": "inventaris"
+    },
+    {
+        "model-name": "Notulensi",
+        "resource-file": "notulensis.json",
+        "table-name": "notulensi_rapat"
+    },
+    {
+        "model-name": "Kategori",
+        "resource-file": "kategoris.json",
+        "table-name": "kategori"
+    },
+    {
+        "model-name": "Pencapaian",
+        "resource-file": "pencapaians.json",
+        "table-name": "pencapaian"
+    },
+    {
+        "model-name": "Ponpes",
+        "resource-file": "ponpes.json",
+        "table-name": "ponpes"
+    },
+    {
+        "model-name": "Sanksi",
+        "resource-file": "sanksis.json",
+        "table-name": "sanksi"
+    },
+    {
+        "model-name": "Santri",
+        "resource-file": "santris.json",
+        "table-name": "santri"
+    },
+    {
+        "model-name": "User",
+        "resource-file": "users.json",
+        "table-name": "user"
+    }
+]

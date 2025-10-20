@@ -2,26 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Keuangan;
 
 class KeuanganController extends Controller
 {
     public function index()
     {
-        $cards = [
-            ['kategori' => 'Pendidikan', 'jumlah' => 48217300, 'sumber' => 'Kas Tunai, Donasi'],
-            ['kategori' => 'Asset', 'jumlah' => 40121481, 'sumber' => 'Donasi Tetap, Pihak Ketiga'],
-            ['kategori' => 'Inventaris', 'jumlah' => 21731200, 'sumber' => 'Kas Pondok'],
-            ['kategori' => 'Kantor', 'jumlah' => 12873100, 'sumber' => 'Operasional'],
-        ];
+        // Ambil data beserta relasi kategori dan user
+        $data = Keuangan::with(['kategori', 'user'])->get();
 
-        $columns = ['UserId', 'Tanggal', 'Sumber', 'Status', 'Kategori', 'Jumlah', 'Keterangan'];
-        $rows = [
-            ['456789356', 'Sep 8, 2024, 03:13pm', 'Kas Tunai', 'Keluar', 'Aset', '+15.000,00', 'Pembelian Rak Sepatu'],
-            ['456789356', 'Sep 7, 2024, 01:00pm', 'Kas Tunai', 'Keluar', 'Inventaris', '-3.456,00', 'Cat & Sapu untuk Kelas 6D'],
-            ['456789356', 'Sep 6, 2024, 07:00am', 'Bank BCA - Arifin', 'Pemasukan', 'Donasi', '+30.000,00', 'Katering Maulid Nabi'],
-        ];
+        // Buat header kolom dan isi tabel
+        $columns = ['User', 'Jumlah', 'Kategori', 'Sumber Dana', 'Tanggal'];
+        $rows = $data->map(function ($item) {
+            return [
+                // $item->id_keuangan,
+                $item->user->username ?? '-', // ambil username dari relasi user
+                'Rp ' . number_format($item->jumlah, 0, ',', '.') . ',00',
+                $item->kategori->nama_kategori ?? '-',
+                $item->sumber_dana ?? '-',
+                $item->tanggal ?? '-',
+            ];
+        })->toArray();
 
-        return view('pages.keuangan', compact('cards', 'columns', 'rows'));
+        // Data untuk chart
+        $labels = $data->pluck('kategori.nama_kategori')->toArray();
+        $values = $data->pluck('jumlah')->toArray();
+        $dates  = $data->pluck('tanggal')->toArray();
+
+        // Return ke view
+        return view('pages.keuangan', compact('data', 'columns', 'rows', 'labels', 'values', 'dates'));
     }
 }
