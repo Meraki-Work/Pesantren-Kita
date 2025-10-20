@@ -1,12 +1,11 @@
 @extends('index')
 
-@section('title', 'Dashboard')
+@section('title', 'santri')
 
 @section('content')
-    <h1>Dashboard Page</h1>
-@endsection
 
-<body class="flex bg-gray-100 min-h-screen">
+
+<div class="flex bg-gray-100 min-h-screen">
     <x-sidemenu title="PesantrenKita" />
 
     <main class="flex-1 p-4 h-full">
@@ -285,4 +284,5 @@
             </div>
         </div>
     </main>
-</body>
+</div>
+@endsection

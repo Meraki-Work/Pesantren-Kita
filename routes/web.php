@@ -21,7 +21,7 @@ Route::get('/keuangan', [KeuanganController::class, 'index'])->name('keuangan');
 
 Route::get('/', function () { return view('pages.dashboard'); })->name('dashboard'); 
 Route::get('/settings', function () { return view('settings'); })->name('settings'); 
-Route::get('/notulensi', function () { return view('notulensi'); })->name('notulensi'); 
+Route::get('/notulensi', function () { return view('pages.notulensi'); })->name('notulensi'); 
 // Route::get('/keuangan', [ChartController::class, 'coba'])->name('keuangan');
 // Route::get('/keuangan', function () { return view('pages.keuangan'); })->name('keuangan'); 
 

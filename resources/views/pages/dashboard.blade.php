@@ -3,10 +3,8 @@
 @section('title', 'Dashboard')
 
 @section('content')
-    <h1>Dashboard Page</h1>
-@endsection
 
-<body class="flex bg-gray-100">
+<div class="flex bg-gray-100">
     <x-sidemenu title="PesantrenKita" class="h-full min-h-screen" />
 
     <main class="flex-1 p-4 overflow-y-auto">
@@ -341,10 +339,7 @@
             </div>
 
             <div class="box-bg col-start-1 row-start-4 bg-white p-2 rounded flex items-center">
-
                 <div class="w-4 h-full bg-green-500 rounded-xl"></div>
-
-
                 <div class="ml-4">
                     <p class="text-sm text-gray-600">Jumlah Keseluruhan Absen</p>
                     <p class="text-2xl font-bold text-black-600">367 Hari</p>
@@ -369,7 +364,7 @@
                 <div class="ml-4">
                     <p class="text-sm text-gray-600">Jumlah keseluruhan Cuti</p>
                     <p class="text-2xl font-bold text-black-500">42 Hari</p>
-                </div>  
+                </div>
             </div>
 
             <div class="box-bg col-span-2 row-span-15 col-start-1 row-start-5 bg-white p-6 rounded">
@@ -386,10 +381,10 @@
                 </div>
 
                 <div class="flex-1 flex justify-center items-center">
-            
+
                     <div id="grafik-prestasi" class="p-8 max-w-[350px] max-h-[350px]"></div>
 
-                    
+
                     <div>
                         <ul class="space-y-5 text-sm">
                             <li class="flex items-center space-x-2">
@@ -421,7 +416,7 @@
                     data: {
                         labels: ['Tilawah', 'Hafalan', 'Fikih', 'Belum Bisa'],
                         datasets: [{
-                            data: [8, 12, 11, 2], 
+                            data: [8, 12, 11, 2],
                             backgroundColor: ['#fb923c', '#2563eb', '#fed7aa', '#99f6e4'],
                             borderWidth: 0
                         }]
@@ -484,4 +479,5 @@
 
                 {{ $slot ?? '' }}
     </main>
-</body>
+            </div>
+@endsection
