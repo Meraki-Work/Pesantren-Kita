@@ -1,3 +1,6 @@
+<!-- Tambahkan Alpine.js di head jika belum ada -->
+<script src="//unpkg.com/alpinejs" defer></script>
+
 <!-- Sidebar -->
 <aside id="sidebar"
     class="fixed inset-y-0 left-0 z-40 w-56 transform -translate-x-full transition-transform duration-300 ease-in-out 
@@ -16,7 +19,7 @@
             class="block px-3 py-2 rounded transition 
             {{ request()->routeIs('dashboard') 
                 ? 'bg-active text-white' 
-                : 'bg-mint hover:bg-active hover:text-white' }}">
+                : 'bg-mint hover:bg-active hover:text-white' }} ">
             Dashboard
         </a>
 
@@ -46,7 +49,7 @@
 
         <div class="my-4 form-label text-gray-300 uppercase tracking-wider">Manajemen</div>
 
-        <a href="{{ route('keuangan') }}"
+        <a href="{{ route('keuangan.index') }}"
             class="block px-3 py-2 rounded transition 
             {{ request()->routeIs('keuangan') 
                 ? 'bg-active text-white' 
@@ -54,13 +57,34 @@
             Keuangan
         </a>
 
-        <a href="{{ route('santri') }}"
-            class="block px-3 py-2 rounded transition 
-            {{ request()->routeIs('santri.index') 
-                ? 'bg-active text-white' 
-                : 'bg-mint hover:bg-active hover:text-white' }}">
-            Santri
-        </a>
+        <!-- Dropdown Santri & Kompetensi -->
+        <div x-data="{ open: {{ request()->routeIs('santri.*') || request()->routeIs('laundry.*') ? 'true' : 'false' }} }" class="relative">
+            <button @click="open = !open"
+                class="w-full flex justify-between items-center px-3 py-2 rounded transition 
+                {{ request()->routeIs('santri.*') || request()->routeIs('laundry.*') 
+                    ? 'bg-active text-white' 
+                    : 'bg-mint hover:bg-active hover:text-white' }}">
+                Santri
+                <span x-bind:class="{'rotate-180': open}" class="transition-transform">&#9662;</span>
+            </button>
+
+            <div x-show="open" x-transition class="mt-1 ml-2 space-y-1">
+                <a href="{{ route('santri.index') }}"
+                    class="block px-3 py-2 rounded transition 
+                    {{ request()->routeIs('santri.index') 
+                        ? 'bg-active text-white' 
+                        : 'bg-mint hover:bg-active hover:text-white' }}">
+                    Santri
+                </a>
+                <a href="{{ route('laundry.index') }}"
+                    class="block px-3 py-2 rounded transition 
+                    {{ request()->routeIs('laundry.index') 
+                        ? 'bg-active text-white' 
+                        : 'bg-mint hover:bg-active hover:text-white' }}">
+                    Laundry
+                </a>
+            </div>
+        </div>
 
         <a href="{{ route('inventaris') }}"
             class="block px-3 py-2 rounded transition 
@@ -86,7 +110,6 @@
     class="fixed top-4 left-4 z-10 md:hidden bg-emerald-800 text-white p-2 rounded-full w-10 h-10 shadow-lg focus:outline-none">
     ☰
 </button>
-
 
 <!-- JS Toggle -->
 <script>

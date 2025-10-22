@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\DB;
 use App\Models\Inventaris;
 
 class InventarisController extends Controller
 {
     public function index()
     {
-        $data = Inventaris::all();
+    $data = DB::table('inventaris')
+        ->select('kategori', DB::raw('SUM(jumlah) as total_jumlah'))
+        ->groupBy('kategori')
+        ->get();
 
-        return view('pages.inventaris','data');
+        // Kirim ke view
+        return view('pages.inventaris', compact('data'));
     }
 }

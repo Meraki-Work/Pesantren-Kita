@@ -1,129 +1,80 @@
 <?php
 
+/**
+ * Created by Reliese Model.
+ */
+
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Class User
+ * 
+ * @property int $id_user
+ * @property string|null $ponpes_id
+ * @property string $username
+ * @property string $password
+ * @property string|null $email
+ * @property string $role
+ * @property Carbon|null $created_at
+ * 
+ * @property Ponpe|null $ponpe
+ * @property Collection|Absensi[] $absensis
+ * @property Collection|Gambar[] $gambars
+ * @property Collection|Keuangan[] $keuangans
+ * @property Collection|Pencapaian[] $pencapaians
+ * @property Collection|Sanksi[] $sanksis
+ *
+ * @package App\Models
+ */
 class User extends Model
 {
-    
-    /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
-    /**
-     * The database table used by the model.
-     *
-     * @var string
-     */
-    protected $table = 'user';
+	protected $table = 'user';
+	protected $primaryKey = 'id_user';
+	public $timestamps = false;
 
-    /**
-    * The database primary key value.
-    *
-    * @var string
-    */
-    protected $primaryKey = 'id_user';
+	protected $hidden = [
+		'password'
+	];
 
-    /**
-     * Attributes that should be mass-assignable.
-     *
-     * @var array
-     */
-    protected $fillable = [
-                  'email',
-                  'password',
-                  'ponpes_id',
-                  'role',
-                  'username'
-              ];
+	protected $fillable = [
+		'ponpes_id',
+		'username',
+		'password',
+		'email',
+		'role'
+	];
 
-    /**
-     * The attributes that should be mutated to dates.
-     *
-     * @var array
-     */
-    protected $dates = [];
-    
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
-    protected $casts = [];
-    
-    /**
-     * Get the Ponpe for this model.
-     *
-     * @return App\Models\Ponpe
-     */
-    public function Ponpe()
-    {
-        return $this->belongsTo('App\Models\Ponpe','ponpes_id','id_ponpes');
-    }
+	public function ponpe()
+	{
+		return $this->belongsTo(Ponpe::class, 'ponpes_id');
+	}
 
-    /**
-     * Get the absensi for this model.
-     *
-     * @return App\Models\Absensi
-     */
-    public function absensi()
-    {
-        return $this->hasOne('App\Models\Absensi','user_id','id_user');
-    }
+	public function absensis()
+	{
+		return $this->hasMany(Absensi::class);
+	}
 
-    /**
-     * Get the inventari for this model.
-     *
-     * @return App\Models\Inventari
-     */
-    public function inventari()
-    {
-        return $this->hasOne('App\Models\Inventari','user_id','id_user');
-    }
+	public function gambars()
+	{
+		return $this->hasMany(Gambar::class);
+	}
 
-    /**
-     * Get the keuangan for this model.
-     *
-     * @return App\Models\Keuangan
-     */
-    public function keuangan()
-    {
-        return $this->hasOne('App\Models\Keuangan','user_id','id_user');
-    }
+	public function keuangans()
+	{
+		return $this->hasMany(Keuangan::class);
+	}
 
-    /**
-     * Get the notulensiRapat for this model.
-     *
-     * @return App\Models\Notulensi
-     */
-    public function notulensiRapat()
-    {
-        return $this->hasOne('App\Models\Notulensi','user_id','id_user');
-    }
+	public function pencapaians()
+	{
+		return $this->hasMany(Pencapaian::class);
+	}
 
-    /**
-     * Get the sanksi for this model.
-     *
-     * @return App\Models\Sanksi
-     */
-    public function sanksi()
-    {
-        return $this->hasOne('App\Models\Sanksi','user_id','id_user');
-    }
-
-
-    /**
-     * Get created_at in array format
-     *
-     * @param  string  $value
-     * @return array
-     */
-    public function getCreatedAtAttribute($value)
-    {
-        return \DateTime::createFromFormat($this->getDateFormat(), $value)->format('j/n/Y g:i A');
-    }
-
+	public function sanksis()
+	{
+		return $this->hasMany(Sanksi::class);
+	}
 }

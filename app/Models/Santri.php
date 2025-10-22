@@ -1,139 +1,94 @@
 <?php
 
+/**
+ * Created by Reliese Model.
+ */
+
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Class Santri
+ * 
+ * @property int $id_santri
+ * @property string|null $ponpes_id
+ * @property int|null $id_kelas
+ * @property string|null $nama
+ * @property string|null $nisn
+ * @property string|null $nik
+ * @property string|null $status_ujian
+ * @property Carbon|null $tahun_masuk
+ * @property string|null $alamat
+ * @property string|null $jenis_kelamin
+ * @property Carbon|null $tanggal_lahir
+ * @property string|null $nama_ayah
+ * @property string|null $nama_ibu
+ * 
+ * @property Ponpe|null $ponpe
+ * @property Kela|null $kela
+ * @property Collection|Absensi[] $absensis
+ * @property Collection|Keuangan[] $keuangans
+ * @property Collection|Pencapaian[] $pencapaians
+ * @property Collection|Sanksi[] $sanksis
+ *
+ * @package App\Models
+ */
 class Santri extends Model
 {
+	protected $table = 'santri';
+	protected $primaryKey = 'id_santri';
+	public $timestamps = false;
 
-    /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
-    /**
-     * The database table used by the model.
-     *
-     * @var string
-     */
-    protected $table = 'santri';
+	protected $casts = [
+		'id_kelas' => 'int',
+		'tanggal_lahir' => 'datetime'
+	];
 
-    /**
-     * The database primary key value.
-     *
-     * @var string
-     */
-    protected $primaryKey = 'id_santri';
+	protected $fillable = [
+		'ponpes_id',
+		'id_kelas',
+		'nama',
+		'nisn',
+		'nik',
+		'status_ujian',
+		'tahun_masuk',
+		'alamat',
+		'jenis_kelamin',
+		'tanggal_lahir',
+		'nama_ayah',
+		'nama_ibu'
+	];
 
-    /**
-     * Attributes that should be mass-assignable.
-     *
-     * @var array
-     */
-    protected $fillable = [
-        'alamat',
-        'jenis_kelamin',
-        'nama',
-        'nama_ayah',
-        'nama_ibu',
-        'nisin',
-        'no_induk_gp',
-        'status',
-        'tahun_masuk',
-        'tanggal_lahir',
-        'tempat_lahir',
-        'tingkat'
-    ];
+	public function ponpe()
+	{
+		return $this->belongsTo(Ponpe::class, 'ponpes_id');
+	}
 
-    /**
-     * The attributes that should be mutated to dates.
-     *
-     * @var array
-     */
-    protected $dates = [];
+	public function kela()
+	{
+		return $this->belongsTo(Kela::class, 'id_kelas');
+	}
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
-    protected $casts = [];
+	public function absensis()
+	{
+		return $this->hasMany(Absensi::class, 'id_santri');
+	}
 
-    /**
-     * Get the absensi for this model.
-     *
-     * @return App\Models\Absensi
-     */
-    public function absensi()
-    {
-        return $this->hasOne('App\Models\Absensi', 'santri_id', 'id_santri');
-    }
+	public function keuangans()
+	{
+		return $this->hasMany(Keuangan::class, 'id_santri');
+	}
 
-    /**
-     * Get the kela for this model.
-     *
-     * @return App\Models\Kela
-     */
-    public function kela()
-    {
-        return $this->hasOne('App\Models\Kela', 'santri_id', 'id_santri');
-    }
+	public function pencapaians()
+	{
+		return $this->hasMany(Pencapaian::class, 'id_santri');
+	}
 
-    /**
-     * Get the keuangan for this model.
-     *
-     * @return App\Models\Keuangan
-     */
-    public function keuangan()
-    {
-        return $this->hasOne('App\Models\Keuangan', 'santri_id', 'id_santri');
-    }
-
-    /**
-     * Get the pencapaian for this model.
-     *
-     * @return App\Models\Pencapaian
-     */
-    public function pencapaian()
-    {
-        return $this->hasOne('App\Models\Pencapaian', 'santri_id', 'id_santri');
-    }
-
-    /**
-     * Get the sanksi for this model.
-     *
-     * @return App\Models\Sanksi
-     */
-    public function sanksi()
-    {
-        return $this->hasOne('App\Models\Sanksi', 'santri_id', 'id_santri');
-    }
-
-    /**
-     * Set the tanggal_lahir.
-     *
-     * @param  string  $value
-     * @return void
-     */
-    public function setTanggalLahirAttribute($value)
-    {
-        $this->attributes['tanggal_lahir'] = !empty($value) ? \DateTime::createFromFormat('j/n/Y g:i A', $value) : null;
-    }
-
-    /**
-     * Get tanggal_lahir in array format
-     *
-     * @param  string  $value
-     * @return array
-     */
-    public function getTanggalLahirAttribute($value)
-    {
-        if (empty($value) || $value === '0000-00-00') {
-            return null; // atau bisa return string kosong ''
-        }
-
-        return \Carbon\Carbon::parse($value)->format('d/m/Y');
-    }
+	public function sanksis()
+	{
+		return $this->hasMany(Sanksi::class, 'id_santri');
+	}
 }

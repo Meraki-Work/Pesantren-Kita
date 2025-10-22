@@ -1,65 +1,46 @@
 <?php
 
+/**
+ * Created by Reliese Model.
+ */
+
 namespace App\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Class Kategori
+ * 
+ * @property int $id_kategori
+ * @property string $ponpes_id
+ * @property string|null $nama_kategori
+ * @property Carbon|null $created_at
+ * 
+ * @property Ponpe $ponpe
+ * @property Collection|Keuangan[] $keuangans
+ *
+ * @package App\Models
+ */
 class Kategori extends Model
 {
-    
-    /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
-    /**
-     * The database table used by the model.
-     *
-     * @var string
-     */
-    protected $table = 'kategori';
+	protected $table = 'kategori';
+	protected $primaryKey = 'id_kategori';
+	public $timestamps = false;
 
-    /**
-    * The database primary key value.
-    *
-    * @var string
-    */
-    protected $primaryKey = 'id_kategori';
+	protected $fillable = [
+		'ponpes_id',
+		'nama_kategori'
+	];
 
-    /**
-     * Attributes that should be mass-assignable.
-     *
-     * @var array
-     */
-    protected $fillable = [
-                  'nama_kategori'
-              ];
+	public function ponpe()
+	{
+		return $this->belongsTo(Ponpe::class, 'ponpes_id');
+	}
 
-    /**
-     * The attributes that should be mutated to dates.
-     *
-     * @var array
-     */
-    protected $dates = [];
-    
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
-    protected $casts = [];
-    
-    /**
-     * Get the keuangan for this model.
-     *
-     * @return App\Models\Keuangan
-     */
-    public function keuangan()
-    {
-        return $this->hasOne('App\Models\Keuangan','kategori_id','id_kategori');
-    }
-
-
-
+	public function keuangans()
+	{
+		return $this->hasMany(Keuangan::class, 'id_kategori');
+	}
 }

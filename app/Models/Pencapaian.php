@@ -1,81 +1,70 @@
 <?php
 
+/**
+ * Created by Reliese Model.
+ */
+
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Class Pencapaian
+ * 
+ * @property int $id_pencapaian
+ * @property string $ponpes_id
+ * @property int $id_santri
+ * @property int|null $user_id
+ * @property string $judul
+ * @property string|null $deskripsi
+ * @property string|null $tipe
+ * @property int|null $skor
+ * @property Carbon|null $tanggal
+ * @property Carbon|null $created_at
+ * 
+ * @property Ponpe $ponpe
+ * @property Santri $santri
+ * @property User|null $user
+ *
+ * @package App\Models
+ */
 class Pencapaian extends Model
 {
-    
-    /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
-    /**
-     * The database table used by the model.
-     *
-     * @var string
-     */
-    protected $table = 'pencapaian';
+	protected $table = 'pencapaian';
+	protected $primaryKey = 'id_pencapaian';
+	public $timestamps = false;
 
-    /**
-    * The database primary key value.
-    *
-    * @var string
-    */
-    protected $primaryKey = 'id_pencapaian';
+	protected $casts = [
+		'id_santri' => 'int',
+		'user_id' => 'int',
+		'skor' => 'int',
+		'tanggal' => 'datetime'
+	];
 
-    /**
-     * Attributes that should be mass-assignable.
-     *
-     * @var array
-     */
-    protected $fillable = [
-                  'jumlah_kompetensi',
-                  'keterangan',
-                  'santri_id',
-                  'semester',
-                  'status',
-                  'target_kompetensi',
-                  'total_mengulang_hafalan'
-              ];
+	protected $fillable = [
+		'ponpes_id',
+		'id_santri',
+		'user_id',
+		'judul',
+		'deskripsi',
+		'tipe',
+		'skor',
+		'tanggal'
+	];
 
-    /**
-     * The attributes that should be mutated to dates.
-     *
-     * @var array
-     */
-    protected $dates = [];
-    
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
-    protected $casts = [];
-    
-    /**
-     * Get the Santri for this model.
-     *
-     * @return App\Models\Santri
-     */
-    public function Santri()
-    {
-        return $this->belongsTo('App\Models\Santri','santri_id','id_santri');
-    }
+	public function ponpe()
+	{
+		return $this->belongsTo(Ponpe::class, 'ponpes_id');
+	}
 
+	public function santri()
+	{
+		return $this->belongsTo(Santri::class, 'id_santri');
+	}
 
-    /**
-     * Get created_at in array format
-     *
-     * @param  string  $value
-     * @return array
-     */
-    public function getCreatedAtAttribute($value)
-    {
-        return \DateTime::createFromFormat($this->getDateFormat(), $value)->format('j/n/Y g:i A');
-    }
-
+	public function user()
+	{
+		return $this->belongsTo(User::class);
+	}
 }

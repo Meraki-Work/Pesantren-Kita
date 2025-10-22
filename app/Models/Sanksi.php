@@ -1,112 +1,68 @@
 <?php
 
+/**
+ * Created by Reliese Model.
+ */
+
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Class Sanksi
+ * 
+ * @property int $id_sanksi
+ * @property string|null $ponpes_id
+ * @property int|null $user_id
+ * @property int|null $id_santri
+ * @property string|null $jenis
+ * @property string|null $deskripsi
+ * @property string|null $hukuman
+ * @property Carbon|null $tanggal
+ * @property string|null $status
+ * 
+ * @property Ponpe|null $ponpe
+ * @property User|null $user
+ * @property Santri|null $santri
+ *
+ * @package App\Models
+ */
 class Sanksi extends Model
 {
-    
-    /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
-    /**
-     * The database table used by the model.
-     *
-     * @var string
-     */
-    protected $table = 'sanksi';
+	protected $table = 'sanksi';
+	protected $primaryKey = 'id_sanksi';
+	public $timestamps = false;
 
-    /**
-    * The database primary key value.
-    *
-    * @var string
-    */
-    protected $primaryKey = 'id_sanksi';
+	protected $casts = [
+		'user_id' => 'int',
+		'id_santri' => 'int',
+		'tanggal' => 'datetime'
+	];
 
-    /**
-     * Attributes that should be mass-assignable.
-     *
-     * @var array
-     */
-    protected $fillable = [
-                  'deskripsi',
-                  'hukuman',
-                  'jenis',
-                  'santri_id',
-                  'status',
-                  'tanggal',
-                  'user_id'
-              ];
+	protected $fillable = [
+		'ponpes_id',
+		'user_id',
+		'id_santri',
+		'jenis',
+		'deskripsi',
+		'hukuman',
+		'tanggal',
+		'status'
+	];
 
-    /**
-     * The attributes that should be mutated to dates.
-     *
-     * @var array
-     */
-    protected $dates = [];
-    
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
-    protected $casts = [];
-    
-    /**
-     * Get the Santri for this model.
-     *
-     * @return App\Models\Santri
-     */
-    public function Santri()
-    {
-        return $this->belongsTo('App\Models\Santri','santri_id','id_santri');
-    }
+	public function ponpe()
+	{
+		return $this->belongsTo(Ponpe::class, 'ponpes_id');
+	}
 
-    /**
-     * Get the User for this model.
-     *
-     * @return App\Models\User
-     */
-    public function User()
-    {
-        return $this->belongsTo('App\Models\User','user_id','id_user');
-    }
+	public function user()
+	{
+		return $this->belongsTo(User::class);
+	}
 
-    /**
-     * Set the tanggal.
-     *
-     * @param  string  $value
-     * @return void
-     */
-    public function setTanggalAttribute($value)
-    {
-        $this->attributes['tanggal'] = !empty($value) ? \DateTime::createFromFormat('j/n/Y g:i A', $value) : null;
-    }
-
-    /**
-     * Get created_at in array format
-     *
-     * @param  string  $value
-     * @return array
-     */
-    public function getCreatedAtAttribute($value)
-    {
-        return \DateTime::createFromFormat($this->getDateFormat(), $value)->format('j/n/Y g:i A');
-    }
-
-    /**
-     * Get tanggal in array format
-     *
-     * @param  string  $value
-     * @return array
-     */
-    public function getTanggalAttribute($value)
-    {
-        return \DateTime::createFromFormat($this->getDateFormat(), $value)->format('j/n/Y g:i A');
-    }
-
+	public function santri()
+	{
+		return $this->belongsTo(Santri::class, 'id_santri');
+	}
 }

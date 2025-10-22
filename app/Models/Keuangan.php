@@ -1,62 +1,79 @@
 <?php
 
+/**
+ * Created by Reliese Model.
+ */
+
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Class Keuangan
+ * 
+ * @property int $id_keuangan
+ * @property int|null $id_santri
+ * @property string|null $ponpes_id
+ * @property int|null $user_id
+ * @property int|null $id_kategori
+ * @property string|null $sumber_dana
+ * @property string|null $keterangan
+ * @property float|null $jumlah
+ * @property string|null $status
+ * @property Carbon|null $tanggal
+ * 
+ * @property Kategori|null $kategori
+ * @property Santri|null $santri
+ * @property Ponpe|null $ponpe
+ * @property User|null $user
+ *
+ * @package App\Models
+ */
 class Keuangan extends Model
 {
-    public $timestamps = false;
-
     protected $table = 'keuangan';
     protected $primaryKey = 'id_keuangan';
+    public $timestamps = false;
 
-    protected $fillable = [
-        'jumlah',
-        'kategori_id',
-        'keterangan',
-        'santri_id',
-        'status',
-        'sumber_dana',
-        'tanggal',
-        'user_id'
+    protected $casts = [
+        'id_santri' => 'int',
+        'user_id' => 'int',
+        'id_kategori' => 'int',
+        'jumlah' => 'float',
+        'tanggal' => 'datetime'
     ];
 
-    /**
-     * Relasi ke tabel kategori
-     * keuangan.kategori_id → kategori.id_kategori
-     */
+    protected $fillable = [
+        'id_santri',
+        'ponpes_id',
+        'user_id',
+        'id_kategori',
+        'sumber_dana',
+        'keterangan',
+        'jumlah',
+        'status',
+        'tanggal'
+    ];
+
     public function kategori()
     {
-        return $this->belongsTo(Kategori::class, 'kategori_id', 'id_kategori');
+        return $this->belongsTo(Kategori::class, 'id_kategori');
     }
 
-    /**
-     * Relasi ke tabel santri
-     */
     public function santri()
     {
-        return $this->belongsTo(Santri::class, 'santri_id', 'id_santri');
+        return $this->belongsTo(Santri::class, 'id_santri');
     }
 
-    /**
-     * Relasi ke tabel user
-     */
+    public function ponpe()
+    {
+        return $this->belongsTo(Ponpe::class, 'ponpes_id');
+    }
+
     public function user()
     {
+        // Pastikan foreign key dan primary key sesuai
         return $this->belongsTo(User::class, 'user_id', 'id_user');
-    }
-
-    /**
-     * Accessor untuk tanggal (format d/m/Y)
-     */
-    public function getTanggalAttribute($value)
-    {
-        if (empty($value) || $value === '0000-00-00') {
-            return null;
-        }
-
-        return Carbon::parse($value)->format('d/m/Y');
     }
 }

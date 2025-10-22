@@ -16,8 +16,7 @@
         </div>
 
         <div class="grid grid-cols-4 grid-rows-7 gap-4 text-gray-900 p-4 rounded-lg ">
-            <div class="box-bg col-span-3 row-span-3 col-start-1 bg-white p-6 rounded-lg relative overflow-hidden"
-                style="background-image: url('{{ asset('assets/img/ji.png') }}'); background-size: cover; background-position: center;">
+            <div class="box-bg col-span-3 row-span-3 col-start-1 bg-white p-6 rounded-lg relative overflow-hidden" style="background-size: cover; background-position: center;">
                 <p class="font-normal text-1 text-gray-800">Pukul</p>
                 <p class="text-m font-semibold text-4xl ml-1 mt-1">06 : 42 AM</p>
                 <div class="max-w-xs break-words">
@@ -339,28 +338,21 @@
             </div>
 
             <div class="box-bg col-start-1 row-start-4 bg-white p-2 rounded flex items-center">
-                <div class="w-4 h-full bg-green-500 rounded-xl"></div>
+                <div class="w-2 h-full bg-green-500 rounded-xl"></div>
                 <div class="ml-4">
                     <p class="text-sm text-gray-600">Jumlah Keseluruhan Absen</p>
                     <p class="text-2xl font-bold text-black-600">367 Hari</p>
                 </div>
             </div>
             <div class="box-bg col-start-2 row-start-4 bg-white p-2 rounded flex items-center">
-
-                <div class="w-4 h-full bg-green-500 rounded-xl"></div>
-
-
+                <div class="w-2 h-full bg-green-500 rounded-xl"></div>
                 <div class="ml-4">
                     <p class="text-sm text-gray-600">Jumlah keseluruhan terlambat</p>
                     <p class="text-2xl font-bold text-black-600">289 Hari</p>
                 </div>
             </div>
-
             <div class="box-bg col-start-3 row-start-4 bg-white p-2 rounded flex items-center">
-
-                <div class="w-4 h-full bg-green-500 rounded-xl"></div>
-
-
+                <div class="w-2 h-full bg-green-500 rounded-xl"></div>
                 <div class="ml-4">
                     <p class="text-sm text-gray-600">Jumlah keseluruhan Cuti</p>
                     <p class="text-2xl font-bold text-black-500">42 Hari</p>
@@ -479,5 +471,5 @@
 
                 {{ $slot ?? '' }}
     </main>
-            </div>
+</div>
 @endsection

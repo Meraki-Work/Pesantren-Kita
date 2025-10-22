@@ -10,51 +10,40 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Class Absensi
+ * Class Gambar
  * 
- * @property int $id_absensi
+ * @property int $id_gambar
  * @property string|null $ponpes_id
- * @property int|null $id_santri
  * @property int|null $user_id
- * @property Carbon|null $tanggal
- * @property string|null $status
+ * @property string|null $path_gambar
  * @property string|null $keterangan
+ * @property Carbon|null $created_at
  * 
  * @property Ponpe|null $ponpe
- * @property Santri|null $santri
  * @property User|null $user
  *
  * @package App\Models
  */
-class Absensi extends Model
+class Gambar extends Model
 {
-	protected $table = 'absensi';
-	protected $primaryKey = 'id_absensi';
+	protected $table = 'gambar';
+	protected $primaryKey = 'id_gambar';
 	public $timestamps = false;
 
 	protected $casts = [
-		'id_santri' => 'int',
-		'user_id' => 'int',
-		'tanggal' => 'datetime'
+		'user_id' => 'int'
 	];
 
 	protected $fillable = [
 		'ponpes_id',
-		'id_santri',
 		'user_id',
-		'tanggal',
-		'status',
+		'path_gambar',
 		'keterangan'
 	];
 
 	public function ponpe()
 	{
 		return $this->belongsTo(Ponpe::class, 'ponpes_id');
-	}
-
-	public function santri()
-	{
-		return $this->belongsTo(Santri::class, 'id_santri');
 	}
 
 	public function user()
