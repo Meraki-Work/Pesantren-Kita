@@ -1,54 +1,135 @@
 @extends('index')
 
-@section('title', 'Notulensi-PesantrenKita')
+@section('title', 'Dashboard')
 
 @section('content')
 
 <div class="flex bg-gray-100">
-    <x-sidemenu title="PesantrenKita" />
+    <x-sidemenu title="PesantrenKita" class="h-full min-h-screen" />
 
-    <main class="flex-1 p-4">
-        {{ $slot ?? '' }}
-        <div class="swiper">
-            <div class="swiper-wrapper">
-                @foreach($cards as $card)
-                <div class="swiper-slide box-bg p-4 max-w-[48%] max-h-32">
-                    <div class="flex gap-4">
-                        {{-- Kolom kiri --}}
-                        <div class="w-1/2">
-                            <h2 class="font-semibold mb-1">{{ $card['kategori'] }}</h2>
-                            <div class="text-sm text-gray-600 space-y-1">
-                                <p>Pimpinan: {{ $card['jumlah'] }}</p>
-                                <p>Tanggal: {{ $card['jumlah'] }}</p>
-                                <p>Lokasi: {{ $card['jumlah'] }}</p>
-                            </div>
-                        </div>
+    <main class="flex-1 p-4 overflow-y-auto">
+        <div class="p-6 bg-gray-50 rounded-xl shadow-sm">
+    <h2 class="text-2xl font-semibold mb-6 text-gray-800">Notulensi Rapat</h2>
 
-                        {{-- Kolom kanan --}}
-                        <div class="relative w-1/2 border-l border-gray-200 pl-3">
-                            <p class="text-gray-700 text-sm line-clamp-5 overflow-hidden">
-                                <br>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                            </p>
-                            {{-- efek fade --}}
-                            <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
-                        </div>
-                    </div>
+    <form action="#" method="POST" class="grid grid-cols-2 gap-6">
+        {{-- Kolom Kiri --}}
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Agenda Rapat</label>
+                <input type="text" name="agenda" class="w-full border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="Rapat Paripurna Internal Pondok Pesantren">
+            </div>
+
+            <div class="flex space-x-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Hari/Tanggal</label>
+                    <input type="date" name="tanggal" class="w-full border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400">
                 </div>
-                @endforeach
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Waktu</label>
+                    <input type="text" name="waktu" class="w-full border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="00:00 - 00:00">
+                </div>
+            </div>
 
+            <div class="flex space-x-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tempat</label>
+                    <input type="text" name="tempat" class="w-full border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="Tambahkan Tempat">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Pimpinan</label>
+                    <input type="text" name="pimpinan" class="w-full border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="Tambahkan Pimpinan">
+                </div>
             </div>
-            <div class="swiper-button-prev">
-                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#1f1f1f">
-                    <path d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z" />
-                </svg>
+
+            {{-- Peserta --}}
+            <div id="peserta-container" class="space-y-2">
+                <div class="flex space-x-2 items-center">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Peserta</label>
+                        <input type="text" name="peserta[]" class="w-full border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="Tambahkan Peserta">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Sebagai</label>
+                        <input type="text" name="sebagai[]" class="w-full border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="Tambahkan Tempat">
+                    </div>
+                    <button type="button" onclick="addPeserta()" class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center mt-5">+</button>
+                </div>
+
+                <div class="flex space-x-2 items-center">
+                    <div class="flex-1">
+                        <input type="text" name="peserta[]" class="w-full border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="Tambahkan Peserta">
+                    </div>
+                    <div class="flex-1">
+                        <input type="text" name="sebagai[]" class="w-full border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="Tambahkan Tempat">
+                    </div>
+                    <button type="button" onclick="removeElement(this)" class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center">−</button>
+                </div>
             </div>
-            <div class="swiper-button-next">
-                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#1f1f1f">
-                    <path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z" />
-                </svg>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
+                <textarea name="keterangan" rows="4" class="w-full border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="Tuliskan keterangan rapat..."></textarea>
             </div>
         </div>
-        <x-dynamic-table :columns="$columns" :rows="$rows" />
-    </main>
+
+        {{-- Kolom Kanan --}}
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Jalannya Rapat</label>
+                <textarea name="jalannya_rapat" rows="6" class="w-full border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="Tuliskan jalannya rapat..."></textarea>
+            </div>
+
+            {{-- Poin-Poin Rapat --}}
+            <div id="poin-container" class="space-y-2">
+                <div class="flex space-x-2 items-center">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Poin Poin Rapat</label>
+                        <input type="text" name="poin[]" class="w-full border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="Tambah Poin">
+                    </div>
+                    <button type="button" onclick="addPoin()" class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center mt-5">+</button>
+                </div>
+
+                <div class="flex space-x-2 items-center">
+                    <input type="text" name="poin[]" class="flex-1 border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="Tambah Poin">
+                    <button type="button" onclick="removeElement(this)" class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center">−</button>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
+
+<script>
+    function addPeserta() {
+        const container = document.getElementById('peserta-container');
+        const div = document.createElement('div');
+        div.classList.add('flex', 'space-x-2', 'items-center');
+        div.innerHTML = `
+            <div class="flex-1">
+                <input type="text" name="peserta[]" class="w-full border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="Tambahkan Peserta">
+            </div>
+            <div class="flex-1">
+                <input type="text" name="sebagai[]" class="w-full border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="Tambahkan Tempat">
+            </div>
+            <button type="button" onclick="removeElement(this)" class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center">−</button>
+        `;
+        container.appendChild(div);
+    }
+
+    function addPoin() {
+        const container = document.getElementById('poin-container');
+        const div = document.createElement('div');
+        div.classList.add('flex', 'space-x-2', 'items-center');
+        div.innerHTML = `
+            <input type="text" name="poin[]" class="flex-1 border border-green-300 rounded-md p-2 focus:outline-none focus:ring-1 focus:ring-green-400" placeholder="Tambah Poin">
+            <button type="button" onclick="removeElement(this)" class="bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center">−</button>
+        `;
+        container.appendChild(div);
+    }
+
+    function removeElement(btn) {
+        btn.parentElement.remove();
+    }
+</script>
+    </main>
+            </div>
 @endsection
