@@ -9,6 +9,8 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
 /**
  * Class User
@@ -32,20 +34,30 @@ use Illuminate\Database\Eloquent\Model;
  */
 class User extends Model
 {
+	use Notifiable;
+
 	protected $table = 'user';
 	protected $primaryKey = 'id_user';
 	public $timestamps = false;
 
 	protected $hidden = [
-		'password'
+		'password',
+		'otp_code'
 	];
 
 	protected $fillable = [
-		'ponpes_id',
 		'username',
-		'password',
 		'email',
-		'role'
+		'password',
+		'role',
+		'ponpes_id',
+		'otp_code',
+		'otp_expired_at',
+		'email_verified_at'
+	];
+
+	protected $casts = [
+		'otp_expired_at' => 'datetime',
 	];
 
 	public function ponpe()

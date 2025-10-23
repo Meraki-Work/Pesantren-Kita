@@ -12,9 +12,17 @@ use App\Http\Controllers\SantriController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\KompetensiController;
 use App\Http\Controllers\PencapaianController;
+
 use App\Http\Controllers\LaundryController;
+use App\Http\Controllers\Auth\LoginController;
+
+use App\Http\Controllers\Auth\RegisterController;
+
+use App\Http\Controllers\Auth\ResetPasswordController;
 use Illuminate\Support\Facades\DB;
 
+
+use App\Models\Ponpes;
 
 
 /*
@@ -40,7 +48,7 @@ Route::delete('/keuangan/{id}', [KeuanganController::class, 'destroy'])->name('k
 
 Route::get('/cash', [CashController::class, 'index'])->name('cash');
 
-Route::get('/', function () { return view('pages.dashboard'); })->name('dashboard'); 
+Route::get('/dashboard', function () { return view('pages.dashboard'); })->name('dashboard'); 
 Route::get('/settings', function () { return view('settings'); })->name('settings'); 
 
 
@@ -117,9 +125,10 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Registrasi
 Route::get('/registrasi', function () {
-    $ponpes = Ponpes::select('id_ponpes', 'nama')->get();
+    $ponpes = Ponpes::select('id_ponpes', 'nama_ponpes')->get();
     return view('auth.registrasi', compact('ponpes'));
 })->name('registrasi.index');
+
 Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
 Route::get('/verify', [RegisterController::class, 'verifyForm'])->name('verify.form');
 Route::post('/verify', [RegisterController::class, 'verifyOtp'])->name('verify.otp');
@@ -131,6 +140,6 @@ Route::post('/lupakatasandi/verify-otp', [ResetPasswordController::class, 'verif
 Route::post('/lupakatasandi/update', [ResetPasswordController::class, 'updatePassword'])->name('password.update');
 
 // Landing pages
-Route::get('/landing_utama', function () {return view('landing_utama');})->name('landing_utama');
+Route::get('/', function () {return view('landing_utama');})->name('landing_utama');
 Route::get('/landing_about', function () {return view('landing_about');})->name('landing_about');
 Route::get('/landing_al-amal', function () {return view('landing_al-amal');})->name('landing_al-amal');
