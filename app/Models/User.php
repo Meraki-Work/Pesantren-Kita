@@ -1,9 +1,5 @@
 <?php
 
-/**
- * Created by Reliese Model.
- */
-
 namespace App\Models;
 
 use Carbon\Carbon;
@@ -32,61 +28,73 @@ use Illuminate\Notifications\Notifiable;
  *
  * @package App\Models
  */
-class User extends Model
+class User extends Authenticatable
 {
-	use Notifiable;
+    use Notifiable;
 
-	protected $table = 'user';
-	protected $primaryKey = 'id_user';
-	public $timestamps = false;
+    protected $table = 'user';
+    protected $primaryKey = 'id_user';
+    public $timestamps = false;
 
-	protected $hidden = [
-		'password',
-		'otp_code'
-	];
+    protected $hidden = [
+        'password',
+        'otp_code'
+    ];
 
-	protected $fillable = [
-		'username',
-		'email',
-		'password',
-		'role',
-		'ponpes_id',
-		'otp_code',
-		'otp_expired_at',
-		'email_verified_at'
-	];
+    protected $fillable = [
+        'username',
+        'email',
+        'password',
+        'role',
+        'ponpes_id',
+        'otp_code',
+        'otp_expired_at',
+        'email_verified_at'
+    ];
 
-	protected $casts = [
-		'otp_expired_at' => 'datetime',
-	];
+    protected $casts = [
+        'otp_expired_at' => 'datetime',
+    ];
 
-	public function ponpe()
-	{
-		return $this->belongsTo(Ponpe::class, 'ponpes_id');
-	}
+    // Jika nama kolom password bukan 'password', tambahkan method ini
+    public function getAuthPassword()
+    {
+        return $this->password;
+    }
 
-	public function absensis()
-	{
-		return $this->hasMany(Absensi::class);
-	}
+    // Jika Anda ingin menggunakan kolom 'username' untuk login juga
+    public function getAuthIdentifierName()
+    {
+        return 'email'; // atau 'username' tergantung kebutuhan
+    }
 
-	public function gambars()
-	{
-		return $this->hasMany(Gambar::class);
-	}
+    public function ponpe()
+    {
+        return $this->belongsTo(Ponpe::class, 'ponpes_id');
+    }
 
-	public function keuangans()
-	{
-		return $this->hasMany(Keuangan::class);
-	}
+    public function absensis()
+    {
+        return $this->hasMany(Absensi::class);
+    }
 
-	public function pencapaians()
-	{
-		return $this->hasMany(Pencapaian::class);
-	}
+    public function gambars()
+    {
+        return $this->hasMany(Gambar::class);
+    }
 
-	public function sanksis()
-	{
-		return $this->hasMany(Sanksi::class);
-	}
+    public function keuangans()
+    {
+        return $this->hasMany(Keuangan::class);
+    }
+
+    public function pencapaians()
+    {
+        return $this->hasMany(Pencapaian::class);
+    }
+
+    public function sanksis()
+    {
+        return $this->hasMany(Sanksi::class);
+    }
 }
