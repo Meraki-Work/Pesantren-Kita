@@ -16,9 +16,8 @@ class RegisterController extends Controller
             $request->validate([
                 'username' => 'required',
                 'email' => 'required|email|unique:user,email',
-                'password' => 'required|min:6',
-                'ponpes_id' => 'required|integer',
-                'role' => 'required',
+                'password' => 'required|min:6|confirmed',
+                'role'     => 'required',
             ]);
 
             $otp = rand(100000, 999999);
@@ -28,7 +27,6 @@ class RegisterController extends Controller
                 'email'          => $request->email,
                 'password'       => bcrypt($request->password),
                 'role'           => $request->role,
-                'ponpes_id'      => $request->ponpes_id,
                 'otp_code'       => $otp,
                 'otp_expired_at' => now()->addMinutes(5),
             ]);
@@ -44,13 +42,11 @@ class RegisterController extends Controller
         }
     }
 
-    // Hanya menampilkan form OTP
     public function verifyForm()
     {
         return view('auth.verify-otp');
     }
 
-    // Memproses OTP
     public function verifyOtp(Request $request)
     {
         $request->validate([
@@ -68,8 +64,8 @@ class RegisterController extends Controller
         }
 
         $user->update([
-            'otp_code' => null,
-            'otp_expired_at' => null,
+            'otp_code'          => null,
+            'otp_expired_at'    => null,
             'email_verified_at' => now(),
         ]);
 

@@ -67,26 +67,6 @@ Deskripsi      : Membuat halaman registrasi pengguna dengan form yang terstruktu
         </div>
 
         <div class="relative">
-          <label class="block text-sm font-medium mb-2">Kata Sandi</label>
-          <input type="password" name="password" id="password" placeholder="Masukkan Kata Sandi" required minlength="6" class="{{ $inputClass }}">
-          <i class="fa-solid fa-eye absolute right-3 top-10 text-gray-500 cursor-pointer" onclick="togglePassword('password', this)"></i>
-        </div>
-      </div>
-
-      {{-- Kolom kanan --}}
-      <div class="space-y-4">
-        <div class="relative">
-          <label class="block text-sm font-medium mb-2">Nama Pondok Pesantren</label>
-          <select name="ponpes_id" required class="{{ $inputClass }}">
-            <option value="">Pilih Pondok Pesantren</option>
-            @foreach ($ponpes as $p)
-                <option value="{{ $p->id_ponpes }}">{{ $p->nama }}</option>
-            @endforeach
-          </select>
-          <i class="fa-solid fa-school absolute right-3 top-10 text-gray-500"></i>
-        </div>
-
-        <div class="relative">
           <label class="block text-sm font-medium mb-2">Role</label>
           <select name="role" required class="{{ $inputClass }}">
             <option value="">Pilih Role</option>
@@ -94,6 +74,21 @@ Deskripsi      : Membuat halaman registrasi pengguna dengan form yang terstruktu
             <option value="Pengajar">Pengajar</option>
           </select>
           <i class="fa-solid fa-user-tag absolute right-3 top-10 text-gray-500"></i>
+        </div>
+      </div>
+
+      {{-- Kolom kanan --}}
+      <div class="space-y-4">
+        <div class="relative">
+          <label class="block text-sm font-medium mb-2">Kata Sandi</label>
+          <input type="password" name="password" id="password" placeholder="Masukkan Kata Sandi" required minlength="6" class="{{ $inputClass }}">
+          <i class="fa-solid fa-eye absolute right-3 top-10 text-gray-500 cursor-pointer" onclick="togglePassword('password', this)"></i>
+        </div>
+
+        <div class="relative">
+          <label class="block text-sm font-medium mb-2">Konfirmasi Kata Sandi</label>
+          <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Ulangi Kata Sandi" required minlength="6" class="{{ $inputClass }}">
+          <i class="fa-solid fa-eye absolute right-3 top-10 text-gray-500 cursor-pointer" onclick="togglePassword('password_confirmation', this)"></i>
         </div>
       </div>
 
