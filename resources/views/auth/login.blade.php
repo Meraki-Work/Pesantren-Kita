@@ -73,7 +73,7 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
           <div class="relative w-full max-w-[300px]">
               <h3 class="mb-1 text-sm font-medium">Kata Sandi</h3>
               <input type="password" id="kataSandi" name="kata_sandi" placeholder="Masukkan Kata Sandi" class="{{ $inputClass }}" required>
-              <i class="fa-solid fa-eye toggle-icon absolute right-3 top-9 text-gray-500" id="togglePassword"></i>
+              <i id="togglePassword" class="fa-solid fa-eye-slash absolute right-3 top-9 text-gray-500 cursor-pointer"></i>
           </div>
 
           <!-- Tombol Masuk -->
@@ -97,15 +97,23 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
   </div>
 <!-- Script Toggle Password -->
   <script>
-    const togglePassword = document.getElementById('togglePassword');
-    const passwordInput = document.getElementById('kataSandi');
+  const togglePassword = document.getElementById('togglePassword');
+  const passwordInput = document.getElementById('kataSandi');
 
-    togglePassword.addEventListener('click', () => {
-      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-      passwordInput.setAttribute('type', type);
-      togglePassword.classList.toggle('fa-eye');
-      togglePassword.classList.toggle('fa-eye-slash');
-    });
-  </script>
+  togglePassword.addEventListener('click', () => {
+    const isPassword = passwordInput.getAttribute('type') === 'password';
+
+    if (isPassword) {
+      passwordInput.setAttribute('type', 'text');
+      togglePassword.classList.remove('fa-eye-slash');
+      togglePassword.classList.add('fa-eye');
+    } else {
+      passwordInput.setAttribute('type', 'password');
+      togglePassword.classList.remove('fa-eye');
+      togglePassword.classList.add('fa-eye-slash');
+    }
+  });
+</script>
+
 </body>
 </html>

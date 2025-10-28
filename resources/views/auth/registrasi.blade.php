@@ -82,13 +82,13 @@ Deskripsi      : Membuat halaman registrasi pengguna dengan form yang terstruktu
         <div class="relative">
           <label class="block text-sm font-medium mb-2">Kata Sandi</label>
           <input type="password" name="password" id="password" placeholder="Masukkan Kata Sandi" required minlength="6" class="{{ $inputClass }}">
-          <i class="fa-solid fa-eye absolute right-3 top-10 text-gray-500 cursor-pointer" onclick="togglePassword('password', this)"></i>
+          <i class="fa-solid fa-eye-slash absolute right-3 top-11 text-gray-500 cursor-pointer" onclick="togglePassword('password', this)"></i>
         </div>
 
         <div class="relative">
           <label class="block text-sm font-medium mb-2">Konfirmasi Kata Sandi</label>
           <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Ulangi Kata Sandi" required minlength="6" class="{{ $inputClass }}">
-          <i class="fa-solid fa-eye absolute right-3 top-10 text-gray-500 cursor-pointer" onclick="togglePassword('password_confirmation', this)"></i>
+          <i class="fa-solid fa-eye-slash absolute right-3 top-11 text-gray-500 cursor-pointer" onclick="togglePassword('password_confirmation', this)"></i>
         </div>
       </div>
 
@@ -110,15 +110,20 @@ Deskripsi      : Membuat halaman registrasi pengguna dengan form yang terstruktu
     function togglePassword(id, el) {
       const input = document.getElementById(id);
       const icon = el;
-      if (input.type === "password") {
-        input.type = "text";
-        icon.classList.replace("fa-eye", "fa-eye-slash");
+      const isHidden = input.type === 'password';
+      
+      if (isHidden) {
+        input.type = 'text';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
       } else {
-        input.type = "password";
-        icon.classList.replace("fa-eye-slash", "fa-eye");
+        input.type = 'password';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
       }
     }
   </script>
+
 
 </body>
 </html>

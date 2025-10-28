@@ -79,16 +79,16 @@ Deskripsi      : Membuat halaman Lupa Kata Sandi dengan form yang terstruktur da
         @csrf
         <input type="hidden" name="email" value="{{ session('email') }}">
 
-        <div class="relative">
+        <div class="relative ">
           <label class="block text-sm font-medium mb-2">Kata Sandi Baru</label>
           <input type="password" name="password" id="password" placeholder="Masukkan Kata Sandi Baru" required minlength="6" class="{{ $inputClass }}">
-          <i class="fa-solid fa-eye absolute right-3 top-10 text-gray-500 cursor-pointer" onclick="togglePassword('password', this)"></i>
+          <i class="fa-solid fa-eye-slash absolute right-3 top-11 text-gray-500 cursor-pointer" onclick="togglePassword('password', this)"></i>
         </div>
 
         <div class="relative">
           <label class="block text-sm font-medium mb-2">Konfirmasi Kata Sandi</label>
           <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Konfirmasi Kata Sandi" required class="{{ $inputClass }}">
-          <i class="fa-solid fa-eye absolute right-3 top-10 text-gray-500 cursor-pointer" onclick="togglePassword('password_confirmation', this)"></i>
+          <i class="fa-solid fa-eye-slash absolute right-3 top-11 text-gray-500 cursor-pointer" onclick="togglePassword('password_confirmation', this)"></i>
         </div>
 
         <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg transition duration-300">
@@ -97,18 +97,21 @@ Deskripsi      : Membuat halaman Lupa Kata Sandi dengan form yang terstruktur da
       </form>
 
       <script>
-        function togglePassword(id, el) {
-          const input = document.getElementById(id);
-          const icon = el;
-          if (input.type === "password") {
-            input.type = "text";
-            icon.classList.replace("fa-eye", "fa-eye-slash");
-          } else {
-            input.type = "password";
-            icon.classList.replace("fa-eye-slash", "fa-eye");
-          }
-        }
-      </script>
+  function togglePassword(inputId, icon) {
+    const input = document.getElementById(inputId);
+    const isHidden = input.type === 'password';
+    
+    if (isHidden) {
+      input.type = 'text';
+      icon.classList.remove('fa-eye-slash');
+      icon.classList.add('fa-eye');
+    } else {
+      input.type = 'password';
+      icon.classList.remove('fa-eye');
+      icon.classList.add('fa-eye-slash');
+    }
+  }
+</script>
     @endif
   </div>
 
