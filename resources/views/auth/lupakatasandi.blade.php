@@ -26,10 +26,10 @@ Deskripsi      : Membuat halaman Lupa Kata Sandi dengan form yang terstruktur da
 <body class="min-h-screen flex items-center justify-center relative">
 
   <!-- Background gambar -->
-  <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ asset('asset/masjid-hd-pc.jpg') }}');"></div>
+  <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ asset('asset/background masjid .png') }}');"></div>
 
-  <!-- Overlay gelap -->
-  <div class="absolute inset-0 bg-black/30"></div>
+  <!-- Overlay blur -->
+  <div class="absolute inset-0 backdrop-blur-sm bg-black/20"></div>
 
   <div class="relative z-10 bg-[#F8FFF8]/95 w-full max-w-md rounded-xl shadow-lg p-8">
     <h2 class="text-2xl font-bold text-center mb-10">Lupa Kata Sandi</h2>
@@ -51,6 +51,9 @@ Deskripsi      : Membuat halaman Lupa Kata Sandi dengan form yang terstruktur da
         <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg transition duration-300">
           Kirim OTP
         </button>
+        <p class="text-sm text-center mt-3 text-black">
+          <a href="{{ route('login') }}" class="text-black hover:underline font-medium">Kembali ke login</a>
+        </p>
       </form>
     @endif
 

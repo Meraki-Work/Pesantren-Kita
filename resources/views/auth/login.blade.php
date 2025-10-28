@@ -85,7 +85,7 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
 
       <!-- Link Lupa Kata Sandi -->
       <p class="text-center text-sm text-gray-600 mt-4">
-          <a href="{{ route('lupakatasandi') }}" class="hover:underline">Lupa Kata Sandi?</a>
+          <a href="{{ route('lupakatasandi') }}" class="hover:underline">Lupa kata sandi?</a>
       </p>
 
       <!-- Link Belum punya akun -->

@@ -24,7 +24,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Registrasi
 Route::get('/registrasi', function () {
-    $ponpes = Ponpes::select('id_ponpes', 'nama')->get();
+    $ponpes = Ponpes::select('id_ponpes')->get();
     return view('auth.registrasi', compact('ponpes'));
 })->name('registrasi.index');
 Route::post('/register', [RegisterController::class, 'store'])->name('register.store');

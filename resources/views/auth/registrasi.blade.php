@@ -27,11 +27,11 @@ Deskripsi      : Membuat halaman registrasi pengguna dengan form yang terstruktu
 
   <!-- Background gambar -->
   <div class="absolute inset-0 bg-cover bg-center"
-       style="background-image: url('{{ asset('asset/masjid-hd-pc.jpg') }}');">
+       style="background-image: url('{{ asset('asset/background masjid .png') }}');">
   </div>
 
-  <!-- Overlay gelap -->
-  <div class="absolute inset-0 bg-black/30"></div>
+  <!-- Overlay blur -->
+<div class="absolute inset-0 backdrop-blur-sm bg-black/20"></div>
 
   <!-- Konten form -->
   <div class="relative z-10 bg-[#F8FFF8]/95 w-full max-w-4xl rounded-xl shadow-lg p-10">
@@ -93,11 +93,15 @@ Deskripsi      : Membuat halaman registrasi pengguna dengan form yang terstruktu
       </div>
 
       {{-- Tombol --}}
-      <div class="md:col-span-2 flex justify-center mt-6">
+      <div class="md:col-span-2 flex flex-col items-center mt-6">
         <button type="submit"
           class="w-full md:w-[300px] bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg transition duration-300">
           Registrasi
         </button>
+
+        <p class="text-sm text-center mt-3 text-black">
+          <a href="{{ route('login') }}" class="text-black hover:underline font-medium">Kembali ke login</a>
+        </p>
       </div>
     </form>
   </div>
