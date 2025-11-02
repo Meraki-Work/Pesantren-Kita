@@ -24,7 +24,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Registrasi
 Route::get('/registrasi', function () {
-    $ponpes = Ponpes::select('id_ponpes')->get();
+    $ponpes = Ponpes::select('id_ponpes', 'nama_ponpes')->get();
     return view('auth.registrasi', compact('ponpes'));
 })->name('registrasi.index');
 Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
@@ -38,6 +38,6 @@ Route::post('/lupakatasandi/verify-otp', [ResetPasswordController::class, 'verif
 Route::post('/lupakatasandi/update', [ResetPasswordController::class, 'updatePassword'])->name('password.update');
 
 // Landing pages
-Route::get('/landing_utama', function () {return view('landing_utama');})->name('landing_utama');
+Route::get('/', function () {return view('landing_utama');})->name('landing_utama');
 Route::get('/landing_about', function () {return view('landing_about');})->name('landing_about');
 Route::get('/landing_al-amal', function () {return view('landing_al-amal');})->name('landing_al-amal');
