@@ -3,8 +3,8 @@
     <!-- Tombol Buka Modal -->
     <button 
         @click="openModal = true" 
-        class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-        + Tambah Kelas
+        class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+        Tambah Kelas
     </button>
 
     <!-- Modal -->

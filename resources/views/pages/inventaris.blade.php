@@ -1,101 +1,146 @@
 @extends('index')
 
-@section('title', 'Inventaris')
+@section('title', 'Inventaris - PesantrenKita')
 
 @section('content')
 <div class="flex bg-gray-100 min-h-screen">
-    <x-sidemenu title="PesantrenKita" />
+    <x-sidemenu title="PesantrenKita" class="h-full" />
 
-    <main class="flex-1 p-6 space-y-3">
+    <main class="flex-1 p-6 overflow-y-auto">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Manajemen Inventaris</h1>
+            <a href="{{ route('inventaris.create') }}"
+                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                + Tambah Inventaris
+            </a>
+        </div>
 
-        {{-- Bagian utama kartu kategori --}}
         @php
-        $sortedData = $data->sortByDesc('total_jumlah')->take(4);
-        $count = $sortedData->count();
+        $total = $inventaris->total() ?? 0;
+        $kategoriCount = $kategories->count() ?? 0;
         @endphp
 
-        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-7xl mx-auto">
-            {{-- Jika data ada --}}
-            @foreach ($sortedData as $card)
-            <div class="flex flex-col rounded-xl box-bg p-4 hover:shadow-md transition w-full">
-                <div class="grid">
-                    <span class="text-mint text-xs sm:text-sm lg:text-base">Kategori Aset</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <label class="{{ strlen($card->kategori ?? '') > 14 ? 'text-base sm:text-lg' : 'sm:text-lg md:text-xl lg:text-2xl' }}">
-                        {{ $card->kategori }}
-                    </label>
-                </div>
-                <div class="mt-2">
-                    <span class="font-medium text-lg sm:text-xl lg:text-2xl">
-                        {{ number_format($card->total_jumlah, 0, ',', '.') }} Unit
-                    </span>
-                </div>
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="box-bg p-4">
+                <p class="text-base sm:text-lg' : 'text-md sm:text-sm lg:text-xl">Total Barang</p>
+                <h3 class="pt-2 font-medium text-lg sm:text-xl lg:text-3xl">{{ $total }} Unit</h3>
             </div>
-            @endforeach
-
-            {{-- Tambah placeholder jika kurang dari 4 --}}
-            @for ($i = $count; $i < 4; $i++)
-                <div class="flex flex-col rounded-xl box-bg p-4 hover:shadow-md transition w-full">
-                <div class="grid">
-                    <span class="text-mint text-xs sm:text-sm lg:text-base">Kategori Aset</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <label class="text-lg sm:text-xl lg:text-2xl">-</label>
-                </div>
-                <div class="mt-2">
-                    <span class="font-medium text-lg sm:text-xl lg:text-2xl">-</span>
-                </div>
+            <div class="box-bg p-4">
+                <p class="text-base sm:text-lg' : 'text-md sm:text-sm lg:text-xl">Kategori</p>
+                <h3 class="pt-2 font-medium text-lg sm:text-xl lg:text-3xl">{{ $kategoriCount }}</h3>
+            </div>
+            <div class="box-bg p-4">
+                <p class="text-base sm:text-lg' : 'text-md sm:text-sm lg:text-xl">Kondisi Baik</h3>
+                <h3 class="pt-2 font-medium text-lg sm:text-xl lg:text-3xl">{{ $inventaris->where('kondisi', 'Baik')->sum('jumlah') }} Unit</h3>
+            </div>
+            <div class="box-bg p-4">
+                <h3 class="text-base sm:text-lg' : 'text-md sm:text-sm lg:text-xl">Perlu Perbaikan</h3>
+                <p class="pt-2 font-medium text-lg sm:text-xl lg:text-3xl">
+                    {{ $inventaris->where('kondisi', 'Rusak')->sum('jumlah') }} Unit
+                </p>
+            </div>
         </div>
-        @endfor
-</div>
 
-<div x-data="{ openForm: '' }" class="box-bg p-4 rounded-xl max-w-6xl mx-auto">
-    <div class="flex flex-col sm:flex-row justify-between items-center">
-        <span class="text-lg font-semibold">Tambahkan Items</span>
-        <div class="flex gap-2 mt-2 sm:mt-0">
-            <!-- Tombol Tambah Kategori -->
-            <button 
-                @click="openForm = openForm === 'kategori' ? '' : 'kategori'"
-                :class="openForm === 'kategori' ? 'bg-green-700' : 'bg-green-500 hover:bg-green-700'"
-                class="px-4 py-2 text-white rounded shadow-sm transition-colors">
-                Tambah Kategori
-            </button>
+        <!-- Filters -->
+        <div class="box-bg p-4 rounded-lg mb-6">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input type="text" name="search" placeholder="Cari barang..."
+                    value="{{ $search ?? '' }}" class="w-full px-4 py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
 
-            <!-- Tombol Tambah Inventaris -->
-            <button 
-                @click="openForm = openForm === 'inventaris' ? '' : 'inventaris'"
-                :class="openForm === 'inventaris' ? 'bg-green-700' : 'bg-green-500 hover:bg-green-700'"
-                class="px-4 py-2 text-white rounded shadow-sm transition-colors">
-                Tambah Inventaris
-            </button>
+                <select name="kategori" class="w-full px-4 py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                    <option value="">Semua Kategori</option>
+                    @foreach($kategories as $kat)
+                    <option value="{{ $kat }}" {{ ($kategori ?? '') == $kat ? 'selected' : '' }}>
+                        {{ $kat }}
+                    </option>
+                    @endforeach
+                </select>
+
+                <select name="kondisi" class="w-full px-4 py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                    <option value="">Semua Kondisi</option>
+                    @foreach($kondisis as $kon)
+                    <option value="{{ $kon }}" {{ ($kondisi ?? '') == $kon ? 'selected' : '' }}>
+                        {{ $kon }}
+                    </option>
+                    @endforeach
+                </select>
+
+                <button type="submit"
+                    class="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700 transition">
+                    Filter
+                </button>
+            </form>
+            <div class="bg-white rounded-lg shadow overflow-hidden mt-4">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-700">
+                        <tr>
+                            <th class="px-6 py-3 text-left font-semibold">Nama Barang</th>
+                            <th class="px-6 py-3 text-left font-semibold">Kategori</th>
+                            <th class="px-6 py-3 text-left font-semibold">Kondisi</th>
+                            <th class="px-6 py-3 text-left font-semibold">Jumlah</th>
+                            <th class="px-6 py-3 text-left font-semibold">Lokasi</th>
+                            <th class="px-6 py-3 text-left font-semibold">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        @forelse($inventaris as $item)
+                        <tr>
+                            <td class="px-6 py-4 truncate">{{ $item->nama_barang }}</td>
+                            <td class="px-6 py-4">
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
+                                    {{ $item->kategori }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 rounded text-xs font-medium
+                                    @if($item->kondisi == 'Baik') bg-green-100 text-green-800
+                                    @elseif($item->kondisi == 'Rusak')
+                                    @elseif($item->kondisi == 'Hilang')
+                                    @endif">
+                                    {{ $item->kondisi }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">{{ $item->jumlah }}</td>
+                            <td class="px-6 py-4">{{ $item->lokasi }}</td>
+                            <td class="px-6 py-4">
+                                <div class="flex space-x-3">
+                                    <a href="{{ route('inventaris.edit', $item->id_inventaris) }}"
+                                        class="text-blue-600 hover:text-blue-900 font-medium">
+                                        Edit
+                                    </a>
+                                    <form action="{{ route('inventaris.destroy', $item->id_inventaris) }}"
+                                        method="POST" class="inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                            class="text-red-600 hover:text-red-900 font-medium"
+                                            onclick="return confirm('Hapus data ini?')">
+                                            Hapus
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="6" class="text-center py-6 text-gray-500">
+                                Tidak ada data inventaris ditemukan.
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                @if($inventaris->hasPages())
+                <div class="px-6 py-4 bg-gray-50">
+                    {{ $inventaris->links() }}
+                </div>
+                @endif
+            </div>
         </div>
-    </div>
-
-    <!-- Form Kategori -->
-    <div x-show="openForm === 'kategori'" x-transition class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 w-full max-w-6xl mx-auto mb-4">
-        <input type="text" placeholder="Nama Kategori" class="input input-bordered w-full rounded-md p-2 sm:col-span-2" />
-        <input type="text" placeholder="Deskripsi Kategori" class="input input-bordered w-full rounded-md p-2 sm:col-span-2 md:col-span-3" />
-        <button @click="openForm = ''" class="px-4 py-2 bg-red-500 text-white rounded shadow-sm hover:bg-red-700 sm:col-span-2 md:col-span-1">
-            Batal
-        </button>
-    </div>
-
-    <!-- Form Inventaris -->
-    <div x-show="openForm === 'inventaris'" x-transition class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 w-full max-w-6xl mx-auto">
-        <input type="text" placeholder="Nama Barang" class="input input-bordered w-full rounded-md p-2 sm:col-span-2 md:col-span-2 lg:col-span-2" />
-        <input type="text" placeholder="Kategori" class="input input-bordered w-full rounded-md p-2" />
-        <input type="number" placeholder="Jumlah" class="input input-bordered w-full rounded-md p-2" />
-        <input type="text" placeholder="Kondisi" class="input input-bordered w-full rounded-md p-2" />
-        <input type="text" placeholder="Lokasi" class="input input-bordered w-full rounded-md p-2 sm:col-span-2 md:col-span-2 lg:col-span-2" />
-        <input type="date" class="input input-bordered w-full rounded-md p-2" />
-        <input type="text" placeholder="Keterangan" class="input input-bordered w-full rounded-md p-2 sm:col-span-2 md:col-span-3 lg:col-span-4" />
-        <button @click="openForm = ''" class="px-4 py-2 bg-red-500 text-white rounded shadow-sm hover:bg-red-700 sm:col-span-2 md:col-span-1 lg:col-span-1">
-            Batal
-        </button>
-    </div>
-</div>
-
-</main>
+    </main>
 </div>
 @endsection
