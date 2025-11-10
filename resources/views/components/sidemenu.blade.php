@@ -31,7 +31,7 @@
             Kepegawaian
         </a>
 
-        <a href="{{ route('settings') }}"
+        <a href="{{ route('sangksi') }}"
             class="block px-3 py-2 rounded transition 
             {{ request()->routeIs('settings') 
                 ? 'bg-active text-white' 
@@ -39,13 +39,13 @@
             Sanksi
         </a>
 
-        <a href="{{ route('notulensi') }}"
-            class="block px-3 py-2 rounded transition 
-            {{ request()->routeIs('notulensi') 
-                ? 'bg-active text-white' 
-                : 'bg-mint hover:bg-active hover:text-white' }}">
-            Notulensi
-        </a>
+<a href="{{ route('notulen.index') }}"
+    class="block px-3 py-2 rounded transition 
+    {{ request()->routeIs('notulen.index') 
+        ? 'bg-active text-white' 
+        : 'bg-mint hover:bg-active hover:text-white' }}">
+    Notulensi
+</a>
 
         <div class="my-4 form-label text-gray-300 uppercase tracking-wider">Manajemen</div>
 
@@ -86,7 +86,7 @@
             </div>
         </div>
 
-        <a href="{{ route('inventaris') }}"
+        <a href="{{ route('inventaris.index') }}"
             class="block px-3 py-2 rounded transition 
             {{ request()->routeIs('inventaris.index') 
                 ? 'bg-active text-white' 

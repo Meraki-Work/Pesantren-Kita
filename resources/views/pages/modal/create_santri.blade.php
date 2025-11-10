@@ -2,8 +2,8 @@
     <!-- Tombol Buka Modal -->
     <button 
         @click="openModal = true" 
-        class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
-        + Tambah Santri
+        class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+        Tambah Santri
     </button>
 
     <!-- Modal -->

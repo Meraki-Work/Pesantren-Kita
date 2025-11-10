@@ -104,8 +104,71 @@ Route::get('/santri/{id}/kompetensi', function ($id) {
     return response()->json($kompetensi);
 })->name('santri.kompetensi');
 
-Route::get('/inventaris', [InventarisController::class, 'index'])->name('inventaris');
-Route::get('/notulensi', [NotulenController::class, 'index'])->name('notulensi');
+
+// Inventaris Routes
+Route::get('/inventaris', [InventarisController::class, 'index'])->name('inventaris.index');
+Route::get('/inventaris/create', [InventarisController::class, 'create'])->name('inventaris.create');
+Route::post('/inventaris', [InventarisController::class, 'store'])->name('inventaris.store');
+Route::get('/inventaris/{id}', [InventarisController::class, 'show'])->name('inventaris.show');
+Route::get('/inventaris/{id}/edit', [InventarisController::class, 'edit'])->name('inventaris.edit');
+Route::put('/inventaris/{id}', [InventarisController::class, 'update'])->name('inventaris.update');
+Route::delete('/inventaris/{id}', [InventarisController::class, 'destroy'])->name('inventaris.destroy');
+
+// API Routes
+Route::get('/api/inventaris/chart-data', [InventarisController::class, 'getChartData']);
+Route::get('/api/inventaris/stats', [InventarisController::class, 'getStats']);
+Route::get('/inventaris/export', [InventarisController::class, 'export'])->name('inventaris.export');
+
+// Notulen Routes
+Route::get('/notulensi', [NotulenController::class, 'index'])->name('notulen.index');
+Route::get('/notulen/create', [NotulenController::class, 'create'])->name('notulen.create'); // ✅
+Route::post('/notulen', [NotulenController::class, 'store'])->name('notulen.store');
+Route::get('/notulen/{id}', [NotulenController::class, 'show'])->name('notulen.show');
+Route::get('/notulen/{id}/edit', [NotulenController::class, 'edit'])->name('notulen.edit');
+Route::put('/notulen/{id}', [NotulenController::class, 'update'])->name('notulen.update');
+Route::delete('/notulen/{id}', [NotulenController::class, 'destroy'])->name('notulen.destroy');
+
+// Route debugging - sementara saja
+Route::get('/debug-gambar', function() {
+    $gambar = \App\Models\Gambar::with('notulen')
+        ->whereNotNull('id_notulen')
+        ->whereNotNull('path_gambar')
+        ->orderBy('created_at', 'desc')
+        ->take(10)
+        ->get();
+    
+    echo "<h1>Data Gambar dari Database:</h1>";
+    foreach ($gambar as $g) {
+        echo "<div style='border:1px solid #ccc; padding:10px; margin:10px;'>";
+        echo "<strong>ID:</strong> " . $g->id_gambar . "<br>";
+        echo "<strong>Path Gambar:</strong> " . $g->path_gambar . "<br>";
+        echo "<strong>Notulen ID:</strong> " . $g->id_notulen . "<br>";
+        echo "<strong>Agenda:</strong> " . ($g->notulen->agenda ?? 'Tidak ada agenda') . "<br>";
+        echo "<strong>Created At:</strong> " . $g->created_at . "<br>";
+        
+        // Test URL
+        $url = asset('storage/' . $g->path_gambar);
+        echo "<strong>URL:</strong> <a href='{$url}' target='_blank'>{$url}</a><br>";
+        
+        // Test if file exists
+        $fileExists = file_exists(public_path('storage/' . $g->path_gambar));
+        echo "<strong>File Exists:</strong> " . ($fileExists ? '✅ YA' : '❌ TIDAK') . "<br>";
+        
+        echo "</div>";
+    }
+    
+    return "Debug selesai - lihat output di atas";
+});
+
+// Route untuk hapus gambar individual
+Route::delete('/notulen/gambar/{id}', [NotulenController::class, 'hapusGambar'])->name('notulen.hapus-gambar');
+
+// Route untuk tambah gambar ke notulen yang sudah ada
+Route::post('/notulen/{id}/tambah-gambar', [NotulenController::class, 'tambahGambar'])->name('notulen.tambah-gambar');
+
+// API Routes
+Route::get('/api/notulen/stats', [NotulenController::class, 'getStats']);
+Route::get('/notulen/{id}/export', [NotulenController::class, 'export'])->name('notulen.export');
 
 Route::get('/santri', [SantriController::class, 'index'])->name('santri.index');
 Route::get('/santri/create', [SantriController::class, 'create'])->name('santri.create');

@@ -50,7 +50,6 @@
                         </span>
                     </div>
                 </div>
-
                 <!-- Total Pengeluaran -->
                 <div class="bg-gradient-to-r from-[#E74C3C] to-[#C0392B] rounded-xl shadow-lg p-6 text-white">
                     <div class="flex justify-between items-start">
