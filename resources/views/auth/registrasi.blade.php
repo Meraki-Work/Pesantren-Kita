@@ -1,11 +1,3 @@
-{{-- 
-Dikerjakan Oleh: Titho (3312401071) Front-End
-               : Muhammad Rizky Febrian (3312401082) Back-End
-Dikerjakan Pada: 8 October 2025 untuk Front-End & 10 October 2025 untuk Back-End
-Deskripsi      : Membuat halaman registrasi pengguna dengan form yang terstruktur dan menarik menggunakan Tailwind CSS.
-                 Form ini mencakup input untuk nama pengguna, email, kata sandi, nama pondok pesantren, dan role pengguna. 
---}}
-
 @extends('index')
 <!DOCTYPE html>
 <html lang="id">
@@ -25,50 +17,39 @@ Deskripsi      : Membuat halaman registrasi pengguna dengan form yang terstruktu
 </head>
 <body class="min-h-screen flex items-center justify-center relative">
 
-  <!-- Background gambar -->
+  <!-- Background -->
   <div class="absolute inset-0 bg-cover bg-center"
-       style="background-image: url('{{ asset('asset/background masjid .png') }}');">
-  </div>
+       style="background-image: url('{{ asset('asset/background masjid .png') }}');"></div>
+  <div class="absolute inset-0 backdrop-blur-sm bg-black/20"></div>
 
-  <!-- Overlay blur -->
-<div class="absolute inset-0 backdrop-blur-sm bg-black/20"></div>
-
-  <!-- Konten form -->
   <div class="relative z-10 bg-[#F8FFF8]/95 w-full max-w-4xl rounded-xl shadow-lg p-10">
     <h2 class="text-2xl font-bold text-center mb-8">Registrasi Pengguna</h2>
+
+    <div id="alert-box" class="hidden p-3 rounded text-center mb-4 text-sm"></div>
 
     @php
         $inputClass = 'w-full h-[45px] pl-3 pr-10 text-sm placeholder:text-sm bg-gray-100 
         border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500';
     @endphp
 
-    {{-- Tampilkan pesan error --}}
-    @if ($errors->any())
-        <div class="bg-red-100 text-red-700 p-3 rounded mb-4 text-center text-sm">
-            {{ $errors->first() }}
-        </div>
-    @endif
-
-    <form method="POST" action="{{ route('register.store') }}" class="grid md:grid-cols-2 gap-6">
-      @csrf
-
-      {{-- Kolom kiri --}}
+    <form id="registerForm" class="grid md:grid-cols-2 gap-6">
+      {{-- Kiri --}}
       <div class="space-y-4">
         <div class="relative">
           <label class="block text-sm font-medium mb-2">Nama Pengguna</label>
-          <input type="text" name="username" placeholder="Masukkan Nama Pengguna" required class="{{ $inputClass }}">
+          <input type="text" id="username" name="username" placeholder="Masukkan Nama Pengguna" required class="{{ $inputClass }}">
           <i class="fa-solid fa-user absolute right-3 top-10 text-gray-500"></i>
         </div>
 
         <div class="relative">
           <label class="block text-sm font-medium mb-2">Email</label>
-          <input type="email" name="email" placeholder="Masukkan Email" required class="{{ $inputClass }}">
+          <input type="email" id="email" name="email" placeholder="Masukkan Email" required class="{{ $inputClass }}">
           <i class="fa-solid fa-envelope absolute right-3 top-10 text-gray-500"></i>
         </div>
 
         <div class="relative">
           <label class="block text-sm font-medium mb-2">Role</label>
-          <select name="role" required class="{{ $inputClass }}">
+          <select id="role" name="role" required class="{{ $inputClass }}">
             <option value="">Pilih Role</option>
             <option value="Admin">Admin</option>
             <option value="Pengajar">Pengajar</option>
@@ -77,17 +58,17 @@ Deskripsi      : Membuat halaman registrasi pengguna dengan form yang terstruktu
         </div>
       </div>
 
-      {{-- Kolom kanan --}}
+      {{-- Kanan --}}
       <div class="space-y-4">
         <div class="relative">
           <label class="block text-sm font-medium mb-2">Kata Sandi</label>
-          <input type="password" name="password" id="password" placeholder="Masukkan Kata Sandi" required minlength="6" class="{{ $inputClass }}">
+          <input type="password" id="password" name="password" placeholder="Masukkan Kata Sandi" required minlength="6" class="{{ $inputClass }}">
           <i class="fa-solid fa-eye-slash absolute right-3 top-11 text-gray-500 cursor-pointer" onclick="togglePassword('password', this)"></i>
         </div>
 
         <div class="relative">
           <label class="block text-sm font-medium mb-2">Konfirmasi Kata Sandi</label>
-          <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Ulangi Kata Sandi" required minlength="6" class="{{ $inputClass }}">
+          <input type="password" id="password_confirmation" name="password_confirmation" placeholder="Ulangi Kata Sandi" required minlength="6" class="{{ $inputClass }}">
           <i class="fa-solid fa-eye-slash absolute right-3 top-11 text-gray-500 cursor-pointer" onclick="togglePassword('password_confirmation', this)"></i>
         </div>
       </div>
@@ -107,23 +88,66 @@ Deskripsi      : Membuat halaman registrasi pengguna dengan form yang terstruktu
   </div>
 
   <script>
+    // toggle password visibility
     function togglePassword(id, el) {
       const input = document.getElementById(id);
-      const icon = el;
       const isHidden = input.type === 'password';
-      
-      if (isHidden) {
-        input.type = 'text';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
-      } else {
-        input.type = 'password';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
-      }
+      input.type = isHidden ? 'text' : 'password';
+      el.classList.toggle('fa-eye');
+      el.classList.toggle('fa-eye-slash');
     }
-  </script>
 
+    // Handle form submit via API
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const data = {
+        username: document.getElementById('username').value,
+        email: document.getElementById('email').value,
+        role: document.getElementById('role').value,
+        password: document.getElementById('password').value,
+        password_confirmation: document.getElementById('password_confirmation').value
+      };
+
+      const alertBox = document.getElementById('alert-box');
+      alertBox.classList.remove('hidden');
+      alertBox.classList.remove('bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+
+      try {
+        const res = await fetch('http://127.0.0.1:8000/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          alertBox.classList.add('bg-red-100', 'text-red-700');
+          alertBox.innerText = result.message || 'Registrasi gagal. Periksa kembali data Anda.';
+          return;
+        }
+
+        alertBox.classList.add('bg-green-100', 'text-green-700');
+        alertBox.innerText = 'Registrasi berhasil! Cek email untuk kode OTP.';
+
+        // Simpan email di localStorage untuk halaman verifikasi OTP
+        localStorage.setItem('pendingEmail', data.email);
+
+        // Redirect ke halaman verifikasi OTP setelah 2 detik
+        setTimeout(() => {
+          window.location.href = '/verify-otp';
+        }, 2000);
+
+      } catch (error) {
+        alertBox.classList.add('bg-red-100', 'text-red-700');
+        alertBox.innerText = 'Terjadi kesalahan server. Silakan coba lagi.';
+      }
+    });
+  </script>
 
 </body>
 </html>

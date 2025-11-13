@@ -3,8 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Models\Ponpes;
+use App\Http\Controllers\Auth\ResetPasswordController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,9 +18,11 @@ use App\Models\Ponpes;
 */
 
 // Login
-Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login.form');
-Route::post('/login', [LoginController::class, 'login'])->name('login');
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::get('/login', function () {
+    return view('auth.login');
+})->name('login');
+// Route::post('/login', [LoginController::class, 'login'])->name('login');
+// Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Registrasi
 Route::get('/registrasi', function () {
@@ -28,8 +30,10 @@ Route::get('/registrasi', function () {
     return view('auth.registrasi', compact('ponpes'));
 })->name('registrasi.index');
 Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
-Route::get('/verify', [RegisterController::class, 'verifyForm'])->name('verify.form');
-Route::post('/verify', [RegisterController::class, 'verifyOtp'])->name('verify.otp');
+// Route::get('/verify', [RegisterController::class, 'verifyForm'])->name('verify.form');
+Route::get('/verify-otp', function () {
+    return view('auth.verify-otp');
+})->name('verify.form');
 
 // Lupa kata sandi 
 Route::get('/lupakatasandi', [ResetPasswordController::class, 'showForm'])->name('lupakatasandi');
