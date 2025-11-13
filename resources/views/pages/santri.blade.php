@@ -87,109 +87,171 @@
                     <div x-show="currentTab==='pencapaian'" class="flex-1 overflow-auto p-4 bg-white rounded-xl shadow-sm">
                         <h2 class="text-lg font-bold text-black mb-4">Kompetensi Data Santri</h2>
                         <!-- Tabel Minimalis -->
+                        <!-- Table Header dengan Info -->
+                        <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">Data Kompetensi Santri</h3>
+                                    <p class="text-sm text-gray-600 mt-1">Total {{ count($pencapaian) }} data kompetensi</p>
+                                </div>
+                            </div>
+
+                            <!-- Search Input dengan Debounce -->
+                            <div class="mt-3 relative">
+                                <input type="text"
+                                    id="searchInputPencapaian"
+                                    placeholder="Cari santri, kompetensi, atau kelas ..."
+                                    class="w-full px-4 py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                                <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                                <!-- Loading Indicator -->
+                                <div id="searchLoadingPencapaian" class="absolute right-3 top-2.5 hidden">
+                                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="bg-white rounded-lg border border-gray-200 overflow-hidden"
                             x-data="pencapaianTable()">
                             <!-- Tabel Utama dengan Dropdown Aksi -->
-                            <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <!-- Table Container -->
+                            <div class="overflow-x-auto">
                                 <table class="w-full">
-                                    <thead class="bg-gray-50">
+                                    <!-- Table Header -->
+                                    <thead class="bg-gray-50/80 backdrop-blur-sm">
                                         <tr>
-                                            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Santri</th>
-                                            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Kelas</th>
-                                            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Pencapaian</th>
-                                            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Tipe</th>
-                                            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Tanggal</th>
-                                            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Skor</th>
-                                            <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-b">Aksi</th>
+                                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200 rounded-tl-lg">
+                                                <div class="flex items-center space-x-1">
+                                                    <span>Santri</span>
+                                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                                                    </svg>
+                                                </div>
+                                            </th>
+                                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                                                Kelas
+                                            </th>
+                                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                                                Pencapaian
+                                            </th>
+                                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                                                Tipe
+                                            </th>
+                                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                                                Tanggal
+                                            </th>
+                                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                                                Skor
+                                            </th>
+                                            <th class="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200 rounded-tr-lg">
+                                                Aksi
+                                            </th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-gray-200">
-                                        @foreach($pencapaian as $item)
-                                        <tr class="hover:bg-gray-50">
-                                            <!-- Kolom yang bisa di-click untuk detail -->
-                                            <td class="px-4 py-3 text-sm text-gray-900 font-medium cursor-pointer"
-                                                @click="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
-                                                {{ $item->nama_santri }}
+
+                                    <!-- Table Body -->
+                                    <tbody class="divide-y divide-gray-100" id="tbodyDataPencapaian">
+                                        @foreach($pencapaian as $index => $item)
+                                        <tr class="group transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 
+                      {{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30' }}">
+
+                                            <!-- Kolom Santri -->
+                                            <td class="px-6 py-4 whitespace-nowrap transition-colors duration-200 group-hover:text-gray-900 cursor-pointer"
+                                                onclick="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
+                                                <div class="flex items-center">
+                                                    <span class="font-semibold text-gray-900">{{ $item->nama_santri }}</span>
+                                                </div>
                                             </td>
-                                            <td class="px-4 py-3 text-sm text-gray-600 cursor-pointer"
-                                                @click="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
-                                                {{ $item->nama_kelas }}
+
+                                            <!-- Kolom Kelas -->
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm transition-colors duration-200 group-hover:text-gray-900 cursor-pointer"
+                                                onclick="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
+                                                <div class="flex items-center">
+                                                    <span class="text-gray-700">{{ $item->nama_kelas }}</span>
+                                                </div>
                                             </td>
-                                            <td class="px-4 py-3 cursor-pointer"
-                                                @click="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
-                                                <div class="text-sm font-medium text-gray-900">{{ $item->judul }}</div>
-                                                <div class="text-xs text-gray-500">{{ Str::limit($item->deskripsi, 40) }}</div>
+
+                                            <!-- Kolom Pencapaian -->
+                                            <td class="px-6 py-4 transition-colors duration-200 cursor-pointer"
+                                                onclick="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
+                                                <div class="flex flex-col">
+                                                    <div class="text-sm font-medium text-gray-900">{{ $item->judul }}</div>
+                                                    <div class="text-xs text-gray-500 mt-1">{{ Str::limit($item->deskripsi, 40) }}</div>
+                                                </div>
                                             </td>
-                                            <td class="px-4 py-3 cursor-pointer"
-                                                @click="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
-                                                <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-800">
+
+                                            <!-- Kolom Tipe -->
+                                            <td class="px-6 py-4 whitespace-nowrap transition-colors duration-200 cursor-pointer"
+                                                onclick="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                                     {{ $item->tipe }}
                                                 </span>
                                             </td>
-                                            <td class="px-4 py-3 text-sm text-gray-600 cursor-pointer"
-                                                @click="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
-                                                {{ \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y') }}
+
+                                            <!-- Kolom Tanggal -->
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm transition-colors duration-200 group-hover:text-gray-900 cursor-pointer"
+                                                onclick="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
+                                                <div class="flex items-center">
+                                                    <span class="text-gray-700">{{ \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y') }}</span>
+                                                </div>
                                             </td>
-                                            <td class="px-4 py-3 text-sm font-medium cursor-pointer"
-                                                @click="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
-                                                <span class="{{ $item->skor >= 80 ? 'text-green-600' : 'text-orange-600' }}">
+
+                                            <!-- Kolom Skor -->
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium transition-colors duration-200 cursor-pointer"
+                                                onclick="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
+                                                <span class="{{ $item->skor >= 80 ? 'text-green-600' : ($item->skor >= 60 ? 'text-orange-600' : 'text-red-600') }}">
                                                     {{ $item->skor }}/100
                                                 </span>
                                             </td>
-                                            <!-- Kolom aksi TIDAK bisa di-click untuk detail -->
-                                            <td class="px-4 py-3" @click.stop>
-                                                <div class="relative inline-block text-left" x-data="{ open: false }">
-                                                    <!-- Tombol Trigger -->
-                                                    <button @click="open = !open; $event.stopPropagation()"
-                                                        class="inline-flex justify-center w-8 h-8 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 transition">
-                                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+
+                                            <!-- Kolom Aksi -->
+                                            <td class="px-6 py-4 whitespace-nowrap" onclick="event.stopPropagation()">
+                                                <div class="flex justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                    <a href="{{ route('pencapaian.edit', $item->id_pencapaian) }}"
+                                                        class="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg 
+                                  hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 
+                                  shadow-sm hover:shadow-md text-xs font-medium">
+                                                        <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                         </svg>
+                                                        Edit
+                                                    </a>
+                                                    <button onclick="confirmDeletePencapaian('{{ $item->id_pencapaian }}', '{{ addslashes($item->judul) }}')"
+                                                        class="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg 
+                                       hover:from-red-600 hover:to-red-700 transition-all duration-200 transform hover:scale-105 
+                                       shadow-sm hover:shadow-md text-xs font-medium">
+                                                        <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                        Hapus
                                                     </button>
-
-                                                    <!-- Dropdown Menu -->
-                                                    <div x-show="open"
-                                                        x-cloak
-                                                        @click.outside="open = false"
-                                                        class="absolute right-0 z-10 mt-1 w-28 bg-white rounded-md shadow-lg border border-gray-200">
-                                                        <div class="py-1">
-                                                            <!-- Tombol Edit -->
-                                                            <a href="{{ route('pencapaian.edit', $item->id_pencapaian) }}"
-                                                                class="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                                                </svg>
-                                                                Edit
-                                                            </a>
-
-                                                            <!-- Tombol Hapus -->
-                                                            <form action="{{ route('pencapaian.destroy', $item->id_pencapaian) }}" method="POST" class="inline">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                                <button type="button"
-                                                                    onclick="confirmDelete('{{ $item->id_pencapaian }}', '{{ $item->judul }}')"
-                                                                    class="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-gray-100 w-full text-left">
-                                                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                                    </svg>
-                                                                    Hapus
-                                                                </button>
-                                                            </form>
-                                                        </div>
-                                                    </div>
+                                                </div>
+                                                <div class="flex justify-center space-x-2 opacity-100 group-hover:opacity-0 transition-opacity duration-200">
+                                                    <span class="text-xs text-gray-400">Hover untuk aksi</span>
                                                 </div>
                                             </td>
                                         </tr>
                                         @endforeach
                                     </tbody>
                                 </table>
-
-                                @if($pencapaian->count() === 0)
-                                <div class="text-center py-8 text-gray-500">
-                                    Tidak ada data pencapaian yang ditemukan
-                                </div>
-                                @endif
                             </div>
+
+                            <!-- Empty State -->
+                            @if(count($pencapaian) === 0)
+                            <div class="px-6 py-12 text-center">
+                                <div class="max-w-md mx-auto">
+                                    <div class="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
+                                        <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                        </svg>
+                                    </div>
+                                    <h4 class="text-lg font-medium text-gray-600 mb-2">Tidak ada data kompetensi</h4>
+                                    <p class="text-gray-500 text-sm">Data kompetensi santri akan muncul di sini ketika tersedia</p>
+                                </div>
+                            </div>
+                            @endif
 
                             <!-- Modal Detail -->
                             <div x-show="selectedSantri"
@@ -295,7 +357,7 @@
             </div>
 
             <!-- Sidebar Info Kelas -->
-            <div class="lg:col-span-3 flex flex-col gap-4">
+            <div x-show="currentTab==='bio'" class="lg:col-span-3 flex flex-col gap-4">
                 <div class="box-bg w-full p-4 box-bg flex flex-col justify-start h-full">
                     <div class="mb-2">
                         <div class="grid items-center space-x-3 pb-3 border-b border-[#E0E0E0]">
@@ -343,11 +405,234 @@
                 </div>
             </div>
 
+            <!-- Sidebar untuk Tab Pencapaian -->
+            <div x-show="currentTab==='pencapaian'" class="lg:col-span-3 flex flex-col gap-4">
+                <div class="box-bg w-full p-4 bg-white rounded-xl">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Statistik Kompetensi</h3>
+                    <div class="flex justify-center items-center">
+                        <div class="w-64 h-64">
+                            <canvas id="grafikPrestasi"></canvas>
+                        </div>
+                    </div>
+                    <div class="mt-4 space-y-2">
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-[#fb923c] rounded-full mr-2"></div>
+                                <span>Tilawah</span>
+                            </div>
+                            <span class="font-medium">8</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-[#2563eb] rounded-full mr-2"></div>
+                                <span>Hafalan</span>
+                            </div>
+                            <span class="font-medium">12</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-[#fed7aa] rounded-full mr-2"></div>
+                                <span>Fikih</span>
+                            </div>
+                            <span class="font-medium">11</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-[#99f6e4] rounded-full mr-2"></div>
+                                <span>Belum Bisa</span>
+                            </div>
+                            <span class="font-medium">2</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    // Chart initialization dengan penanganan yang lebih baik
+    function initializeChart() {
+        const ctx = document.getElementById('grafikPrestasi');
+
+        if (!ctx) {
+            console.log('Canvas element not found, retrying...');
+            return;
+        }
+
+        // Hancurkan chart sebelumnya jika ada
+        if (window.prestasiChart) {
+            window.prestasiChart.destroy();
+        }
+
+        try {
+            window.prestasiChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Tilawah', 'Hafalan', 'Fikih', 'Belum Bisa'],
+                    datasets: [{
+                        data: [8, 12, 11, 2],
+                        backgroundColor: [
+                            '#fb923c', // orange
+                            '#2563eb', // blue
+                            '#fed7aa', // light orange
+                            '#99f6e4' // teal
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true
+                    }
+                }
+            });
+            console.log('Chart initialized successfully');
+        } catch (error) {
+            console.error('Error initializing chart:', error);
+        }
+    }
+
+    // Inisialisasi chart ketika Alpine.js siap
+    document.addEventListener('alpine:init', () => {
+        setTimeout(initializeChart, 100);
+    });
+
+    // Juga inisialisasi saat tab diubah
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initial chart setup
+        setTimeout(initializeChart, 200);
+
+        // Observer untuk mendeteksi perubahan tab
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'x-show') {
+                    const tabPencapaian = document.querySelector('[x-show="currentTab===\'pencapaian\'"]');
+                    if (tabPencapaian && !tabPencapaian.hasAttribute('hidden')) {
+                        setTimeout(initializeChart, 50);
+                    }
+                }
+            });
+        });
+
+        // Observe the main element
+        const mainElement = document.querySelector('main[x-data]');
+        if (mainElement) {
+            observer.observe(mainElement, {
+                attributes: true,
+                attributeFilter: ['x-show']
+            });
+        }
+    });
+
+    // Search functionality
+    let searchTimeoutPencapaian = null;
+
+    function performSearchPencapaian(searchTerm) {
+        const searchTermLower = searchTerm.trim().toLowerCase();
+
+        if (!searchTermLower) {
+            // Show all rows if search is empty
+            document.querySelectorAll('#tbodyDataPencapaian tr').forEach(row => {
+                row.style.display = '';
+            });
+            return;
+        }
+
+        // Filter rows
+        document.querySelectorAll('#tbodyDataPencapaian tr').forEach(row => {
+            const rowText = row.textContent.toLowerCase();
+            if (rowText.includes(searchTermLower)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Event handler untuk search input
+    document.getElementById('searchInputPencapaian')?.addEventListener('input', function(e) {
+        const searchTerm = e.target.value;
+
+        if (searchTimeoutPencapaian) {
+            clearTimeout(searchTimeoutPencapaian);
+        }
+
+        // Show loading
+        const searchLoading = document.getElementById('searchLoadingPencapaian');
+        if (searchLoading) searchLoading.classList.remove('hidden');
+
+        searchTimeoutPencapaian = setTimeout(() => {
+            performSearchPencapaian(searchTerm);
+            if (searchLoading) searchLoading.classList.add('hidden');
+        }, 500);
+    });
+
+    // Clear search function
+    function clearSearchPencapaian() {
+        const searchInput = document.getElementById('searchInputPencapaian');
+        const searchLoading = document.getElementById('searchLoadingPencapaian');
+
+        if (searchInput) searchInput.value = '';
+        if (searchLoading) searchLoading.classList.add('hidden');
+
+        if (searchTimeoutPencapaian) {
+            clearTimeout(searchTimeoutPencapaian);
+        }
+
+        // Show all rows
+        document.querySelectorAll('#tbodyDataPencapaian tr').forEach(row => {
+            row.style.display = '';
+        });
+    }
+
+    // Delete confirmation function
+    function confirmDeletePencapaian(id, judul) {
+        if (confirm(`Apakah Anda yakin ingin menghapus kompetensi "${judul}"?`)) {
+            // Create and submit form
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/pencapaian/${id}`;
+
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = '{{ csrf_token() }}';
+
+            const methodField = document.createElement('input');
+            methodField.type = 'hidden';
+            methodField.name = '_method';
+            methodField.value = 'DELETE';
+
+            form.appendChild(csrfToken);
+            form.appendChild(methodField);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
     function confirmDelete(id, judul) {
         if (confirm(`Apakah Anda yakin ingin menghapus pencapaian "${judul}"?`)) {
             event.target.closest('form').submit();

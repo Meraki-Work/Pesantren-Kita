@@ -1,6 +1,6 @@
 @extends('index')
 
-@section('title', 'Sanksi')
+@section('title', 'Sangsi')
 
 @section('content')
 <div class="flex bg-gray-100 min-h-screen">

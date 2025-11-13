@@ -8,7 +8,7 @@
             PesantrenKita
         </h2>
         <p class="text-lg max-w-2xl leading-relaxed drop-shadow-md text-[#2ECC71]"
-           style="-webkit-text-stroke: 0.7px white; text-stroke: 0.7px white;">
+           style="-webkit-text-stroke: 0.7px white;">
             Aplikasi manajemen untuk pondok pesantren yang lebih mudah dan inovatif
         </p>
     </div>

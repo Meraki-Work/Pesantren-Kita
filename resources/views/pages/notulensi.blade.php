@@ -55,10 +55,11 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-            @foreach($recentlyGambar as $index => $gambar)
-            <div class="mb-3 box-bg overflow-hidden hover: transition-all duration-300 relative">
-
+        <!-- Featured Images Grid -->
+        @if(isset($recentGambar) && $recentGambar->count() > 0)
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-6">
+            @foreach($recentGambar as $index => $gambar)
+            <div class="box-bg overflow-hidden hover:shadow-lg transition-all duration-300 relative">
                 <!-- Badge TERBARU untuk item pertama -->
                 @if($index === 0)
                 <div class="absolute top-3 right-3 z-10">
@@ -110,16 +111,18 @@
                             </svg>
                             <span>{{ $gambar->created_at ? \Carbon\Carbon::parse($gambar->created_at)->diffForHumans() : '' }}</span>
                         </div>
-                        @forelse($notulen as $item)
-                        <button class="text-blue-600 hover:text-blue-800 font-medium">
-                            <a href="{{ route('notulen.show', $item->id_notulen) }}">Lihat Detail →</a>
-                        </button>
-                        @endforeach
+                        @if($gambar->notulen)
+                        <a href="{{ route('notulen.show', $gambar->notulen->id_notulen) }}" 
+                           class="text-blue-600 hover:text-blue-800 font-medium transition-colors">
+                            Lihat Detail →
+                        </a>
+                        @endif
                     </div>
                 </div>
             </div>
             @endforeach
         </div>
+        @endif
 
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -129,15 +132,15 @@
                 <div class="box-bg border border-gray-100 p-4">
                     <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <input type="text" name="search" placeholder="Cari agenda, peserta..."
-                            value="{{ $search }}" class="border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            value="{{ $search ?? '' }}" class="border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
 
                         <input type="date" name="tanggal"
-                            value="{{ $tanggal }}" class="border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            value="{{ $tanggal ?? '' }}" class="border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
 
                         <select name="pimpinan" class="border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">Semua Pimpinan</option>
                             @foreach($pimpinans as $pimp)
-                            <option value="{{ $pimp }}" {{ $pimpinan == $pimp ? 'selected' : '' }}>
+                            <option value="{{ $pimp }}" {{ ($pimpinan ?? '') == $pimp ? 'selected' : '' }}>
                                 {{ $pimp }}
                             </option>
                             @endforeach
@@ -254,8 +257,6 @@
                 </div>
             </div>
 
-
-
             <!-- Right Column - Gallery & Quick Stats -->
             <div class="space-y-6">
                 <!-- Gallery Section -->
@@ -265,7 +266,7 @@
                         <p class="text-sm text-gray-600">Foto-foto rapat terbaru</p>
                     </div>
                     <div class="p-4">
-                        @if($recentGambar->count() > 0)
+                        @if(isset($recentGambar) && $recentGambar->count() > 0)
                         <div class="space-y-4">
                             @foreach($recentGambar as $gambar)
                             <div class="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
@@ -326,11 +327,11 @@
                     <div class="p-4 space-y-3">
                         <div class="flex justify-between items-center">
                             <span class="text-sm text-gray-600">Total Dokumentasi</span>
-                            <span class="font-semibold text-blue-600">{{ $totalGambar }}</span>
+                            <span class="font-semibold text-blue-600">{{ $totalGambar ?? 0 }}</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-sm text-gray-600">Rapat Bulan Ini</span>
-                            <span class="font-semibold text-green-600">{{ $rapatBulanIni }}</span>
+                            <span class="font-semibold text-green-600">{{ $rapatBulanIni ?? 0 }}</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-sm text-gray-600">Pimpinan Teraktif</span>
@@ -347,21 +348,21 @@
                         <h3 class="text-lg font-semibold text-gray-800">Aktivitas Terbaru</h3>
                     </div>
                     <div class="p-4 space-y-3">
-                        @foreach($recentActivities as $activity)
-                        <div class="flex items-start space-x-3">
-                            <div class="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-900 truncate">
-                                    {{ Str::limit($activity->agenda, 40) }}
-                                </p>
-                                <p class="text-xs text-gray-500">
-                                    {{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->diffForHumans() : 'Tanggal tidak tersedia' }} • {{ $activity->user->username ?? 'System' }}
-                                </p>
+                        @if(isset($recentActivities) && $recentActivities->count() > 0)
+                            @foreach($recentActivities as $activity)
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 truncate">
+                                        {{ Str::limit($activity->agenda, 40) }}
+                                    </p>
+                                    <p class="text-xs text-gray-500">
+                                        {{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->diffForHumans() : 'Tanggal tidak tersedia' }} • {{ $activity->user->username ?? 'System' }}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                        @endforeach
-
-                        @if($recentActivities->isEmpty())
+                            @endforeach
+                        @else
                         <div class="text-center py-4">
                             <p class="text-gray-500 text-sm">Belum ada aktivitas</p>
                         </div>
@@ -372,7 +373,7 @@
         </div>
 
         <!-- Image Modal -->
-        <div id="imageModal" class="fixed inset-0 flex items-center justify-center z-50">
+        <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
             <div class="bg-white rounded-lg max-w-3xl w-full mx-4 max-h-[90vh] overflow-hidden">
                 <div class="p-4 border-b border-gray-200 flex justify-between items-center">
                     <h4 id="modalTitle" class="text-lg font-semibold text-gray-800"></h4>
@@ -391,10 +392,12 @@
 </div>
 
 <script>
-    function showImageModal(imageSrc, title) {
-        console.log('Showing modal with image:', imageSrc);
-        document.getElementById('modalImage').src = imageSrc;
-        document.getElementById('modalTitle').textContent = title;
+    function showImageModal(element) {
+        const imageUrl = element.getAttribute('data-image');
+        const imageTitle = element.getAttribute('data-title');
+        
+        document.getElementById('modalImage').src = imageUrl;
+        document.getElementById('modalTitle').textContent = imageTitle;
         document.getElementById('imageModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
@@ -418,31 +421,12 @@
         }
     });
 
-    function showImageModal(element) {
-        const imageUrl = element.getAttribute('data-image');
-        const imageTitle = element.getAttribute('data-title');
-
-        // Lanjutkan dengan kode modal Anda
-        console.log('Image URL:', imageUrl);
-        console.log('Image Title:', imageTitle);
-
-        // Contoh membuka modal
-        // document.getElementById('modalImage').src = imageUrl;
-        // document.getElementById('modalTitle').textContent = imageTitle;
-        // document.getElementById('imageModal').classList.remove('hidden');
-    }
-
-    // Debug function to check images
-    function checkImages() {
+    // Check images on load
+    document.addEventListener('DOMContentLoaded', function() {
         const images = document.querySelectorAll('img');
         images.forEach((img, index) => {
             console.log(`Image ${index}:`, img.src, img.complete ? 'loaded' : 'loading');
         });
-    }
-
-    // Check images on load
-    document.addEventListener('DOMContentLoaded', function() {
-        checkImages();
     });
 </script>
 
@@ -455,6 +439,20 @@
 
     #imageModal {
         backdrop-filter: blur(4px);
+    }
+
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 </style>
 @endsection

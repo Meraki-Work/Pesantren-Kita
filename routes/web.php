@@ -13,6 +13,8 @@ use App\Http\Controllers\KelasController;
 use App\Http\Controllers\KompetensiController;
 use App\Http\Controllers\PencapaianController;
 
+use App\Http\Controllers\SanksiController;
+
 use App\Http\Controllers\LaundryController;
 use App\Http\Controllers\Auth\LoginController;
 
@@ -127,6 +129,15 @@ Route::get('/notulen/{id}', [NotulenController::class, 'show'])->name('notulen.s
 Route::get('/notulen/{id}/edit', [NotulenController::class, 'edit'])->name('notulen.edit');
 Route::put('/notulen/{id}', [NotulenController::class, 'update'])->name('notulen.update');
 Route::delete('/notulen/{id}', [NotulenController::class, 'destroy'])->name('notulen.destroy');
+
+Route::get('/sangksi', [SanksiController::class, 'index'])->name('sangksi');
+Route::get('/sangksi/create', [SanksiController::class, 'create'])->name('sangksi.create');
+Route::post('/sangksi', [SanksiController::class, 'store'])->name('sangksi.store');
+Route::get('/sangksi/{sanksi}', [SanksiController::class, 'show'])->name('sangksi.show');
+Route::get('/sangksi/{sanksi}/edit', [SanksiController::class, 'edit'])->name('sangksi.edit');
+Route::put('/sangksi/{sanksi}', [SanksiController::class, 'update'])->name('sangksi.update');
+Route::delete('/sangksi/{sanksi}', [SanksiController::class, 'destroy'])->name('sangksi.destroy');
+
 
 // Route debugging - sementara saja
 Route::get('/debug-gambar', function() {
