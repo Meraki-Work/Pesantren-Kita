@@ -38,7 +38,8 @@ class Gambar extends Model
 		'ponpes_id',
 		'user_id',
 		'path_gambar',
-		'keterangan'
+		'keterangan',
+		'id_notulen'
 	];
 
 	public function ponpe()
@@ -48,6 +49,16 @@ class Gambar extends Model
 
 	public function user()
 	{
-		return $this->belongsTo(User::class);
+		return $this->belongsTo(User::class, 'user_id');
+	}
+
+	public function notulen()
+	{
+		return $this->belongsTo(Notulen::class, 'id_notulen', 'id_notulen');
+	}
+
+	public function getImageUrlAttribute()
+	{
+		return $this->path_gambar ? asset('storage/' . $this->path_gambar) : null;
 	}
 }

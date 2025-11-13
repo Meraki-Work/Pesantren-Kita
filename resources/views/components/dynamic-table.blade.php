@@ -8,28 +8,24 @@
                 <h3 class="text-lg font-semibold text-gray-800">Data Santri</h3>
                 <p class="text-sm text-gray-600 mt-1">Total {{ count($rows) }} data santri</p>
             </div>
-            <div class="flex items-center space-x-2">
-                <div class="bg-white rounded-lg px-3 py-1 shadow-sm">
-                    <span class="text-sm font-medium text-gray-700">{{ count($rows) }} items</span>
-                </div>
-            </div>
+
+
         </div>
-        
+
         <!-- Search Input dengan Debounce -->
         <div class="mt-3">
-            <div class="relative max-w-md">
-                <input type="text" 
-                       id="searchInput"
-                       placeholder="Cari santri ..." 
-                       class="w-full px-4 py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
-                <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-                <!-- Loading Indicator -->
-                <div id="searchLoading" class="absolute right-3 top-2.5 hidden">
-                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                </div>
+            <input type="text"
+                id="searchInput"
+                placeholder="Cari santri ..."
+                class="w-full px-4 py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+            <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <!-- Loading Indicator -->
+            <div id="searchLoading" class="absolute right-3 top-2.5 hidden">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
             </div>
+
         </div>
     </div>
 
@@ -47,7 +43,7 @@
                             <span>{{ $col }}</span>
                             @if($index === 0)
                             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                             </svg>
                             @endif
                         </div>
@@ -58,7 +54,7 @@
                     </th>
                 </tr>
             </thead>
-            
+
             <!-- Table Body -->
             <tbody class="divide-y divide-gray-100" id="tbodyData">
                 <!-- Data akan diisi oleh JavaScript -->
@@ -71,7 +67,7 @@
         <div class="max-w-md mx-auto">
             <div class="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
                 <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                 </svg>
             </div>
             <h4 class="text-lg font-medium text-gray-600 mb-2">Tidak ada data</h4>
@@ -92,7 +88,7 @@
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
                 <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span class="text-sm text-yellow-700" id="searchResultText"></span>
             </div>
@@ -132,7 +128,7 @@
             danger: 'bg-red-100 text-red-800',
             info: 'bg-blue-100 text-blue-800'
         };
-        
+
         return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[type]}">${text}</span>`;
     };
 
@@ -149,7 +145,7 @@
             if (!data.length) {
                 tbody.classList.add('hidden');
                 emptyState.classList.remove('hidden');
-                
+
                 // Show search info if searching
                 if (currentSearchTerm) {
                     searchInfo.classList.remove('hidden');
@@ -159,22 +155,22 @@
             }
 
             tbody.classList.remove('hidden');
-            
+
             // Show search info if searching
             if (currentSearchTerm) {
                 searchInfo.classList.remove('hidden');
                 searchResultText.textContent = `Menampilkan ${data.length} hasil untuk "${currentSearchTerm}"`;
             }
-            
+
             data.forEach((row, index) => {
                 const tr = document.createElement('tr');
                 tr.className = `group transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 
                                ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`;
-                
+
                 // Render data cells dengan styling yang lebih baik
                 const dataCells = row.data.map((item, cellIndex) => {
                     let cellContent = formatCell(item);
-                    
+
                     // Styling khusus berdasarkan konten
                     if (cellIndex === 1) { // Kolom Nama
                         // Highlight search term in name
@@ -191,7 +187,7 @@
                     } else if (cellIndex === 6) { // Kolom Tanggal Lahir
                         cellContent = `<span class="text-gray-700">${cellContent}</span>`;
                     }
-                    
+
                     return `<td class="px-6 py-4 whitespace-nowrap text-sm transition-colors duration-200 group-hover:text-gray-900">
                                 <div class="flex items-center">${cellContent}</div>
                             </td>`;
@@ -227,7 +223,7 @@
                         </div>
                     </td>
                 `;
-                
+
                 tr.innerHTML = dataCells + actionButtons;
                 tbody.appendChild(tr);
             });
@@ -237,21 +233,21 @@
     // Debounced search function dengan delay 5 detik
     function performSearch(searchTerm) {
         currentSearchTerm = searchTerm.trim();
-        
+
         if (!currentSearchTerm) {
             renderTable(allData);
             return;
         }
 
         searchLoading.classList.remove('hidden');
-        
+
         // Filter data berdasarkan search term
-        const filteredData = allData.filter(row => 
-            row.data.some(cell => 
+        const filteredData = allData.filter(row =>
+            row.data.some(cell =>
                 cell?.toString().toLowerCase().includes(currentSearchTerm.toLowerCase())
             )
         );
-        
+
         // Simulate network delay untuk menunjukkan loading
         setTimeout(() => {
             searchLoading.classList.add('hidden');
@@ -262,15 +258,15 @@
     // Event handler untuk search input dengan debounce 5 detik
     searchInput.addEventListener('input', function(e) {
         const searchTerm = e.target.value;
-        
+
         // Clear previous timeout
         if (searchTimeout) {
             clearTimeout(searchTimeout);
         }
-        
+
         // Show loading immediately
         searchLoading.classList.remove('hidden');
-        
+
         // Set new timeout dengan delay 5 detik (5000ms)
         searchTimeout = setTimeout(() => {
             performSearch(searchTerm);
@@ -283,11 +279,11 @@
         currentSearchTerm = '';
         searchInfo.classList.add('hidden');
         searchLoading.classList.add('hidden');
-        
+
         if (searchTimeout) {
             clearTimeout(searchTimeout);
         }
-        
+
         renderTable(allData);
     }
 
@@ -337,36 +333,36 @@
                 });
 
                 fetch(`/santri/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Content-Type': 'application/json',
-                    },
-                })
-                .then(response => {
-                    if (response.ok) {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json',
+                        },
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            Swal.fire({
+                                title: 'Terhapus!',
+                                text: 'Data santri berhasil dihapus.',
+                                icon: 'success',
+                                confirmButtonColor: '#3085d6',
+                                willClose: () => {
+                                    location.reload();
+                                }
+                            });
+                        } else {
+                            throw new Error('Gagal menghapus data');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
                         Swal.fire({
-                            title: 'Terhapus!',
-                            text: 'Data santri berhasil dihapus.',
-                            icon: 'success',
-                            confirmButtonColor: '#3085d6',
-                            willClose: () => {
-                                location.reload();
-                            }
+                            title: 'Error!',
+                            text: 'Terjadi kesalahan saat menghapus santri.',
+                            icon: 'error',
+                            confirmButtonColor: '#3085d6'
                         });
-                    } else {
-                        throw new Error('Gagal menghapus data');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'Terjadi kesalahan saat menghapus santri.',
-                        icon: 'error',
-                        confirmButtonColor: '#3085d6'
                     });
-                });
             }
         });
     }

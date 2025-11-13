@@ -15,55 +15,73 @@
             <div class="lg:col-span-9 flex flex-col gap-4">
 
                 <!-- Aksi Cepat -->
-                <div class="box-bg w-full p-4 bg-white rounded-xl shadow-sm">
+                <div class="box-bg w-full p-4 bg-white rounded-xl">
                     <p class="text-2xl font-semibold text-gray-800 mb-4">Aksi Cepat</p>
-                    <div class="flex flex-col md:flex-row gap-4 w-full">
-
+                    <div class="flex flex-col md:flex-row gap-4 col-span-3">
                         <!-- Dropdown Pilih Kelas -->
-                        <form action="{{ route('santri.index') }}" method="GET" id="kelasForm" class="flex-1">
-                            <select name="kelas" id="kelasFilter"
-                                onchange="document.getElementById('kelasForm').submit()"
-                                class="bg-[#A8E6CF] rounded-2xl h-16 px-4 py-2 cursor-pointer hover:bg-green-300 transition w-full text-lg font-medium">
-                                <option value="">-- Semua Kelas --</option>
-                                @foreach($kelas as $k)
-                                <option value="{{ $k->id_kelas }}" {{ $selectedKelas == $k->id_kelas ? 'selected' : '' }}>
-                                    {{ $k->nama_kelas }}
-                                </option>
-                                @endforeach
-                            </select>
+                        <form action="{{ route('santri.index') }}" method="GET" id="kelasForm" class="flex-2">
+                            <div class="relative group w-full">
+
+                                <select
+                                    name="kelas"
+                                    id="kelasFilter"
+                                    onchange="document.getElementById('kelasForm').submit()"
+                                    class="appearance-none bg-white/90 backdrop-blur-sm border-2 border-emerald-200 rounded-2xl h-16 px-6 pr-12 cursor-pointer hover:border-emerald-300 transition-all duration-500 text-lg font-semibold text-gray-700 shadow-lg hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-emerald-200 focus:border-emerald-400 transform hover:scale-[1.02] w-full">
+
+                                    <option value="" class="text-gray-400">
+                                        Pilih Kelas
+                                    </option>
+                                    @foreach($kelas as $k)
+                                    <option value="{{ $k->id_kelas }}" {{ $selectedKelas == $k->id_kelas ? 'selected' : '' }}>
+                                        {{ $k->nama_kelas }}
+                                    </option>
+                                    @endforeach
+                                </select>
+
+                                <!-- Animated dropdown icon -->
+                                <div class="pointer-events-none absolute top-1/2 right-4 transform -translate-y-1/2 text-emerald-600">
+                                    <div class="transition-transform duration-500 group-hover:rotate-180">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
                         </form>
 
-                        <!-- Tombol Aksi -->
-                        <div class="flex flex-col sm:flex-row gap-4 flex-1">
+                        <!-- Tombol Aksi 1 -->
+                        <div class="flex-1">
                             <button @click="currentTab='bio'"
                                 :class="currentTab==='bio' ? 'ring-4 ring-green-300' : ''"
-                                class="bg-[#2ECC71] rounded-2xl h-16 flex items-center justify-start px-4 hover:bg-green-600 transition cursor-pointer flex-1">
+                                class="bg-gradient-to-r from-[#2ECC71] to-[#17b459] rounded-xl shadow-lg p-6 text-white h-16 flex items-center justify-start px-4 hover:bg-green-600 transition cursor-pointer w-full">
                                 <div class="flex items-center">
-                                    <img src="{{ asset('assets/img/laundry.png') }}" alt="Laundry Icon" class="w-10 h-10 mr-3">
-                                    <h2 class="text-lg font-semibold text-gray-900">Biodata Santri</h2>
+                                    <h2 class="text-lg font-semibold">Biodata</h2>
                                 </div>
                             </button>
+                        </div>
 
+                        <!-- Tombol Aksi 2 -->
+                        <div class="flex-1">
                             <button @click="currentTab='pencapaian'"
                                 :class="currentTab==='pencapaian' ? 'ring-4 ring-green-300' : ''"
-                                class="bg-[#344E41] rounded-2xl h-16 flex items-center justify-start px-4 hover:bg-[#2f423c] transition cursor-pointer flex-1">
+                                class="bg-[#344E41] rounded-2xl h-16 flex items-center justify-start px-4 hover:bg-[#2f423c] transition cursor-pointer w-full">
                                 <div class="flex items-center">
-                                    <img src="{{ asset('assets/img/kompetensi.png') }}" alt="Kompetensi Icon" class="w-9 h-9 mr-3">
-                                    <h2 class="text-lg font-semibold text-white">Pencapaian Santri</h2>
+                                    <h2 class="text-lg font-semibold text-white">Kompetensi</h2>
                                 </div>
                             </button>
                         </div>
                     </div>
+                    <div class="flex gap-4 mt-4">
+                        <div class="w-full">@include('pages.modal.create_kelas')</div>
+                        <div class="w-full">@include('pages.modal.create_santri')</div>
+                    </div>
+
                 </div>
-                <div class="flex gap-4">
-                    @include('pages.modal.create_kelas')
-                    @include('pages.modal.create_santri')
-                </div>
+
                 <!-- Tabel Santri -->
                 <div class="box-bg w-full flex flex-col space-y-4 flex-1">
                     <!-- Tab Bio -->
                     <div x-show="currentTab==='bio'" class="flex-1 overflow-auto p-4 bg-white rounded-xl shadow-sm">
-                        <h2 class="text-lg font-bold text-black mb-4">Bio Data Santri</h2>
                         <x-dynamic-table :columns="$columnsbio" :rows="$rowsbio" />
                     </div>
                     <div x-show="currentTab==='pencapaian'" class="flex-1 overflow-auto p-4 bg-white rounded-xl shadow-sm">
@@ -278,12 +296,14 @@
 
             <!-- Sidebar Info Kelas -->
             <div class="lg:col-span-3 flex flex-col gap-4">
-                <div class="box-bg w-full p-4 bg-white rounded-xl shadow-sm flex flex-col justify-start h-full">
-                    <div class="mb-6">
-                        <div class="flex items-center space-x-3 mb-3">
-                            <img src="{{ asset('assets/img/Frame.png') }}" alt="Group Icon" class="w-12 h-12">
+                <div class="box-bg w-full p-4 box-bg flex flex-col justify-start h-full">
+                    <div class="mb-2">
+                        <div class="grid items-center space-x-3 pb-3 border-b border-[#E0E0E0]">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="46px" viewBox="0 -960 960 960" width="46px" fill="#1f1f1f">
+                                <path d="M40-160v-160q0-34 23.5-57t56.5-23h131q20 0 38 10t29 27q29 39 71.5 61t90.5 22q49 0 91.5-22t70.5-61q13-17 30.5-27t36.5-10h131q34 0 57 23t23 57v160H640v-91q-35 25-75.5 38T480-200q-43 0-84-13.5T320-252v92H40Zm440-160q-38 0-72-17.5T351-386q-17-25-42.5-39.5T253-440q22-37 93-58.5T480-520q63 0 134 21.5t93 58.5q-29 0-55 14.5T609-386q-22 32-56 49t-73 17ZM160-440q-50 0-85-35t-35-85q0-51 35-85.5t85-34.5q51 0 85.5 34.5T280-560q0 50-34.5 85T160-440Zm640 0q-50 0-85-35t-35-85q0-51 35-85.5t85-34.5q51 0 85.5 34.5T920-560q0 50-34.5 85T800-440ZM480-560q-50 0-85-35t-35-85q0-51 35-85.5t85-34.5q51 0 85.5 34.5T600-680q0 50-34.5 85T480-560Z" />
+                            </svg>
                             <div>
-                                <h2 class="text-xl font-bold text-black">
+                                <h2 class="text-md font-medium text-black">
                                     {{ $selectedKelas ? $kelas->firstWhere('id_kelas', $selectedKelas)->nama_kelas : 'Semua Kelas' }}
                                 </h2>
                                 <p class="text-sm text-gray-600">
@@ -293,8 +313,8 @@
                         </div>
                     </div>
 
-                    <div class="mb-6">
-                        <h3 class="text-md font-semibold text-black mb-3">Kompetensi</h3>
+                    <div class="mb-4">
+                        <h3 class="text-md font-semibold my-2">Kompetensi</h3>
                         <div class="flex flex-wrap gap-2 mb-4">
                             @forelse($kompetensi as $k)
                             <span class="px-3 py-1 bg-[#A8E6CF] text-[#344E41] rounded-full text-sm">{{ $k }}</span>
@@ -304,7 +324,7 @@
                         </div>
                     </div>
 
-                    <div class="mb-6">
+                    <div class="mb-4">
                         <h3 class="text-md font-semibold text-black mb-3">Kelas</h3>
                         <div class="flex flex-wrap gap-2">
                             @forelse($kelas as $k)
