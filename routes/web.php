@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChartController;
 use App\Http\Controllers\KeuanganController;
@@ -14,8 +15,7 @@ use App\Http\Controllers\KompetensiController;
 use App\Http\Controllers\PencapaianController;
 use App\Http\Controllers\LaundryController;
 use Illuminate\Support\Facades\DB;
-
-
+use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,9 +38,16 @@ Route::put('/keuangan/{id}', [KeuanganController::class, 'update'])->name('keuan
 Route::delete('/keuangan/{id}', [KeuanganController::class, 'destroy'])->name('keuangan.destroy');
 
 
+Route::post('/dashboard', [DashboardController::class, 'store'])->name('dashboard.store');
+Route::get('/dashboard/absensi', [DashboardController::class, 'getAbsensi'])->name('dashboard.absensi');
+Route::get('/dashboard/absensi/all', [DashboardController::class, 'getAllAbsensi'])->name('dashboard.absensi.all');
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+Route::get('/grafik-prestasi', [DashboardController::class, 'getGrafikPrestasi'])->name('dashboard.prestasi');
+
+
 Route::get('/cash', [CashController::class, 'index'])->name('cash');
 
-Route::get('/', function () { return view('pages.dashboard'); })->name('dashboard'); 
+Route::get('/', [DashboardController::class, 'index']);
 Route::get('/settings', function () { return view('settings'); })->name('settings'); 
 
 
