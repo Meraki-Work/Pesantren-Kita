@@ -45,3 +45,6 @@ Route::post('/lupakatasandi/update', [ResetPasswordController::class, 'updatePas
 Route::get('/', function () {return view('landing_utama');})->name('landing_utama');
 Route::get('/landing_about', function () {return view('landing_about');})->name('landing_about');
 Route::get('/landing_al-amal', function () {return view('landing_al-amal');})->name('landing_al-amal');
+
+// Admin
+Route::get('/admin/kepegawaian', function () {return view('admin.kepegawaian');})->name('admin.kepegawaian');
