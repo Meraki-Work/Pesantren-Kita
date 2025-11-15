@@ -46,9 +46,9 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard
 Route::get('/grafik-prestasi', [DashboardController::class, 'getGrafikPrestasi'])->name('dashboard.prestasi');
 
 
-Route::get('/cash', [CashController::class, 'index'])->name('cash');
 
-Route::get('/', function () { return view('pages.dashboard'); })->name('dashboard'); 
+
+Route::get('/cash', [CashController::class, 'index'])->name('cash');
 
 Route::get('/sangksi', [SanksiController::class, 'index'])->name('sangksi');
 Route::get('/sangksi/create', [SanksiController::class, 'create'])->name('sangksi.create');
