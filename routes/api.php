@@ -1,10 +1,10 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use App\Http\Controllers\Api\SantriController;
 use App\Http\Controllers\Api\KeuanganController;
-
+use App\Http\Controllers\Api\KelasController; // Tambahkan ini
 
 /*
 |--------------------------------------------------------------------------
@@ -17,11 +17,22 @@ use App\Http\Controllers\Api\KeuanganController;
 |
 */
 
+// Public routes
 Route::get('/keuangan', [KeuanganController::class, 'index']);
-
 Route::get('/santri', [SantriController::class, 'index']);
 Route::get('/santri/{id}', [SantriController::class, 'show']);
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+// 🔥 KELAS API ROUTES - Tambahkan ini
+Route::get('/kelas', [KelasController::class, 'index']);
+Route::get('/kelas/{id}', [KelasController::class, 'show']);
+Route::post('/kelas', [KelasController::class, 'store']);
+Route::put('/kelas/{id}', [KelasController::class, 'update']);
+Route::delete('/kelas/{id}', [KelasController::class, 'destroy']);
+Route::get('/kelas/{id}/santri', [KelasController::class, 'getSantri']);
+
+// Protected routes dengan auth (jika perlu)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
 });
