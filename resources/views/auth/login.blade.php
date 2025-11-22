@@ -105,13 +105,14 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
         {{-- Input Email --}}
         <div class="relative w-full max-w-[300px]">
           <h3 class="mb-1 text-sm font-medium">Email</h3>
-          <input type="email" id="email" name="email" class="{{ $inputClass }}" required>
+          <input type="email" id="email" name="email" class="{{ $inputClass }}" placeholder="Masukkan email" required>
+          <i class="fa-solid fa-envelope absolute right-3 top-9 text-gray-500"></i>
         </div>
 
         {{-- Input Password + Toggle --}}
         <div class="relative w-full max-w-[300px]">
           <h3 class="mb-1 text-sm font-medium">Kata Sandi</h3>
-          <input type="password" id="kataSandi" name="password" class="{{ $inputClass }}" required>
+          <input type="password" id="kataSandi" name="password" class="{{ $inputClass }}" placeholder="Masukkan kata sandi" required>
           {{-- Ikon mata untuk toggle password --}}
           <i id="togglePassword" class="fa-solid fa-eye-slash absolute right-3 top-9 text-gray-500 cursor-pointer"></i>
         </div>

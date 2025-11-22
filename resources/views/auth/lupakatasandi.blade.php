@@ -44,7 +44,7 @@ Deskripsi      : Halaman Lupa Kata Sandi dengan API
       <div class="relative">
         <label class="block text-sm font-medium mb-2">Email</label>
         <input type="email" id="email" placeholder="Masukkan Email" class="{{ $inputClass }}">
-        <i class="fa-solid fa-envelope absolute right-3 top-10 text-gray-500"></i>
+        <i class="fa-solid fa-envelope absolute right-3 top-11 text-gray-500"></i>
       </div>
 
       <button id="btn-send-otp" onclick="sendOtp()"
