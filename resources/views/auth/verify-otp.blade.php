@@ -29,6 +29,8 @@
     <label class="block text-sm font-medium mb-2">Kode OTP</label>
 
     <input
+        id="otp"                      
+        name="otp"
         type="text"
         placeholder="Masukkan 6 digit OTP"
         class="w-full h-12 p-3 pr-12 rounded-lg border border-[#C3C8C5] bg-gray-200
@@ -65,8 +67,11 @@
         return;
       }
 
+      const submitBtn = otpForm.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+
       try {
-        const res = await fetch('http://127.0.0.1:8000/api/verify-otp', {
+        const res = await fetch('/api/verify-otp', {   // gunakan path relatif
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -79,18 +84,19 @@
 
         if (!res.ok) {
           showAlert(result.message || 'Kode OTP salah atau sudah kedaluwarsa.', 'error');
+          submitBtn.disabled = false;
           return;
         }
 
         showAlert('Verifikasi berhasil! Mengarahkan ke halaman login...', 'success');
-        localStorage.removeItem('pendingEmail'); // hapus data email
+        localStorage.removeItem('pendingEmail');
 
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 2000);
+        setTimeout(() => window.location.href = '/login', 1500);
 
       } catch (error) {
+        console.error(error);
         showAlert('Terjadi kesalahan server. Silakan coba lagi.', 'error');
+        submitBtn.disabled = false;
       }
     });
 
