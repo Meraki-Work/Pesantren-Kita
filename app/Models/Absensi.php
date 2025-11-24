@@ -40,7 +40,6 @@ class Absensi extends Model
 
 	protected $fillable = [
 		'ponpes_id',
-		'id_santri',
 		'user_id',
 		'tanggal',
 		'status',

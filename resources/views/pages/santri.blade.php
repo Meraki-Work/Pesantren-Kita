@@ -8,7 +8,55 @@
     <x-sidemenu title="PesantrenKita" />
 
     <main class="flex-1 p-4 h-full" x-data="{ currentTab: 'bio', selectedRow: null }">
+        @if(session('error'))
+        <div class="mb-4 mx-4">
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">
+                            Gagal Menambah Data Santri
+                        </h3>
+                        <div class="mt-1 text-sm text-red-700">
+                            {!! session('error') !!}
+                        </div>
+                        <div class="mt-2 text-sm text-red-600">
+                            <ul class="list-disc list-inside space-y-1">
+                                <li>Pastikan NISN dan NIK belum digunakan oleh santri lain</li>
+                                <li>Periksa kembali data yang dimasukkan</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
 
+        @if(session('success'))
+        <div class="mb-4 mx-4">
+            <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg shadow-sm">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-green-800">
+                            Berhasil!
+                        </h3>
+                        <div class="mt-1 text-sm text-green-700">
+                            {!! session('success') !!}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
         <div class="w-full h-full grid grid-cols-1 lg:grid-cols-12 gap-4">
 
             <!-- Konten Utama -->
@@ -55,7 +103,7 @@
                                 :class="currentTab==='bio' ? 'ring-4 ring-green-300' : ''"
                                 class="bg-gradient-to-r from-[#2ECC71] to-[#17b459] rounded-xl shadow-lg p-6 text-white h-16 flex items-center justify-start px-4 hover:bg-green-600 transition cursor-pointer w-full">
                                 <div class="flex items-center">
-                                    <h2 class="text-lg font-semibold">Biodata</h2>
+                                    <h2 class="text-lg font-semibold">Kelola Biodata</h2>
                                 </div>
                             </button>
                         </div>
@@ -66,7 +114,7 @@
                                 :class="currentTab==='pencapaian' ? 'ring-4 ring-green-300' : ''"
                                 class="bg-[#344E41] rounded-2xl h-16 flex items-center justify-start px-4 hover:bg-[#2f423c] transition cursor-pointer w-full">
                                 <div class="flex items-center">
-                                    <h2 class="text-lg font-semibold text-white">Kompetensi</h2>
+                                    <h2 class="text-lg font-semibold text-white">Kelola Kompetensi</h2>
                                 </div>
                             </button>
                         </div>
@@ -408,40 +456,24 @@
             <!-- Sidebar untuk Tab Pencapaian -->
             <div x-show="currentTab==='pencapaian'" class="lg:col-span-3 flex flex-col gap-4">
                 <div class="box-bg w-full p-4 bg-white rounded-xl">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Statistik Kompetensi</h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Statistik Kompetensi</h3>
+                        <button onclick="refreshChart()" class="text-blue-600 hover:text-blue-800 text-sm flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
                     <div class="flex justify-center items-center">
                         <div class="w-64 h-64">
                             <canvas id="grafikPrestasi"></canvas>
                         </div>
                     </div>
-                    <div class="mt-4 space-y-2">
-                        <div class="flex items-center justify-between text-sm">
-                            <div class="flex items-center">
-                                <div class="w-3 h-3 bg-[#fb923c] rounded-full mr-2"></div>
-                                <span>Tilawah</span>
-                            </div>
-                            <span class="font-medium">8</span>
-                        </div>
-                        <div class="flex items-center justify-between text-sm">
-                            <div class="flex items-center">
-                                <div class="w-3 h-3 bg-[#2563eb] rounded-full mr-2"></div>
-                                <span>Hafalan</span>
-                            </div>
-                            <span class="font-medium">12</span>
-                        </div>
-                        <div class="flex items-center justify-between text-sm">
-                            <div class="flex items-center">
-                                <div class="w-3 h-3 bg-[#fed7aa] rounded-full mr-2"></div>
-                                <span>Fikih</span>
-                            </div>
-                            <span class="font-medium">11</span>
-                        </div>
-                        <div class="flex items-center justify-between text-sm">
-                            <div class="flex items-center">
-                                <div class="w-3 h-3 bg-[#99f6e4] rounded-full mr-2"></div>
-                                <span>Belum Bisa</span>
-                            </div>
-                            <span class="font-medium">2</span>
+                    <div class="mt-4 space-y-2" id="chartStatistics">
+                        <!-- Data statistik akan diisi secara dinamis oleh JavaScript -->
+                        <div class="text-center text-gray-500 py-4">
+                            Memuat data...
                         </div>
                     </div>
                 </div>
@@ -452,8 +484,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Chart initialization dengan penanganan yang lebih baik
-    function initializeChart() {
+    // Chart initialization dengan data dari controller
+    async function initializeChart() {
         const ctx = document.getElementById('grafikPrestasi');
 
         if (!ctx) {
@@ -461,24 +493,25 @@
             return;
         }
 
-        // Hancurkan chart sebelumnya jika ada
-        if (window.prestasiChart) {
-            window.prestasiChart.destroy();
-        }
-
         try {
+            // Ambil data dari controller
+            const response = await fetch('/pencapaian/chart-data');
+            const chartData = await response.json();
+
+            console.log('Data chart dari server:', chartData);
+
+            // Hancurkan chart sebelumnya jika ada
+            if (window.prestasiChart) {
+                window.prestasiChart.destroy();
+            }
+
             window.prestasiChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Tilawah', 'Hafalan', 'Fikih', 'Belum Bisa'],
+                    labels: chartData.labels,
                     datasets: [{
-                        data: [8, 12, 11, 2],
-                        backgroundColor: [
-                            '#fb923c', // orange
-                            '#2563eb', // blue
-                            '#fed7aa', // light orange
-                            '#99f6e4' // teal
-                        ],
+                        data: chartData.data,
+                        backgroundColor: chartData.colors,
                         borderWidth: 2,
                         borderColor: '#ffffff'
                     }]
@@ -497,8 +530,8 @@
                                     const label = context.label || '';
                                     const value = context.parsed;
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = Math.round((value / total) * 100);
-                                    return `${label}: ${value} (${percentage}%)`;
+                                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                    return `${label}: ${value} prestasi (${percentage}%)`;
                                 }
                             }
                         }
@@ -509,10 +542,77 @@
                     }
                 }
             });
-            console.log('Chart initialized successfully');
+
+            // Update statistik di sidebar
+            updateChartStatistics(chartData);
+            console.log('Chart initialized successfully with live data');
+
         } catch (error) {
             console.error('Error initializing chart:', error);
+            // Fallback ke data default jika error
+            initializeFallbackChart();
         }
+    }
+
+    // Update statistik di sidebar dengan data real
+    function updateChartStatistics(chartData) {
+        const statisticsContainer = document.querySelector('.mt-4.space-y-2');
+        if (!statisticsContainer) return;
+
+        let html = '';
+
+        chartData.labels.forEach((label, index) => {
+            const count = chartData.data[index];
+            const color = chartData.colors[index];
+
+            html += `
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full mr-2" style="background-color: ${color}"></div>
+                        <span>${label}</span>
+                    </div>
+                    <span class="font-medium">${count}</span>
+                </div>
+            `;
+        });
+
+        statisticsContainer.innerHTML = html;
+    }
+
+    // Fallback chart jika data tidak bisa diambil
+    function initializeFallbackChart() {
+        const ctx = document.getElementById('grafikPrestasi');
+        if (!ctx) return;
+
+        if (window.prestasiChart) {
+            window.prestasiChart.destroy();
+        }
+
+        window.prestasiChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Tidak ada data'],
+                datasets: [{
+                    data: [1],
+                    backgroundColor: ['#cbd5e1'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: false
+                    }
+                }
+            }
+        });
     }
 
     // Inisialisasi chart ketika Alpine.js siap
@@ -546,6 +646,104 @@
             });
         }
     });
+
+    // Refresh chart function (bisa dipanggil dari mana saja)
+    window.refreshChart = initializeChart;
+
+    function performSearchPencapaian(searchTerm) {
+        const searchTermLower = searchTerm.trim().toLowerCase();
+
+        if (!searchTermLower) {
+            // Show all rows if search is empty
+            document.querySelectorAll('#tbodyDataPencapaian tr').forEach(row => {
+                row.style.display = '';
+            });
+            return;
+        }
+
+        // Filter rows
+        document.querySelectorAll('#tbodyDataPencapaian tr').forEach(row => {
+            const rowText = row.textContent.toLowerCase();
+            if (rowText.includes(searchTermLower)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Event handler untuk search input
+    document.getElementById('searchInputPencapaian')?.addEventListener('input', function(e) {
+        const searchTerm = e.target.value;
+
+        if (searchTimeoutPencapaian) {
+            clearTimeout(searchTimeoutPrecapaian);
+        }
+
+        // Show loading
+        const searchLoading = document.getElementById('searchLoadingPencapaian');
+        if (searchLoading) searchLoading.classList.remove('hidden');
+
+        searchTimeoutPencapaian = setTimeout(() => {
+            performSearchPencapaian(searchTerm);
+            if (searchLoading) searchLoading.classList.add('hidden');
+        }, 500);
+    });
+
+    function confirmDeletePencapaian(id, judul) {
+        if (confirm(`Apakah Anda yakin ingin menghapus kompetensi "${judul}"?`)) {
+            // Create and submit form
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/pencapaian/${id}`;
+
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = '{{ csrf_token() }}';
+
+            const methodField = document.createElement('input');
+            methodField.type = 'hidden';
+            methodField.name = '_method';
+            methodField.value = 'DELETE';
+
+            form.appendChild(csrfToken);
+            form.appendChild(methodField);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function pencapaianTable() {
+        return {
+            selectedSantri: null,
+            detailData: [],
+            loading: false,
+
+            async showDetail(idSantri, namaSantri) {
+                this.loading = true;
+                this.selectedSantri = {
+                    id: idSantri,
+                    nama: namaSantri
+                };
+
+                try {
+                    const response = await fetch(`/santri/${idSantri}/kompetensi`);
+                    this.detailData = await response.json();
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                    this.detailData = [];
+                }
+
+                this.loading = false;
+            },
+
+            closeDetail() {
+                this.selectedSantri = null;
+                this.detailData = [];
+            }
+        }
+    };
 
     // Search functionality
     let searchTimeoutPencapaian = null;

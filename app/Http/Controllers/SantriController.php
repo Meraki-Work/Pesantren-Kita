@@ -5,266 +5,701 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use App\Models\Santri;
-use App\Models\Kela;
+use App\Models\Kelas;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class SantriController extends Controller
 {
+    /**
+     * Get user's ponpes_id
+     */
+    private function getUserPonpesId()
+    {
+        return Auth::user()->ponpes_id;
+    }
+
+    /**
+     * Check if santri belongs to user's ponpes
+     */
+    private function checkSantriOwnership($santriId)
+    {
+        $userPonpesId = $this->getUserPonpesId();
+
+        $santri = Santri::where('id_santri', $santriId)
+            ->where('ponpes_id', $userPonpesId)
+            ->first();
+
+        if (!$santri) {
+            Log::warning('Akses santri ditolak', [
+                'user_id' => Auth::id(),
+                'ponpes_id' => $userPonpesId,
+                'santri_id' => $santriId,
+                'ip' => request()->ip()
+            ]);
+            abort(403, 'Akses ditolak. Anda tidak memiliki izin untuk mengakses data ini.');
+        }
+
+        return $santri;
+    }
+
+    /**
+     * Check if kelas belongs to user's ponpes
+     */
+    private function checkKelasOwnership($kelasId)
+    {
+        $userPonpesId = $this->getUserPonpesId();
+
+        $kelas = Kelas::where('id_kelas', $kelasId)
+            ->where('ponpes_id', $userPonpesId)
+            ->first();
+
+        if (!$kelas) {
+            Log::warning('Akses kelas ditolak untuk santri', [
+                'user_id' => Auth::id(),
+                'ponpes_id' => $userPonpesId,
+                'kelas_id' => $kelasId,
+                'ip' => request()->ip()
+            ]);
+            abort(403, 'Akses ditolak. Anda tidak memiliki izin untuk mengakses kelas ini.');
+        }
+
+        return $kelas;
+    }
+
     public function index(Request $request)
     {
-        // Ambil semua kelas untuk dropdown
-        $kelas = Kela::all();
+        try {
+            Log::info('Mengakses halaman santri index', [
+                'user_id' => Auth::id(),
+                'ponpes_id' => $this->getUserPonpesId(),
+                'kelas_filter' => $request->input('kelas')
+            ]);
 
-        // NOTE: gunakan 'kelas' sebagai query param (sesuai dropdown)
-        $selectedKelas = $request->input('kelas'); // <- pastikan di Blade onchange kirim ?kelas=ID
+            $userPonpesId = $this->getUserPonpesId();
 
-        // Ambil data santri (filter per kelas jika dipilih)
-        $querySantri = Santri::with('kela'); // eager load relasi kela
-        if ($selectedKelas) {
-            $querySantri->where('id_kelas', $selectedKelas);
-        }
-        $santri = $querySantri->get();
+            // Ambil semua kelas untuk dropdown (hanya milik ponpes user)
+            $kelas = Kelas::where('ponpes_id', $userPonpesId)->get();
 
-        // Ambil data pencapaian bergabung dengan santri dan kelas - TAMBAHKAN id_santri
-        $pencapaian = DB::table('pencapaian as p')
-            ->join('santri as s', 's.id_santri', '=', 'p.id_santri')
-            ->join('kelas as k', 'k.id_kelas', '=', 's.id_kelas')
-            ->when($selectedKelas, fn($q) => $q->where('k.id_kelas', $selectedKelas))
-            ->select(
-                'p.id_pencapaian',
-                's.id_santri', // <- TAMBAHKAN INI
-                's.nama as nama_santri',
-                'k.nama_kelas',
-                'p.judul',
-                'p.deskripsi',
-                'p.tipe',
-                'p.tanggal',
-                'p.skor'
-            )
-            ->orderBy('s.id_santri')
-            ->orderBy('p.tanggal')
-            ->get();
+            // Filter kelas yang dipilih
+            $selectedKelas = $request->input('kelas');
 
-        // Ambil daftar kompetensi unik dari kolom "judul" pencapaian
-        $kompetensi = $pencapaian->pluck('judul')->unique()->filter()->values();
-
-        // Kolom & rows untuk Bio (format tanggal)
-        $columnsbio = [
-            'Kelas',
-            'Nama',
-            'NISN',
-            'NIK',
-            'Tahun Masuk',
-            'Jenis Kelamin',
-            'Tanggal Lahir',
-            'Nama Ayah',
-            'Nama Ibu'
-        ];
-
-        $rowsbio = $santri->map(function ($s) {
-            // Handle tahun_masuk dengan aman
-            $tahunMasuk = '-';
-            if ($s->tahun_masuk) {
-                // Jika tahun_masuk adalah Carbon object
-                if ($s->tahun_masuk instanceof \Carbon\Carbon) {
-                    $tahunMasuk = $s->tahun_masuk->format('Y');
-                }
-                // Jika tahun_masuk adalah string atau integer
-                else if (is_numeric($s->tahun_masuk)) {
-                    $tahunMasuk = $s->tahun_masuk;
-                } else {
-                    $tahunMasuk = $s->tahun_masuk;
-                }
+            // Validasi bahwa kelas yang dipilih milik ponpes user
+            if ($selectedKelas) {
+                $this->checkKelasOwnership($selectedKelas);
             }
 
-            return [
-                'id' => $s->id_santri, // TAMBAHKAN ID UNTUK AKSI
-                'data' => [
-                    $s->kela->nama_kelas ?? $s->id_kelas ?? '-',
-                    $s->nama ?? '-',
-                    $s->nisn ?? '-',
-                    $s->nik ?? '-',
-                    $tahunMasuk, // Gunakan variabel yang sudah di-handle
-                    $s->jenis_kelamin ?? '-',
-                    $s->tanggal_lahir ? Carbon::parse($s->tanggal_lahir)->format('d M Y') : '-',
-                    $s->nama_ayah ?? '-',
-                    $s->nama_ibu ?? '-',
-                ]
+            // Ambil data santri (hanya milik ponpes user)
+            $querySantri = Santri::with('kelas')->where('ponpes_id', $userPonpesId);
+
+            if ($selectedKelas) {
+                $querySantri->where('id_kelas', $selectedKelas);
+            }
+
+            $santri = $querySantri->get();
+
+            // Ambil data pencapaian bergabung dengan santri dan kelas - hanya data ponpes user
+            $pencapaian = DB::table('pencapaian as p')
+                ->join('santri as s', 's.id_santri', '=', 'p.id_santri')
+                ->join('kelas as k', 'k.id_kelas', '=', 's.id_kelas')
+                ->where('s.ponpes_id', $userPonpesId)
+                ->when($selectedKelas, fn($q) => $q->where('k.id_kelas', $selectedKelas))
+                ->select(
+                    'p.id_pencapaian',
+                    's.id_santri',
+                    's.nama as nama_santri',
+                    'k.nama_kelas',
+                    'p.judul',
+                    'p.deskripsi',
+                    'p.tipe',
+                    'p.tanggal',
+                    'p.skor'
+                )
+                ->orderBy('s.id_santri')
+                ->orderBy('p.tanggal')
+                ->get();
+
+            // Ambil daftar kompetensi unik dari kolom "judul" pencapaian
+            $kompetensi = $pencapaian->pluck('judul')->unique()->filter()->values();
+
+            // Kolom & rows untuk Bio (format tanggal)
+            $columnsbio = [
+                'Kelas',
+                'Nama',
+                'NISN',
+                'NIK',
+                'Tahun Masuk',
+                'Jenis Kelamin',
+                'Tanggal Lahir',
+                'Nama Ayah',
+                'Nama Ibu'
             ];
-        })->toArray();
 
-        // Hitung statistik untuk dashboard
-        $statistics = [
-            'total_santri' => $santri->count(),
-            'total_pencapaian' => $pencapaian->count(),
-            'rata_rata_skor' => $pencapaian->avg('skor') ? round($pencapaian->avg('skor'), 1) : 0,
-            'santri_berprestasi' => $pencapaian->unique('nama_santri')->count(),
-        ];
+            $rowsbio = $santri->map(function ($s) {
+                // Handle tahun_masuk dengan aman
+                $tahunMasuk = '-';
+                if ($s->tahun_masuk) {
+                    if ($s->tahun_masuk instanceof \Carbon\Carbon) {
+                        $tahunMasuk = $s->tahun_masuk->format('Y');
+                    } else if (is_numeric($s->tahun_masuk)) {
+                        $tahunMasuk = $s->tahun_masuk;
+                    } else {
+                        $tahunMasuk = $s->tahun_masuk;
+                    }
+                }
 
-        // Distribusi tipe pencapaian
-        $distribusiTipe = $pencapaian->groupBy('tipe')->map(function ($group, $tipe) use ($pencapaian) {
-            return [
-                'count' => $group->count(),
-                'percentage' => $pencapaian->count() > 0 ? round(($group->count() / $pencapaian->count()) * 100, 1) : 0
+                return [
+                    'id' => $s->id_santri,
+                    'data' => [
+                        $s->kelas->nama_kelas ?? $s->id_kelas ?? '-',
+                        $s->nama ?? '-',
+                        $s->nisn ?? '-',
+                        $s->nik ?? '-',
+                        $tahunMasuk,
+                        $s->jenis_kelamin ?? '-',
+                        $s->tanggal_lahir ? Carbon::parse($s->tanggal_lahir)->format('d M Y') : '-',
+                        $s->nama_ayah ?? '-',
+                        $s->nama_ibu ?? '-',
+                    ]
+                ];
+            })->toArray();
+
+            // Hitung statistik untuk dashboard
+            $statistics = [
+                'total_santri' => $santri->count(),
+                'total_pencapaian' => $pencapaian->count(),
+                'rata_rata_skor' => $pencapaian->avg('skor') ? round($pencapaian->avg('skor'), 1) : 0,
+                'santri_berprestasi' => $pencapaian->unique('nama_santri')->count(),
             ];
-        });
 
-        return view('pages.santri', compact(
-            'kelas',
-            'selectedKelas',
-            'kompetensi',
-            'columnsbio',
-            'rowsbio',
-            'pencapaian',
-            'statistics',
-            'distribusiTipe',
-            'santri'
-        ));
+            // Distribusi tipe pencapaian
+            $distribusiTipe = $pencapaian->groupBy('tipe')->map(function ($group, $tipe) use ($pencapaian) {
+                return [
+                    'count' => $group->count(),
+                    'percentage' => $pencapaian->count() > 0 ? round(($group->count() / $pencapaian->count()) * 100, 1) : 0
+                ];
+            });
+
+            Log::info('Berhasil memuat data santri', [
+                'user_id' => Auth::id(),
+                'total_santri' => $santri->count(),
+                'total_pencapaian' => $pencapaian->count(),
+                'kelas_filter' => $selectedKelas
+            ]);
+
+            return view('pages.santri', compact(
+                'kelas',
+                'selectedKelas',
+                'kompetensi',
+                'columnsbio',
+                'rowsbio',
+                'pencapaian',
+                'statistics',
+                'distribusiTipe',
+                'santri'
+            ));
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            Log::warning('Akses tidak diizinkan untuk index santri', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('santri.index')->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Error pada santri index', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memuat data santri.');
+        }
     }
+
     public function create()
     {
-        $kelas = Kela::all();
-        return view('pages.santri-create', compact('kelas'));
+        try {
+            Log::info('Mengakses form create santri', [
+                'user_id' => Auth::id(),
+                'ponpes_id' => $this->getUserPonpesId()
+            ]);
+
+            $userPonpesId = $this->getUserPonpesId();
+
+            // Hanya ambil kelas yang milik ponpes user
+            $kelas = Kelas::where('ponpes_id', $userPonpesId)->get();
+
+            Log::debug('Data untuk form create santri', [
+                'kelas_count' => $kelas->count()
+            ]);
+
+            return view('pages.santri-create', compact('kelas'));
+        } catch (\Exception $e) {
+            Log::error('Error pada santri create form', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return redirect()->route('santri.index')->with('error', 'Terjadi kesalahan saat memuat form tambah data.');
+        }
     }
 
     public function store(Request $request)
     {
-        // Validasi input biar tetap aman
-        $request->validate([
-            'nama' => 'required|string|max:100',
-            'nisn' => 'required|string|max:20',
-            'nik' => 'required|string|max:20',
-            'id_kelas' => 'nullable|integer|exists:kelas,id_kelas',
-            'tahun_masuk' => 'required|digits:4',
-            'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
-            'tanggal_lahir' => 'required|date',
-            'nama_ayah' => 'nullable|string|max:100',
-            'nama_ibu' => 'nullable|string|max:100',
-        ]);
+        try {
+            Log::info('Memproses store santri', [
+                'user_id' => Auth::id(),
+                'ponpes_id' => $this->getUserPonpesId(),
+                'input_data' => $request->except(['_token'])
+            ]);
 
-        // Format data sesuai kolom di database
-        $data = [
-            'nama' => $request->nama,
-            'nisn' => $request->nisn,
-            'nik' => $request->nik,
-            'id_kelas' => $request->id_kelas,
-            'tahun_masuk' => $request->tahun_masuk, // pastikan hanya 4 digit
-            'jenis_kelamin' => $request->jenis_kelamin,
-            'tanggal_lahir' => $request->tanggal_lahir, // YYYY-MM-DD
-            'nama_ayah' => $request->nama_ayah,
-            'nama_ibu' => $request->nama_ibu,
-        ];
+            $userPonpesId = $this->getUserPonpesId();
 
-        // Jalankan query manual (setara persis dengan contohmu)
-        DB::insert(
-            'INSERT INTO santri
-            (nama, nisn, nik, id_kelas, tahun_masuk, jenis_kelamin, tanggal_lahir, nama_ayah, nama_ibu)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [
-                $data['nama'],
-                $data['nisn'],
-                $data['nik'],
-                $data['id_kelas'],
-                $data['tahun_masuk'],
-                $data['jenis_kelamin'],
-                $data['tanggal_lahir'],
-                $data['nama_ayah'],
-                $data['nama_ibu'],
-            ]
-        );
+            // Validasi bahwa kelas yang dipilih milik ponpes user
+            if ($request->id_kelas) {
+                $this->checkKelasOwnership($request->id_kelas);
+            }
 
-        return redirect()->back()->with('success', 'Data santri berhasil ditambahkan!');
-    }
+            // 🔥 PERBAIKAN: Hapus unique validation untuk nama, biarkan nama bisa sama
+            $validator = Validator::make($request->all(), [
+                'nama' => 'required|string|max:100', // HANYA required dan string, TANPA unique
+                'nisn' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    Rule::unique('santri')->where(function ($query) use ($userPonpesId) {
+                        return $query->where('ponpes_id', $userPonpesId);
+                    })
+                ],
+                'nik' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    Rule::unique('santri')->where(function ($query) use ($userPonpesId) {
+                        return $query->where('ponpes_id', $userPonpesId);
+                    })
+                ],
+                'id_kelas' => 'nullable|integer|exists:kelas,id_kelas',
+                'tahun_masuk' => 'required|digits:4',
+                'jenis_kelamin' => 'required|in:Laki-laki,Perempuan',
+                'tanggal_lahir' => 'required|date',
+                'nama_ayah' => 'nullable|string|max:100',
+                'nama_ibu' => 'nullable|string|max:100',
+            ], [
+                'nisn.unique' => 'NISN :input sudah digunakan oleh santri lain di ponpes ini',
+                'nik.unique' => 'NIK :input sudah digunakan oleh santri lain di ponpes ini',
+                'nisn.required' => 'NISN wajib diisi',
+                'nik.required' => 'NIK wajib diisi',
+            ]);
 
-    public function edit($id)
-    {
-        $santri = Santri::findOrFail($id);
-        $kelas = Kela::all(); // Sesuaikan dengan model Kelas Anda
+            // 🔥 PERBAIKAN: Cek duplikat secara manual untuk memberikan feedback yang lebih baik
+            $existingNisn = Santri::where('nisn', $request->nisn)
+                ->where('ponpes_id', $userPonpesId)
+                ->exists();
 
-        return view('pages.action.santri_edit', compact('santri', 'kelas'));
+            $existingNik = Santri::where('nik', $request->nik)
+                ->where('ponpes_id', $userPonpesId)
+                ->exists();
+
+            if ($existingNisn && $existingNik) {
+                Log::warning('NISN dan NIK sudah digunakan', [
+                    'user_id' => Auth::id(),
+                    'nisn' => $request->nisn,
+                    'nik' => $request->nik
+                ]);
+                return redirect()->back()
+                    ->with('error', 'NISN <strong>' . $request->nisn . '</strong> dan NIK <strong>' . $request->nik . '</strong> sudah digunakan oleh santri lain di ponpes ini.')
+                    ->withInput();
+            }
+
+            if ($existingNisn) {
+                Log::warning('NISN sudah digunakan', [
+                    'user_id' => Auth::id(),
+                    'nisn' => $request->nisn
+                ]);
+                return redirect()->back()
+                    ->with('error', 'NISN <strong>' . $request->nisn . '</strong> sudah digunakan oleh santri lain di ponpes ini.')
+                    ->withInput();
+            }
+
+            if ($existingNik) {
+                Log::warning('NIK sudah digunakan', [
+                    'user_id' => Auth::id(),
+                    'nik' => $request->nik
+                ]);
+                return redirect()->back()
+                    ->with('error', 'NIK <strong>' . $request->nik . '</strong> sudah digunakan oleh santri lain di ponpes ini.')
+                    ->withInput();
+            }
+
+            if ($validator->fails()) {
+                Log::warning('Validasi gagal pada store santri', [
+                    'user_id' => Auth::id(),
+                    'errors' => $validator->errors()->toArray()
+                ]);
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+
+            // Format data sesuai kolom di database
+            $data = [
+                'ponpes_id' => $userPonpesId,
+                'nama' => $request->nama,
+                'nisn' => $request->nisn,
+                'nik' => $request->nik,
+                'id_kelas' => $request->id_kelas,
+                'tahun_masuk' => $request->tahun_masuk,
+                'jenis_kelamin' => $request->jenis_kelamin,
+                'tanggal_lahir' => $request->tanggal_lahir,
+                'nama_ayah' => $request->nama_ayah,
+                'nama_ibu' => $request->nama_ibu,
+            ];
+
+            // Gunakan Eloquent untuk konsistensi
+            $santri = Santri::create($data);
+
+            Log::info('Berhasil membuat santri baru', [
+                'user_id' => Auth::id(),
+                'santri_id' => $santri->id_santri,
+                'nama' => $santri->nama,
+                'nisn' => $santri->nisn
+            ]);
+
+            return redirect()->route('santri.index')
+                ->with('success', 'Data santri <strong>' . $santri->nama . '</strong> berhasil ditambahkan!');
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            Log::warning('Akses tidak diizinkan untuk store santri', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('santri.index')->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Error pada santri store', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat menambah data santri.')->withInput();
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $santri = Santri::findOrFail($id);
+        try {
+            Log::info('Memproses update santri', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id,
+                'input_data' => $request->except(['_token', '_method'])
+            ]);
 
-        $validator = Validator::make($request->all(), [
-            'nama' => 'required|string|max:100',
-            'nisn' => 'required|string|max:20',
-            'nik' => 'nullable|string|max:20',
-            'id_kelas' => 'nullable|exists:kelas,id_kelas',
-            'status_ujian' => 'nullable|in:Lulus,Belum Lulus',
-            'tahun_masuk' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
-            'jenis_kelamin' => 'nullable|in:Laki-laki,Perempuan',
-            'tanggal_lahir' => 'nullable|date',
-            'nama_ayah' => 'nullable|string|max:100',
-            'nama_ibu' => 'nullable|string|max:100',
-            'alamat' => 'nullable|string',
-        ]);
+            $userPonpesId = $this->getUserPonpesId();
 
-        // Manual unique validation untuk NISN
-        if ($request->nisn !== $santri->nisn) {
-            $exists = Santri::where('nisn', $request->nisn)
-                ->where('id_santri', '!=', $id)
-                ->exists();
-            if ($exists) {
-                $validator->errors()->add('nisn', 'NISN sudah digunakan oleh santri lain.');
+            // Cek kepemilikan data santri
+            $santri = $this->checkSantriOwnership($id);
+
+            // Validasi bahwa kelas yang dipilih milik ponpes user
+            if ($request->id_kelas) {
+                $this->checkKelasOwnership($request->id_kelas);
             }
-        }
 
-        // Manual unique validation untuk NIK (hanya jika diisi dan berbeda)
-        if (!empty($request->nik) && $request->nik !== $santri->nik) {
-            $exists = Santri::where('nik', $request->nik)
-                ->where('id_santri', '!=', $id)
-                ->exists();
-            if ($exists) {
-                $validator->errors()->add('nik', 'NIK sudah digunakan oleh santri lain.');
+            $validator = Validator::make($request->all(), [
+                'nama' => 'required|string|max:100', // 🔥 TANPA unique validation
+                'nisn' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    'unique:santri,nisn,' . $id . ',id_santri,ponpes_id,' . $userPonpesId
+                ],
+                'nik' => [
+                    'nullable',
+                    'string',
+                    'max:20',
+                    'unique:santri,nik,' . $id . ',id_santri,ponpes_id,' . $userPonpesId
+                ],
+                'id_kelas' => 'nullable|exists:kelas,id_kelas',
+                'status_ujian' => 'nullable|in:Lulus,Belum Lulus',
+                'tahun_masuk' => 'nullable|integer|min:1900|max:' . (date('Y') + 1),
+                'jenis_kelamin' => 'nullable|in:Laki-laki,Perempuan',
+                'tanggal_lahir' => 'nullable|date',
+                'nama_ayah' => 'nullable|string|max:100',
+                'nama_ibu' => 'nullable|string|max:100',
+                'alamat' => 'nullable|string',
+            ]);
+
+            if ($validator->fails()) {
+                Log::warning('Validasi gagal pada update santri', [
+                    'user_id' => Auth::id(),
+                    'santri_id' => $id,
+                    'errors' => $validator->errors()->toArray()
+                ]);
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput();
             }
+
+            $data = $validator->validated();
+
+            // Handle tahun_masuk
+            if (empty($data['tahun_masuk'])) {
+                $data['tahun_masuk'] = null;
+            }
+
+            // Handle tanggal_lahir
+            if (empty($data['tanggal_lahir'])) {
+                $data['tanggal_lahir'] = null;
+            }
+
+            // Ensure null for empty values
+            $data['nik'] = empty($data['nik']) ? null : $data['nik'];
+            $data['id_kelas'] = empty($data['id_kelas']) ? null : $data['id_kelas'];
+
+            $santri->update($data);
+
+            Log::info('Berhasil update santri', [
+                'user_id' => Auth::id(),
+                'santri_id' => $santri->id_santri,
+                'nama' => $santri->nama,
+                'nisn' => $santri->nisn
+            ]);
+
+            return redirect()->route('santri.index')
+                ->with('success', 'Data santri ' . $santri->nama . ' berhasil diperbarui');
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            Log::warning('Akses tidak diizinkan untuk update santri', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('santri.index')->with('error', $e->getMessage());
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Validasi exception pada update santri', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id,
+                'errors' => $e->errors()
+            ]);
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        } catch (ModelNotFoundException $e) {
+            Log::warning('Santri tidak ditemukan untuk update', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id
+            ]);
+            return redirect()->route('santri.index')->with('error', 'Data santri tidak ditemukan.');
+        } catch (\Exception $e) {
+            Log::error('Error pada santri update', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memperbarui data santri.')->withInput();
         }
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        $data = $validator->validated();
-
-        // Handle tahun_masuk - JANGAN diubah ke Carbon, biarkan sebagai integer
-        // Karena di model sudah ada cast ke datetime, biarkan Laravel yang handle
-        if (empty($data['tahun_masuk'])) {
-            $data['tahun_masuk'] = null;
-        }
-
-        // Handle tanggal_lahir - biarkan sebagai string, Laravel akan auto convert ke Carbon
-        if (empty($data['tanggal_lahir'])) {
-            $data['tanggal_lahir'] = null;
-        }
-
-        // Ensure null for empty values
-        $data['nik'] = empty($data['nik']) ? null : $data['nik'];
-        $data['id_kelas'] = empty($data['id_kelas']) ? null : $data['id_kelas'];
-
-        // Debug data sebelum update
-        logger('Data sebelum update:', [
-            'tahun_masuk' => $data['tahun_masuk'],
-            'tanggal_lahir' => $data['tanggal_lahir'],
-            'original_tahun_masuk' => $santri->tahun_masuk,
-            'original_tanggal_lahir' => $santri->tanggal_lahir
-        ]);
-
-        $santri->update($data);
-
-        return redirect()->route('santri.index')
-            ->with('success', 'Data santri ' . $santri->nama . ' berhasil diperbarui');
     }
+
+    /**
+     * Check if NISN or NIK is unique for real-time validation
+     */
+    public function checkUnique(Request $request)
+    {
+        try {
+            $userPonpesId = $this->getUserPonpesId();
+
+            $request->validate([
+                'field' => 'required|in:nisn,nik',
+                'value' => 'required|string|max:20'
+            ]);
+
+            $exists = Santri::where($request->field, $request->value)
+                ->where('ponpes_id', $userPonpesId)
+                ->exists();
+
+            return response()->json([
+                'available' => !$exists,
+                'message' => $exists ? "{$request->field} \"{$request->value}\" sudah digunakan oleh santri lain" : "{$request->field} tersedia"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'available' => false,
+                'message' => 'Terjadi kesalahan saat validasi'
+            ], 500);
+        }
+    }
+
+    public function edit($id)
+    {
+        try {
+            Log::info('Mengakses form edit santri', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id
+            ]);
+
+            $userPonpesId = $this->getUserPonpesId();
+
+            // Cek kepemilikan data santri
+            $santri = $this->checkSantriOwnership($id);
+
+            // 🔥 PERBAIKAN: Format tanggal_lahir untuk input type="date"
+            if ($santri->tanggal_lahir) {
+                // Jika tanggal_lahir adalah Carbon instance, format ke Y-m-d
+                if ($santri->tanggal_lahir instanceof \Carbon\Carbon) {
+                    $santri->tanggal_lahir_formatted = $santri->tanggal_lahir->format('Y-m-d');
+                } else {
+                    // Jika string, coba parse dan format
+                    try {
+                        $santri->tanggal_lahir_formatted = \Carbon\Carbon::parse($santri->tanggal_lahir)->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        $santri->tanggal_lahir_formatted = $santri->tanggal_lahir;
+                    }
+                }
+            } else {
+                $santri->tanggal_lahir_formatted = null;
+            }
+
+            // Hanya ambil kelas yang milik ponpes user
+            $kelas = Kelas::where('ponpes_id', $userPonpesId)->get();
+
+            Log::debug('Data untuk form edit santri', [
+                'santri_id' => $santri->id_santri,
+                'nama' => $santri->nama,
+                'tanggal_lahir_original' => $santri->tanggal_lahir,
+                'tanggal_lahir_formatted' => $santri->tanggal_lahir_formatted,
+                'kelas_count' => $kelas->count()
+            ]);
+
+            return view('pages.action.edit_santri', compact('santri', 'kelas'));
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            Log::warning('Akses tidak diizinkan untuk edit santri', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('santri.index')->with('error', $e->getMessage());
+        } catch (ModelNotFoundException $e) {
+            Log::warning('Santri tidak ditemukan untuk edit', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id
+            ]);
+            return redirect()->route('santri.index')->with('error', 'Data santri tidak ditemukan.');
+        } catch (\Exception $e) {
+            Log::error('Error pada santri edit', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return redirect()->route('santri.index')->with('error', 'Terjadi kesalahan saat memuat form edit.');
+        }
+    }
+
+
     public function destroy($id)
     {
-        $santri = Santri::findOrFail($id);
-        $santri->delete();
+        try {
+            Log::info('Memproses delete santri', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id
+            ]);
 
-        return response()->json(['success' => true, 'message' => 'Santri berhasil dihapus']);
+            // Cek kepemilikan data santri
+            $santri = $this->checkSantriOwnership($id);
+
+            $santriData = [
+                'id_santri' => $santri->id_santri,
+                'nama' => $santri->nama,
+                'nisn' => $santri->nisn
+            ];
+
+            $santri->delete();
+
+            Log::info('Berhasil delete santri', [
+                'user_id' => Auth::id(),
+                'deleted_santri' => $santriData
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Santri berhasil dihapus'
+            ]);
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            Log::warning('Akses tidak diizinkan untuk delete santri', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 403);
+        } catch (ModelNotFoundException $e) {
+            Log::warning('Santri tidak ditemukan untuk delete', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Data santri tidak ditemukan.'
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error pada santri delete', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data santri.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get santri data for API (optional)
+     */
+    public function getSantriByPonpes()
+    {
+        try {
+            Log::debug('Mengambil data santri untuk API', [
+                'user_id' => Auth::id(),
+                'ponpes_id' => $this->getUserPonpesId()
+            ]);
+
+            $userPonpesId = $this->getUserPonpesId();
+
+            $santri = Santri::with('kelas')
+                ->where('ponpes_id', $userPonpesId)
+                ->select('id_santri', 'nama', 'nisn', 'nik', 'id_kelas', 'tahun_masuk', 'jenis_kelamin')
+                ->orderBy('nama', 'asc')
+                ->paginate(10);
+
+            Log::debug('Data santri API berhasil diambil', [
+                'user_id' => Auth::id(),
+                'data_count' => $santri->count()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $santri
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error pada getSantriByPonpes API', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil data santri'
+            ], 500);
+        }
     }
 }

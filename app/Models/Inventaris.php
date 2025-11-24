@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 
 class Inventaris extends Model
 {
+    use HasFactory;
+
     protected $table = 'inventaris';
     protected $primaryKey = 'id_inventaris';
-    public $timestamps = false;
-
+    
     protected $fillable = [
         'ponpes_id',
         'nama_barang',
@@ -19,53 +20,27 @@ class Inventaris extends Model
         'jumlah',
         'lokasi',
         'tanggal_beli',
-        'keterangan',
-        'created_at'
+        'keterangan'
     ];
 
-    protected $casts = [
-        'tanggal_beli' => 'date',
-        'created_at' => 'datetime',
-        'jumlah' => 'integer'
-    ];
+    public $timestamps = false;
 
-    // Relationship dengan ponpes (jika ada)
+    // Relasi dengan ponpes
     public function ponpes()
     {
-        return $this->belongsTo(Ponpe::class, 'ponpes_id');
+        return $this->belongsTo(Ponpes::class, 'ponpes_id');
     }
 
-    // Scope untuk kondisi barang
-    public function scopeBaik($query)
+    // Accessor untuk kondisi dengan badge color
+    public function getKondisiBadgeAttribute()
     {
-        return $query->where('kondisi', 'Baik');
-    }
-
-    public function scopeRusak($query)
-    {
-        return $query->where('kondisi', 'Rusak');
-    }
-
-    public function scopeHilang($query)
-    {
-        return $query->where('kondisi', 'Hilang');
-    }
-
-    // Scope untuk kategori
-    public function scopeKategori($query, $kategori)
-    {
-        return $query->where('kategori', $kategori);
-    }
-
-    // Accessor untuk status berdasarkan kondisi
-    public function getStatusAttribute()
-    {
-        return match($this->kondisi) {
+        $colors = [
             'Baik' => 'success',
-            'Rusak' => 'warning',
-            'Hilang' => 'danger',
-            default => 'secondary'
-        };
+            'Rusak' => 'danger',
+            'Hilang' => 'warning'
+        ];
+
+        return $colors[$this->kondisi] ?? 'secondary';
     }
 
     // Accessor untuk format tanggal
@@ -74,5 +49,17 @@ class Inventaris extends Model
         return $this->tanggal_beli 
             ? \Carbon\Carbon::parse($this->tanggal_beli)->format('d M Y')
             : '-';
+    }
+
+    // Scope untuk barang dengan kondisi tertentu
+    public function scopeKondisi($query, $kondisi)
+    {
+        return $query->where('kondisi', $kondisi);
+    }
+
+    // Scope untuk kategori tertentu
+    public function scopeKategori($query, $kategori)
+    {
+        return $query->where('kategori', $kategori);
     }
 }

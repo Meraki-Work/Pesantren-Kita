@@ -42,88 +42,32 @@
 
                 <script>
                     document.addEventListener('DOMContentLoaded', () => {
-                        const jamSekarang = document.getElementById('jamSekarang');
-
-                        function updateClock() {
-                            const waktu = new Date();
-                            const jam = waktu.toLocaleTimeString('id-ID', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            });
-                            jamSekarang.textContent = jam;
-                        }
-
-                        // Jalankan pertama kali dan perbarui tiap 60 detik
-                        updateClock();
-                        setInterval(updateClock, 60000);
-                    });
-
-                    document.addEventListener('DOMContentLoaded', () => {
                         const buttons = document.querySelectorAll('.btn-absen');
                         const logContainer = document.getElementById('logAbsen');
-
-                        // Ambil CSRF token dari meta
                         const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                        // === Fungsi: Ambil Data Absensi dari Server ===
-                        async function getAbsensi() {
+                        // Cek status absensi hari ini
+                        async function checkTodayAbsensi() {
                             try {
-                                const response = await fetch("{{ url('/get-absensi') }}");
+                                const response = await fetch("{{ route('dashboard.absensi.check') }}");
                                 const data = await response.json();
 
-                                data.forEach(absen => {
-                                    const el = document.querySelector(`[data-date="${absen.tanggal}"]`);
-                                    if (el) {
-                                        el.classList.remove('hadir', 'izin', 'cuti');
-                                        el.classList.add(absen.status.toLowerCase());
-                                    }
-                                });
-                            } catch (err) {
-                                console.error('Gagal memuat absensi:', err);
-                            }
-                        }
-
-                        // === Fungsi: Ambil Log Absen dari Server ===
-                        async function loadAllLogs() {
-                            try {
-                                const res = await fetch("{{ url('/get-log-absen') }}");
-                                const data = await res.json();
-
-                                logContainer.innerHTML = ''; // kosongkan log sebelum render ulang
-
-                                // hanya ambil 1 data terbaru per tanggal
-                                const uniqueByDate = {};
-                                data.forEach(item => {
-                                    if (!uniqueByDate[item.tanggal]) {
-                                        uniqueByDate[item.tanggal] = item;
-                                    }
-                                });
-
-                                Object.values(uniqueByDate).forEach(item => {
-                                    const newLog = document.createElement('div');
-                                    newLog.classList.add('log-item');
-                                    newLog.innerHTML = `
-                    <img src="{{ asset('assets/img/orang.jpg') }}" 
-                        class="w-12 h-12 rounded-full object-cover border-2 ${
-                            item.status === 'Hadir' ? 'border-green-500' :
-                            item.status === 'Izin' ? 'border-blue-500' :
-                            'border-yellow-500'
-                        }" />
-                    <div>
-                        <p class="text-sm font-medium text-gray-700">${item.status} (${item.tanggal})</p>
-                        <p class="text-xs text-gray-500">${item.keterangan ?? '-'} 
-                            <span class="text-green-600 font-semibold">${item.created_at ? item.created_at.slice(11, 16) : ''}</span>
-                        </p>
-                    </div>
-                `;
-                                    logContainer.appendChild(newLog);
-                                });
+                                if (data.already_absened) {
+                                    buttons.forEach(btn => {
+                                        btn.disabled = true;
+                                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                                        // Hanya ubah teks untuk tombol yang sesuai dengan status
+                                        if (btn.dataset.status === data.status) {
+                                            btn.innerHTML = `Sudah ${data.status}`;
+                                        }
+                                    });
+                                }
                             } catch (error) {
-                                console.error('Gagal memuat log absen:', error);
+                                console.error('Gagal memeriksa absensi:', error);
                             }
                         }
 
-                        // === Fungsi: Kirim Data Absen ke Server ===
+                        // Fungsi: Kirim Data Absen ke Server - DIPERBAIKI
                         async function kirimDataToServer(payload, btn) {
                             if (btn) {
                                 btn.disabled = true;
@@ -131,25 +75,29 @@
                             }
 
                             try {
-                                const response = await fetch("{{ url('/dashboard') }}", {
+                                const response = await fetch("{{ route('dashboard.absensi.store') }}", {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
-                                        'X-CSRF-TOKEN': CSRF_TOKEN
+                                        'X-CSRF-TOKEN': CSRF_TOKEN,
+                                        'Accept': 'application/json'
                                     },
                                     body: JSON.stringify(payload)
                                 });
 
-                                if (!response.ok) throw new Error(`Server error: ${response.status}`);
-
                                 const data = await response.json();
+
+                                if (!response.ok) {
+                                    throw new Error(data.message || `Server error: ${response.status}`);
+                                }
+
                                 return {
                                     ok: true,
                                     json: data
                                 };
                             } catch (err) {
                                 console.error('Fetch error:', err);
-                                Swal.fire('Terjadi Kesalahan!', 'Tidak dapat menghubungi server.', 'error');
+                                Swal.fire('Terjadi Kesalahan!', err.message, 'error');
                                 return {
                                     ok: false
                                 };
@@ -161,7 +109,56 @@
                             }
                         }
 
-                        // === Fungsi Utama: Klik Tombol Absen ===
+                        // Fungsi: Ambil Log Absen dari Server
+                        async function loadAllLogs() {
+                            try {
+                                const res = await fetch("{{ route('dashboard.absensi.all') }}");
+                                const data = await res.json();
+
+                                logContainer.innerHTML = '';
+
+                                if (data.success && data.data.length > 0) {
+                                    data.data.forEach(item => {
+                                        const statusColor =
+                                            item.status === 'Hadir' ? 'border-green-500' :
+                                            item.status === 'Izin' ? 'border-blue-500' :
+                                            item.status === 'Sakit' ? 'border-yellow-500' :
+                                            'border-red-500';
+
+                                        const statusTextColor =
+                                            item.status === 'Hadir' ? 'text-green-600' :
+                                            item.status === 'Izin' ? 'text-blue-600' :
+                                            item.status === 'Sakit' ? 'text-yellow-600' :
+                                            'text-red-600';
+
+                                        const logItem = document.createElement('div');
+                                        logItem.className = 'flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition';
+                                        logItem.innerHTML = `
+                        <img src="{{ asset('assets/img/orang.jpg') }}" 
+                            class="w-12 h-12 rounded-full object-cover border-2 ${statusColor}" />
+                        <div>
+                            <p class="text-sm font-semibold ${statusTextColor}">${item.status}</p>
+                            <p class="text-xs text-gray-500">${item.keterangan} pada 
+                                <span class="font-medium text-green-600">${item.tanggal}</span>
+                            </p>
+                        </div>
+                    `;
+                                        logContainer.appendChild(logItem);
+                                    });
+                                } else {
+                                    logContainer.innerHTML = `
+                    <p class="text-sm text-gray-500 text-center py-4">Belum ada data absensi.</p>
+                `;
+                                }
+                            } catch (error) {
+                                console.error('Gagal memuat log absen:', error);
+                                logContainer.innerHTML = `
+                <p class="text-sm text-red-500 text-center py-4">Gagal memuat data absensi.</p>
+            `;
+                            }
+                        }
+
+                        // Event handler untuk tombol absen
                         buttons.forEach(btn => {
                             btn.addEventListener('click', async () => {
                                 const status = btn.dataset.status;
@@ -171,8 +168,8 @@
                                     minute: '2-digit'
                                 });
 
-                                // --- Jika Izin / Cuti ---
-                                if (status === 'Izin' || status === 'Cuti') {
+                                // Jika Izin / Sakit butuh keterangan
+                                if (status === 'Izin' || status === 'Sakit') {
                                     const {
                                         value: keterangan
                                     } = await Swal.fire({
@@ -183,11 +180,9 @@
                                         confirmButtonText: 'Simpan',
                                         cancelButtonText: 'Batal',
                                         preConfirm: () => {
-                                            const v = Swal.getPopup().querySelector(
-                                                '#swal-input').value;
+                                            const v = Swal.getPopup().querySelector('#swal-input').value;
                                             if (!v || v.trim().length === 0) {
-                                                Swal.showValidationMessage(
-                                                    'Keterangan harus diisi!');
+                                                Swal.showValidationMessage('Keterangan harus diisi!');
                                             }
                                             return v.trim();
                                         }
@@ -210,8 +205,7 @@
                                         status,
                                         keterangan
                                     }, btn);
-
-                                    if (res.ok && res.json.success) {
+                                    if (res.ok) {
                                         Swal.fire({
                                             icon: 'success',
                                             title: 'Berhasil!',
@@ -219,15 +213,13 @@
                                             showConfirmButton: false,
                                             timer: 1500
                                         });
-
-                                        // 🔁 perbarui log & kalender tanpa refresh halaman
                                         await loadAllLogs();
-                                        await getAbsensi();
+                                        await checkTodayAbsensi();
                                     }
                                     return;
                                 }
 
-                                // --- Jika Hadir ---
+                                // Untuk Hadir dan Alpa
                                 const result = await Swal.fire({
                                     title: `Yakin ingin ${status.toLowerCase()} sekarang?`,
                                     icon: 'question',
@@ -241,8 +233,7 @@
                                 const res = await kirimDataToServer({
                                     status
                                 }, btn);
-
-                                if (res.ok && res.json.success) {
+                                if (res.ok) {
                                     Swal.fire({
                                         icon: 'success',
                                         title: 'Berhasil!',
@@ -250,19 +241,17 @@
                                         showConfirmButton: false,
                                         timer: 1500
                                     });
-
                                     await loadAllLogs();
-                                    await getAbsensi();
+                                    await checkTodayAbsensi();
                                 }
                             });
                         });
 
-                        // === Jalankan di awal saat halaman dibuka ===
+                        // Jalankan saat halaman dimuat
+                        checkTodayAbsensi();
                         loadAllLogs();
-                        getAbsensi();
                     });
                 </script>
-
                 <script>
                     document.addEventListener('DOMContentLoaded', async () => {
                         const logContainer = document.getElementById('logAbsen');
@@ -618,28 +607,31 @@
             </div>
 
             <div class="box-bg col-span-2 row-span-15 col-start-1 row-start-5 bg-white p-6 rounded">
-                <div class="flex justify-between items-center mb-4">
-                    <p class="text-3xl font-semibold text-gray-800">Grafik Prestasi</p>
-                    <div>
-                        <select id="selectKelas" class="border border-gray-300 rounded px-3 py-1 text-xl">
-                            @foreach ($kelas as $k)
-                            <option value="{{ $k->nama_kelas }}">{{ $k->nama_kelas }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
+    <div class="flex justify-between items-center mb-4">
+        <p class="text-3xl font-semibold text-gray-800">Grafik Prestasi</p>
+        <div>
+            <select id="selectKelas" class="border border-gray-300 rounded px-3 py-1 text-xl">
+                @foreach ($kelas as $k)
+                    <option value="{{ $k->nama_kelas }}">{{ $k->nama_kelas }}</option>
+                @endforeach
+            </select>
+        </div>
+    </div>
 
-                <div class="flex-1 flex justify-center items-center">
-
-                    <div id="grafik-prestasi" class="p-8 max-w-[350px] max-h-[350px]"></div>
-
-
-                    <div>
-
-                    </div>
-                </div>
+    <div class="flex-1 flex justify-center items-center">
+        @if($akademikTerbaik->isEmpty() && $tahfidzTerbaik->isEmpty())
+            <div class="text-center">
+                <p class="mb-4 text-gray-500 text-lg">Belum ada data prestasi</p>
+                <a href="{{ url('/santri') }}" 
+                   class="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                    Tambah Data Santri
+                </a>
             </div>
-            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        @else
+            <div id="grafik-prestasi" class="p-8 max-w-[350px] max-h-[350px]"></div>
+        @endif
+    </div>
+</div>
 
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             <script>

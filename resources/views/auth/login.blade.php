@@ -6,21 +6,6 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
 --}}
 
 @extends('index')
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - PesantrenKita</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
-  <style>
-    .input-custom {
-      font-family: 'Poppins';
-      font-size: 15px;
-    }
-  </style>
-</head>
 <body class="min-h-screen flex">
 
   <!-- Kiri: Background Masjid -->
@@ -59,29 +44,30 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
           </div>
       @endif
 
-      <form action="{{ route('login') }}" method="POST" class="space-y-4 flex flex-col items-center w-full">
-          @csrf
+      <form action="{{ route('login.post') }}" method="POST" class="space-y-4 flex flex-col items-center w-full">
+    @csrf
 
-          <!-- Input Nama email -->
-            <div class="relative w-full max-w-[300px]">
-              <h3 class="mb-1 text-sm font-medium">Email</h3>
-              <input type="email" name="email" placeholder="Masukkan Email" class="{{ $inputClass }}" required>
-              <i class="fa-solid fa-envelope absolute right-3 top-9 text-gray-500"></i>
-            </div>
+    <!-- Input Email -->
+    <div class="relative w-full max-w-[300px]">
+        <h3 class="mb-1 text-sm font-medium">Email</h3>
+        <input type="email" name="email" placeholder="Masukkan Email" class="{{ $inputClass }}" required>
+        <i class="fa-solid fa-envelope absolute right-3 top-9 text-gray-500"></i>
+    </div>
 
-          <!-- Input Kata Sandi dengan Toggle -->
-          <div class="relative w-full max-w-[300px]">
-              <h3 class="mb-1 text-sm font-medium">Kata Sandi</h3>
-              <input type="password" id="kataSandi" name="kata_sandi" placeholder="Masukkan Kata Sandi" class="{{ $inputClass }}" required>
-              <i class="fa-solid fa-eye toggle-icon absolute right-3 top-9 text-gray-500" id="togglePassword"></i>
-          </div>
+    <!-- Input Kata Sandi dengan Toggle -->
+    <div class="relative w-full max-w-[300px]">
+        <h3 class="mb-1 text-sm font-medium">Kata Sandi</h3>
+        <!-- PERBAIKAN: ganti name="kata_sandi" menjadi name="password" -->
+        <input type="password" id="kataSandi" name="password" placeholder="Masukkan Kata Sandi" class="{{ $inputClass }}" required>
+        <i class="fa-solid fa-eye toggle-icon absolute right-3 top-9 text-gray-500" id="togglePassword"></i>
+    </div>
 
-          <!-- Tombol Masuk -->
-          <button type="submit"
-              class="w-full max-w-[300px] flex justify-center bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-lg transition duration-300 text-sm">
-              Masuk
-          </button>
-      </form>
+    <!-- Tombol Masuk -->
+    <button type="submit"
+        class="w-full max-w-[300px] flex justify-center bg-green-500 hover:bg-green-600 text-white font-semibold py-2 rounded-lg transition duration-300 text-sm">
+        Masuk
+    </button>
+</form>
 
       <!-- Link Lupa Kata Sandi -->
       <p class="text-center text-sm text-gray-600 mt-4">

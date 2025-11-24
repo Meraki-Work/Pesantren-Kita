@@ -38,18 +38,20 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password',
-        'otp_code'
+        'otp_code',
+        'remember_token'
     ];
 
     protected $fillable = [
+        'ponpes_id',
         'username',
         'email',
         'password',
         'role',
-        'ponpes_id',
         'otp_code',
         'otp_expired_at',
-        'email_verified_at'
+        'email_verified_at',
+        'status',
     ];
 
     protected $casts = [
@@ -73,6 +75,16 @@ class User extends Authenticatable
         return $this->belongsTo(Ponpe::class, 'ponpes_id');
     }
 
+        public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+    
     public function absensis()
     {
         return $this->hasMany(Absensi::class);

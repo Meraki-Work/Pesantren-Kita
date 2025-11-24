@@ -5,21 +5,41 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
+
 class DashboardController extends Controller
 {
-    public function store(Request $request)
+    /**
+     * Menyimpan absensi hari ini
+     */
+    public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'status' => 'required|in:Hadir,Izin,Cuti',
+            'status' => 'required|in:Hadir,Izin,Sakit,Alpa',
             'keterangan' => 'nullable|string|max:255',
         ]);
 
-        $userId = auth()->id() ?? 1;
+        $user = Auth::user();
+        $userId = (int)$user->id_user;
+        $userPonpesId = $user->ponpes_id;
         $tanggalHariIni = Carbon::now()->toDateString();
 
-        // ✅ Simpan absensi baru
+        $exists = DB::table('absensi')
+            ->where('user_id', $userId)
+            ->where('ponpes_id', $userPonpesId)
+            ->where('tanggal', $tanggalHariIni)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda sudah absen hari ini!'
+            ], 400);
+        }
+
         DB::table('absensi')->insert([
-            'ponpes_id' => 'P001',
+            'ponpes_id' => $userPonpesId,
             'user_id' => $userId,
             'tanggal' => $tanggalHariIni,
             'status' => $request->status,
@@ -32,17 +52,24 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function getAllAbsensi()
+    /**
+     * Mendapatkan absensi terakhir per hari (limit 6)
+     */
+    public function getAllAbsensi(): JsonResponse
     {
-        $userId = auth()->id() ?? 1;
+        $user = Auth::user();
+        $userId = (int)$user->id_user;
+        $userPonpesId = $user->ponpes_id;
 
         $data = DB::table('absensi as a')
-            ->select('a.*')
+            ->select('a.id_absensi', 'a.tanggal', 'a.status', 'a.keterangan')
             ->where('a.user_id', $userId)
-            ->whereIn('a.id_absensi', function ($query) use ($userId) {
+            ->where('a.ponpes_id', $userPonpesId)
+            ->whereIn('a.id_absensi', function ($query) use ($userId, $userPonpesId) {
                 $query->selectRaw('MAX(id_absensi)')
                     ->from('absensi')
                     ->where('user_id', $userId)
+                    ->where('ponpes_id', $userPonpesId)
                     ->groupBy('tanggal');
             })
             ->orderByDesc('a.tanggal')
@@ -55,99 +82,137 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function getAbsensi()
+    /**
+     * Data absensi untuk kalender
+     */
+    public function getAbsensi(): JsonResponse
     {
-        $userId = auth()->id() ?? 1;
+        $user = Auth::user();
+        $userId = (int)$user->id_user;
+        $userPonpesId = $user->ponpes_id;
 
         $absensi = DB::table('absensi')
-            ->select('tanggal', 'status')
+            ->select('tanggal','status')
             ->where('user_id', $userId)
+            ->where('ponpes_id', $userPonpesId)
             ->get()
             ->groupBy('tanggal')
-            ->map(function ($item) {
-                return $item->pluck('status');
-            });
+            ->map(fn($item) => $item->pluck('status')->toArray());
 
         return response()->json($absensi);
     }
 
+    /**
+     * Dashboard
+     */
     public function index()
-{
-    $userId = auth()->id() ?? 1;
+    {
+        $user = Auth::user();
+        $userId = (int)$user->id_user;
+        $userPonpesId = $user->ponpes_id;
 
-    // Hitung jumlah hadir, cuti, izin
-    $jumlahHadir = DB::table('absensi')
-        ->where('user_id', $userId)
-        ->whereRaw('LOWER(status) = ?', ['hadir'])
-        ->count();
+        // Hitung jumlah status
+        $counts = DB::table('absensi')
+            ->select('status', DB::raw('COUNT(*) as total'))
+            ->where('user_id', $userId)
+            ->where('ponpes_id', $userPonpesId)
+            ->groupBy('status')
+            ->pluck('total','status');
 
-    $jumlahCuti = DB::table('absensi')
-        ->where('user_id', $userId)
-        ->whereRaw('LOWER(status) = ?', ['cuti'])
-        ->count();
+        $jumlahHadir = $counts['Hadir'] ?? 0;
+        $jumlahIzin = $counts['Izin'] ?? 0;
+        $jumlahSakit = $counts['Sakit'] ?? 0;
+        $jumlahAlpa = $counts['Alpa'] ?? 0;
 
-    $jumlahIzin = DB::table('absensi')
-        ->where('user_id', $userId)
-        ->whereRaw('LOWER(status) = ?', ['izin'])
-        ->count();
+        // Ambil kelas
+        $kelas = DB::table('kelas')
+            ->select('id_kelas','nama_kelas')
+            ->where('ponpes_id', $userPonpesId)
+            ->orderBy('tingkat')
+            ->orderBy('nama_kelas')
+            ->get();
 
-    $kelas = DB::table('kelas')
-        ->select('id_kelas', 'nama_kelas')
-        ->orderBy('tingkat')
-        ->orderBy('nama_kelas')
-        ->get();
-
-    // 🔹 Akademik Terbaik
-    $akademikTerbaik = DB::table('pencapaian as p')
-            ->join('santri as s', 'p.id_santri', '=', 's.id_santri')
-            ->select('s.id_santri', 's.nama', 's.nisn', DB::raw('COUNT(*) as total'))
-            ->where('p.tipe', 'Akademik')
-            ->groupBy('s.id_santri', 's.nama', 's.nisn')
+        // Akademik terbaik
+        $akademikTerbaik = DB::table('pencapaian as p')
+            ->join('santri as s','p.id_santri','=','s.id_santri')
+            ->select('s.id_santri','s.nama','s.nisn', DB::raw('COUNT(*) as total'))
+            ->where('p.tipe','Akademik')
+            ->where('p.ponpes_id',$userPonpesId)
+            ->where('s.ponpes_id',$userPonpesId)
+            ->groupBy('s.id_santri','s.nama','s.nisn')
             ->orderByDesc('total')
             ->limit(4)
             ->get();
 
-    // 🔹 Tahfidz Terbaik
-   $tahfidzTerbaik = DB::table('pencapaian as p')
-            ->join('santri as s', 'p.id_santri', '=', 's.id_santri')
-            ->select('s.id_santri', 's.nama', 's.nisn', DB::raw('COUNT(*) as total'))
-            ->where('p.tipe', 'Tahfidz')
-            ->groupBy('s.id_santri', 's.nama', 's.nisn')
+        // Tahfidz terbaik
+        $tahfidzTerbaik = DB::table('pencapaian as p')
+            ->join('santri as s','p.id_santri','=','s.id_santri')
+            ->select('s.id_santri','s.nama','s.nisn', DB::raw('COUNT(*) as total'))
+            ->where('p.tipe','Tahfidz')
+            ->where('p.ponpes_id',$userPonpesId)
+            ->where('s.ponpes_id',$userPonpesId)
+            ->groupBy('s.id_santri','s.nama','s.nisn')
             ->orderByDesc('total')
             ->limit(4)
             ->get();
 
-    return view('pages.dashboard', compact(
-            'jumlahHadir',
-            'jumlahIzin',
-            'jumlahCuti',
-            'kelas',
-            'akademikTerbaik',
-            'tahfidzTerbaik'
+        return view('pages.dashboard', compact(
+            'jumlahHadir','jumlahIzin','jumlahSakit','jumlahAlpa',
+            'kelas','akademikTerbaik','tahfidzTerbaik'
         ));
     }
 
-    public function getGrafikPrestasi(Request $request)
-{
-    $query = DB::table('pencapaian')
-        ->join('santri', 'pencapaian.id_santri', '=', 'santri.id_santri')
-        ->join('kelas', 'santri.id_kelas', '=', 'kelas.id_kelas')
-        ->select('pencapaian.tipe', DB::raw('COUNT(*) as total'))
-        ->groupBy('pencapaian.tipe');
+    /**
+     * Grafik prestasi
+     */
+    public function getGrafikPrestasi(Request $request): JsonResponse
+    {
+        $userPonpesId = Auth::user()->ponpes_id;
 
-    if ($request->has('kelas') && $request->kelas !== 'Semua') {
-        $query->where('kelas.nama_kelas', $request->kelas);
+        $query = DB::table('pencapaian')
+            ->join('santri','pencapaian.id_santri','=','santri.id_santri')
+            ->join('kelas','santri.id_kelas','=','kelas.id_kelas')
+            ->select('pencapaian.tipe', DB::raw('COUNT(*) as total'))
+            ->where('pencapaian.ponpes_id',$userPonpesId)
+            ->where('santri.ponpes_id',$userPonpesId)
+            ->where('kelas.ponpes_id',$userPonpesId)
+            ->groupBy('pencapaian.tipe');
+
+        if ($request->filled('kelas') && $request->kelas !== 'Semua') {
+            $query->where('kelas.nama_kelas', $request->kelas);
+        }
+
+        $data = $query->pluck('total','tipe');
+
+        $types = ['Akademik','Non-Akademik','Tahfidz','Hafalan','Lainnya'];
+        $result = [];
+        foreach ($types as $type) {
+            $result[$type] = $data[$type] ?? 0;
+        }
+
+        return response()->json($result);
     }
 
-    $data = $query->pluck('total', 'tipe');
+    /**
+     * Cek absensi hari ini
+     */
+    public function checkTodayAbsensi(): JsonResponse
+    {
+        $user = Auth::user();
+        $userId = (int)$user->id_user;
+        $userPonpesId = $user->ponpes_id;
+        $tanggalHariIni = Carbon::now()->toDateString();
 
-    $types = ['Akademik', 'Non Akademik', 'Tahfidz', 'Hafalan', 'Lainnya'];
-    $result = [];
-    foreach ($types as $type) {
-        $result[$type] = $data[$type] ?? 0;
+        $absensiHariIni = DB::table('absensi')
+            ->where('user_id',$userId)
+            ->where('ponpes_id',$userPonpesId)
+            ->where('tanggal',$tanggalHariIni)
+            ->first();
+
+        return response()->json([
+            'already_absened' => $absensiHariIni !== null,
+            'status' => $absensiHariIni?->status,
+            'keterangan' => $absensiHariIni?->keterangan
+        ]);
     }
-
-    return response()->json($result);
-}
-    
 }

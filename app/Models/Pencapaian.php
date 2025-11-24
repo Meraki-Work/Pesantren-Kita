@@ -8,6 +8,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Class Pencapaian
@@ -62,6 +63,19 @@ class Pencapaian extends Model
 	{
 		return $this->belongsTo(Santri::class, 'id_santri');
 	}
+
+	    public function scopeByPonpes(Builder $query, $ponpesId)
+    {
+        return $query->where('ponpes_id', $ponpesId);
+    }
+
+    /**
+     * Scope untuk data milik user yang login
+     */
+    public function scopeOwnedByCurrentUser(Builder $query)
+    {
+        return $query->where('ponpes_id', auth()->user()->ponpes_id);
+    }
 
 	public function user()
 	{

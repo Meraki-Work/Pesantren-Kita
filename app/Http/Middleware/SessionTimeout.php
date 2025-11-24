@@ -5,20 +5,22 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class SessionTimeout
 {
     /**
      * Routes yang dikecualikan dari session timeout
-     * (Landing page, public pages, dll)
      */
     protected $except = [
         '/',
         'login',
+        'logout',
         'register',
         'password/*',
-        'public/*',
-        'landing-page'
+        'auth/*',
+        'verify-otp',
+        'resend-otp'
     ];
 
     /**
@@ -26,18 +28,18 @@ class SessionTimeout
      */
     public function handle(Request $request, Closure $next)
     {
-        // Cek jika route saat ini dikecualikan
+        // ✅ PERBAIKAN: Cek jika route saat ini dikecualikan
         if ($this->shouldPassThrough($request)) {
             return $next($request);
         }
 
-        // Jika user tidak login, lanjutkan request
+        // ✅ PERBAIKAN: Jika user tidak login, lanjutkan request
         if (!Auth::check()) {
             return $next($request);
         }
 
         $lastActivity = session('last_activity');
-        $timeout = config('session.lifetime') * 60; // dalam detik
+        $timeout = config('session.lifetime', 120) * 60; // default 2 jam
 
         // Jika session last_activity belum ada, set sekarang
         if (!$lastActivity) {
@@ -51,8 +53,15 @@ class SessionTimeout
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->route('login')
-                ->with('message', 'Session Anda telah berakhir karena tidak ada aktivitas.');
+            // ✅ PERBAIKAN: Handle case dimana route login belum ada
+            try {
+                return redirect()->route('login')
+                    ->with('message', 'Session Anda telah berakhir karena tidak ada aktivitas.');
+            } catch (\Exception $e) {
+                // Fallback ke URL langsung
+                return redirect('/login')
+                    ->with('message', 'Session Anda telah berakhir karena tidak ada aktivitas.');
+            }
         }
 
         // Update last activity time

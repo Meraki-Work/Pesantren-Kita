@@ -11,7 +11,7 @@
     <nav class="absolute left-1/2 transform -translate-x-1/2 flex gap-12 text-sm md:text-base font-medium tracking-wide">
       <a href="{{ route('landing_utama') }}" class="hover:text-[#a0f0c5] transition">Home</a>
       <a href="{{ route('landing_about') }}" class="hover:text-[#a0f0c5] transition">About</a>
-      <a href="#contact" class="hover:text-[#a0f0c5] transition">Contact</a>
+      <a href="{{ route('contact') }}" class="hover:text-[#a0f0c5] transition">Contact</a>
     </nav>
 
     <!-- Tombol Login -->

@@ -6,124 +6,39 @@ use App\Models\Keuangan;
 use App\Models\Kategori;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class KeuanganController extends Controller
 {
-         public function index(Request $request)
+    /**
+     * Get user's ponpes_id
+     */
+    private function getUserPonpesId()
     {
-        // Ambil parameter filter dari request
-        $filter = $request->get('filter', '1-tahun'); // default 1 tahun
-
-        // ==========================
-        // 🔹 QUERY UNTUK CHART (dengan filter)
-        // ==========================
-        $chartQuery = Keuangan::with(['kategori', 'user']);
-        $chartQuery = $this->applyDateFilter($chartQuery, $filter);
-        $data = $chartQuery->orderBy('tanggal', 'asc')->get();
-
-        // ==========================
-        // 🔹 QUERY UNTUK TABEL (TANPA filter date, TAPI dengan pagination)
-        // ==========================
-        $tableQuery = Keuangan::with(['kategori', 'user']);
-
-        
-        // HAPUS filter date untuk tabel agar semua data muncul
-        // $tableQuery = $this->applyDateFilter($tableQuery, $filter); // DIHAPUS
-        
-        // Pagination untuk tabel - 10 data per halaman
-        $tableData = $tableQuery->orderBy('tanggal', 'desc')->paginate(10);
-
-        $columns = ['User', 'Jumlah', 'Kategori', 'Sumber Dana', 'Tanggal', 'Status'];
-        $rows = $tableData->map(function ($item) {
-            return [
-                'id' => $item->id_keuangan,
-                'user' => $item->user->username ?? 'Tidak ada user',
-                'jumlah' => 'Rp ' . number_format($item->jumlah, 0, ',', '.') . ',00',
-                'jumlah_raw' => $item->jumlah,
-                'jumlah_raw' => $item->keterangan,
-                'kategori' => $item->kategori->nama_kategori ?? 'Tidak ada kategori',
-                'id_kategori' => $item->id_kategori,
-                'sumber_dana' => $item->sumber_dana ?? '-',
-                'tanggal' => $item->tanggal ? Carbon::parse($item->tanggal)->format('d M Y') : '-',
-                'tanggal_raw' => $item->tanggal,
-                'status' => $item->status ?? '-',
-                'keterangan' => $item->keterangan ?? '',
-            ];
-        })->toArray();
-
-        // ==========================
-        // 🔹 Data untuk chart kategori (PIE CHART) - dari data filtered
-        // ==========================
-        $grouped = $data->groupBy(function ($item) {
-            return $item->kategori->nama_kategori ?? 'Tidak ada kategori';
-        })->map(function ($items) {
-            return [
-                'total' => $items->sum('jumlah'),
-                'sumber_dana' => $items->pluck('sumber_dana')->unique()->join(', ')
-            ];
-        });
-
-        $labels = $grouped->keys()->toArray();
-        $values = $grouped->pluck('total')->toArray();
-        $sumber_dana = $grouped->pluck('sumber_dana')->toArray();
-
-        // ==========================
-        // 🔹 Data untuk CASH FLOW CHART (LINE CHART) - dari data filtered
-        // ==========================
-        $dates = $data->pluck('tanggal')
-            ->filter()
-            ->map(fn($t) => Carbon::parse($t)->format('Y-m-d'))
-            ->unique()
-            ->sort()
-            ->values()
-            ->toArray();
-
-        $dailyFlow = [];
-        $total = 0; // Mulai dari saldo 0
-
-        foreach ($dates as $tanggal) {
-            $transactions = $data->filter(
-                fn($i) =>
-                $i->tanggal && Carbon::parse($i->tanggal)->format('Y-m-d') === $tanggal
-            );
-
-            $masuk = $transactions->where('status', 'Masuk')->sum('jumlah');
-            $keluar = $transactions->where('status', 'Keluar')->sum('jumlah');
-
-            // Akumulasi: saldo_hari_ini = saldo_kemarin + (pemasukan - pengeluaran)
-            $total += ($masuk - $keluar);
-            $dailyFlow[] = $total;
-        }
-
-        $saldo_terakhir = !empty($dailyFlow) ? end($dailyFlow) : 0;
-
-        // Hitung total untuk cards - dari data filtered
-        $totalPemasukan = $data->where('status', 'Masuk')->sum('jumlah');
-        $totalPengeluaran = $data->where('status', 'Keluar')->sum('jumlah');
-        $saldo = $totalPemasukan - $totalPengeluaran;
-
-// dd($tableData);
-
-        return view('pages.keuangan', compact(
-            'data',
-            'columns',
-            'rows',
-            'labels',
-            'values',
-            'sumber_dana',
-            'dates',
-            'dailyFlow',
-            'saldo_terakhir',
-            'filter',
-            'totalPemasukan',
-            'totalPengeluaran',
-            'saldo',
-            'tableData' // Kirim pagination object
-        ));
+        return Auth::user()->ponpes_id;
     }
 
     /**
-     * Apply date filter to query - HANYA untuk chart
+     * Check if keuangan belongs to user's ponpes
+     */
+    private function checkKeuanganOwnership($keuanganId)
+    {
+        $userPonpesId = $this->getUserPonpesId();
+        
+        $keuangan = Keuangan::where('id_keuangan', $keuanganId)
+            ->where('ponpes_id', $userPonpesId)
+            ->first();
+
+        if (!$keuangan) {
+            abort(403, 'Akses ditolak. Anda tidak memiliki izin untuk mengakses data ini.');
+        }
+
+        return $keuangan;
+    }
+
+    /**
+     * Apply date filter to query
      */
     private function applyDateFilter($query, $filter)
     {
@@ -146,82 +61,307 @@ class KeuanganController extends Controller
                 $startDate = $now->copy()->subYears(5);
                 break;
             default:
-                $startDate = $now->copy()->subYear(); // default 1 tahun
+                $startDate = $now->copy()->subYear();
         }
 
         return $query->where('tanggal', '>=', $startDate->format('Y-m-d'))
             ->where('tanggal', '<=', $now->format('Y-m-d'));
     }
 
-    // ... method lainnya tetap sama
-    
+    public function index(Request $request)
+    {
+        try {
+            $userPonpesId = $this->getUserPonpesId();
+            $filter = $request->get('filter', '1-tahun');
+
+            // ==========================
+            // 🔹 QUERY UNTUK CHART (dengan filter ponpes_id)
+            // ==========================
+            $chartQuery = Keuangan::with(['kategori', 'user'])
+                ->where('ponpes_id', $userPonpesId);
+                
+            $chartQuery = $this->applyDateFilter($chartQuery, $filter);
+            $data = $chartQuery->orderBy('tanggal', 'asc')->get();
+
+            // ==========================
+            // 🔹 QUERY UNTUK TABEL (dengan filter ponpes_id)
+            // ==========================
+            $tableQuery = Keuangan::with(['kategori', 'user'])
+                ->where('ponpes_id', $userPonpesId);
+
+            $tableData = $tableQuery->orderBy('tanggal', 'desc')->paginate(10);
+
+            $columns = ['User', 'Jumlah', 'Kategori', 'Sumber Dana', 'Tanggal', 'Status'];
+            $rows = $tableData->map(function ($item) {
+                return [
+                    'id' => $item->id_keuangan,
+                    'user' => $item->user->username ?? 'Tidak ada user',
+                    'jumlah' => 'Rp ' . number_format($item->jumlah, 0, ',', '.') . ',00',
+                    'jumlah_raw' => $item->jumlah,
+                    'keterangan_raw' => $item->keterangan,
+                    'kategori' => $item->kategori->nama_kategori ?? 'Tidak ada kategori',
+                    'id_kategori' => $item->id_kategori,
+                    'sumber_dana' => $item->sumber_dana ?? '-',
+                    'tanggal' => $item->tanggal ? Carbon::parse($item->tanggal)->format('d M Y') : '-',
+                    'tanggal_raw' => $item->tanggal,
+                    'status' => $item->status ?? '-',
+                    'keterangan' => $item->keterangan ?? '',
+                ];
+            })->toArray();
+
+            // ==========================
+            // 🔹 Data untuk chart kategori (PIE CHART) - dari data filtered
+            // ==========================
+            $grouped = $data->groupBy(function ($item) {
+                return $item->kategori->nama_kategori ?? 'Tidak ada kategori';
+            })->map(function ($items) {
+                return [
+                    'total' => $items->sum('jumlah'),
+                    'sumber_dana' => $items->pluck('sumber_dana')->unique()->join(', ')
+                ];
+            });
+
+            $labels = $grouped->keys()->toArray();
+            $values = $grouped->pluck('total')->toArray();
+            $sumber_dana = $grouped->pluck('sumber_dana')->toArray();
+
+            // ==========================
+            // 🔹 Data untuk CASH FLOW CHART (LINE CHART) - dari data filtered
+            // ==========================
+            $dates = $data->pluck('tanggal')
+                ->filter()
+                ->map(fn($t) => Carbon::parse($t)->format('Y-m-d'))
+                ->unique()
+                ->sort()
+                ->values()
+                ->toArray();
+
+            $dailyFlow = [];
+            $total = 0; // Mulai dari saldo 0
+
+            foreach ($dates as $tanggal) {
+                $transactions = $data->filter(
+                    fn($i) =>
+                    $i->tanggal && Carbon::parse($i->tanggal)->format('Y-m-d') === $tanggal
+                );
+
+                $masuk = $transactions->where('status', 'Masuk')->sum('jumlah');
+                $keluar = $transactions->where('status', 'Keluar')->sum('jumlah');
+
+                // Akumulasi: saldo_hari_ini = saldo_kemarin + (pemasukan - pengeluaran)
+                $total += ($masuk - $keluar);
+                $dailyFlow[] = $total;
+            }
+
+            $saldo_terakhir = !empty($dailyFlow) ? end($dailyFlow) : 0;
+
+            // Hitung total untuk cards - dari data filtered
+            $totalPemasukan = $data->where('status', 'Masuk')->sum('jumlah');
+            $totalPengeluaran = $data->where('status', 'Keluar')->sum('jumlah');
+            $saldo = $totalPemasukan - $totalPengeluaran;
+
+            return view('pages.keuangan', compact(
+                'data',
+                'columns',
+                'rows',
+                'labels',
+                'values',
+                'sumber_dana',
+                'dates',
+                'dailyFlow',
+                'saldo_terakhir',
+                'filter',
+                'totalPemasukan',
+                'totalPengeluaran',
+                'saldo',
+                'tableData'
+            ));
+
+        } catch (\Exception $e) {
+            // Hapus logging untuk sementara
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memuat data keuangan.');
+        }
+    }
+
     public function create()
     {
-        $kategories = Kategori::all();
-        return view('pages.keuangan-create', compact('kategories'));
+        try {
+            $userPonpesId = $this->getUserPonpesId();
+            
+            // Hanya ambil kategori yang milik ponpes user
+            $kategories = Kategori::where('ponpes_id', $userPonpesId)->get();
+            
+            return view('pages.keuangan-create', compact('kategories'));
+
+        } catch (\Exception $e) {
+            return redirect()->route('keuangan.index')->with('error', 'Terjadi kesalahan saat memuat form tambah data.');
+        }
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'jumlah' => 'required|numeric',
-            'id_kategori' => 'required|exists:kategori,id_kategori',
-            'sumber_dana' => 'required|string|max:100',
-            'status' => 'required|in:Masuk,Keluar',
-            'tanggal' => 'required|date',
-            'keterangan' => 'nullable|string'
-        ]);
+        try {
+            $user = Auth::user();
+            $userPonpesId = $this->getUserPonpesId();
 
-        Keuangan::create([
-            'user_id' => auth()->id() ?? 1, // Sesuaikan dengan auth user
-            'jumlah' => $request->jumlah,
-            'id_kategori' => $request->id_kategori,
-            'sumber_dana' => $request->sumber_dana,
-            'status' => $request->status,
-            'tanggal' => $request->tanggal,
-            'keterangan' => $request->keterangan
-        ]);
+            // Validasi bahwa kategori yang dipilih milik ponpes user
+            $validKategori = Kategori::where('id_kategori', $request->id_kategori)
+                ->where('ponpes_id', $userPonpesId)
+                ->exists();
 
-        return redirect()->route('keuangan.index')->with('success', 'Data keuangan berhasil ditambahkan!');
+            if (!$validKategori) {
+                return redirect()->back()->with('error', 'Kategori tidak valid atau tidak ditemukan.')->withInput();
+            }
+
+            $request->validate([
+                'jumlah' => 'required|numeric|min:0',
+                'id_kategori' => 'required|exists:kategori,id_kategori',
+                'sumber_dana' => 'required|string|max:100',
+                'status' => 'required|in:Masuk,Keluar',
+                'tanggal' => 'required|date',
+                'keterangan' => 'nullable|string|max:500'
+            ], [
+                'jumlah.min' => 'Jumlah tidak boleh negatif',
+                'id_kategori.exists' => 'Kategori tidak valid'
+            ]);
+
+            Keuangan::create([
+                'user_id' => (int) $user->id_user,
+                'ponpes_id' => $userPonpesId,
+                'jumlah' => $request->jumlah,
+                'id_kategori' => $request->id_kategori,
+                'sumber_dana' => $request->sumber_dana,
+                'status' => $request->status,
+                'tanggal' => $request->tanggal,
+                'keterangan' => $request->keterangan
+            ]);
+
+            return redirect()->route('keuangan.index')->with('success', 'Data keuangan berhasil ditambahkan!');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat menambah data keuangan.')->withInput();
+        }
     }
 
     public function edit($id)
     {
-        $keuangan = Keuangan::with('kategori')->findOrFail($id);
-        $kategories = Kategori::all();
-        
-        return view('pages.keuangan-edit', compact('keuangan', 'kategories'));
+        try {
+            $userPonpesId = $this->getUserPonpesId();
+            
+            // Cek kepemilikan data keuangan
+            $keuangan = $this->checkKeuanganOwnership($id);
+            $keuangan->load('kategori');
+            
+            // Hanya ambil kategori yang milik ponpes user
+            $kategories = Kategori::where('ponpes_id', $userPonpesId)->get();
+            
+            return view('pages.keuangan-edit', compact('keuangan', 'kategories'));
+
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return redirect()->route('keuangan.index')->with('error', $e->getMessage());
+        } catch (ModelNotFoundException $e) {
+            return redirect()->route('keuangan.index')->with('error', 'Data keuangan tidak ditemukan.');
+        } catch (\Exception $e) {
+            return redirect()->route('keuangan.index')->with('error', 'Terjadi kesalahan saat memuat form edit.');
+        }
     }
 
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'jumlah' => 'required|numeric',
-            'id_kategori' => 'required|exists:kategori,id_kategori',
-            'sumber_dana' => 'required|string|max:100',
-            'status' => 'required|in:Masuk,Keluar',
-            'tanggal' => 'required|date',
-            'keterangan' => 'nullable|string'
-        ]);
+        try {
+            $userPonpesId = $this->getUserPonpesId();
 
-        $keuangan = Keuangan::findOrFail($id);
-        $keuangan->update([
-            'jumlah' => $request->jumlah,
-            'id_kategori' => $request->id_kategori,
-            'sumber_dana' => $request->sumber_dana,
-            'status' => $request->status,
-            'tanggal' => $request->tanggal,
-            'keterangan' => $request->keterangan
-        ]);
+            // Cek kepemilikan data keuangan
+            $keuangan = $this->checkKeuanganOwnership($id);
 
-        return redirect()->route('keuangan.index')->with('success', 'Data keuangan berhasil diperbarui!');
+            // Validasi bahwa kategori yang dipilih milik ponpes user
+            $validKategori = Kategori::where('id_kategori', $request->id_kategori)
+                ->where('ponpes_id', $userPonpesId)
+                ->exists();
+
+            if (!$validKategori) {
+                return redirect()->back()->with('error', 'Kategori tidak valid atau tidak ditemukan.')->withInput();
+            }
+
+            $request->validate([
+                'jumlah' => 'required|numeric|min:0',
+                'id_kategori' => 'required|exists:kategori,id_kategori',
+                'sumber_dana' => 'required|string|max:100',
+                'status' => 'required|in:Masuk,Keluar',
+                'tanggal' => 'required|date',
+                'keterangan' => 'nullable|string|max:500'
+            ], [
+                'jumlah.min' => 'Jumlah tidak boleh negatif',
+                'id_kategori.exists' => 'Kategori tidak valid'
+            ]);
+
+            $keuangan->update([
+                'jumlah' => $request->jumlah,
+                'id_kategori' => $request->id_kategori,
+                'sumber_dana' => $request->sumber_dana,
+                'status' => $request->status,
+                'tanggal' => $request->tanggal,
+                'keterangan' => $request->keterangan
+            ]);
+
+            return redirect()->route('keuangan.index')->with('success', 'Data keuangan berhasil diperbarui!');
+
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return redirect()->route('keuangan.index')->with('error', $e->getMessage());
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
+        } catch (ModelNotFoundException $e) {
+            return redirect()->route('keuangan.index')->with('error', 'Data keuangan tidak ditemukan.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memperbarui data keuangan.')->withInput();
+        }
     }
 
     public function destroy($id)
     {
-        $keuangan = Keuangan::findOrFail($id);
-        $keuangan->delete();
+        try {
+            // Cek kepemilikan data keuangan
+            $keuangan = $this->checkKeuanganOwnership($id);
+            
+            $keuangan->delete();
 
-        return redirect()->route('keuangan.index')->with('success', 'Data keuangan berhasil dihapus!');
+            return redirect()->route('keuangan.index')->with('success', 'Data keuangan berhasil dihapus!');
+
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            return redirect()->route('keuangan.index')->with('error', $e->getMessage());
+        } catch (ModelNotFoundException $e) {
+            return redirect()->route('keuangan.index')->with('error', 'Data keuangan tidak ditemukan.');
+        } catch (\Exception $e) {
+            return redirect()->route('keuangan.index')->with('error', 'Terjadi kesalahan saat menghapus data keuangan.');
+        }
+    }
+
+    /**
+     * Get keuangan data for API (optional)
+     */
+    public function getKeuanganByPonpes()
+    {
+        try {
+            $userPonpesId = $this->getUserPonpesId();
+
+            $keuangan = Keuangan::with(['kategori', 'user'])
+                ->where('ponpes_id', $userPonpesId)
+                ->select('id_keuangan', 'jumlah', 'sumber_dana', 'status', 'tanggal', 'keterangan', 'id_kategori', 'user_id')
+                ->orderBy('tanggal', 'desc')
+                ->paginate(10);
+
+            return response()->json([
+                'success' => true,
+                'data' => $keuangan
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil data keuangan'
+            ], 500);
+        }
     }
 }

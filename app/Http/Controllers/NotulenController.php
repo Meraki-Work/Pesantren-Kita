@@ -5,40 +5,77 @@ namespace App\Http\Controllers;
 use App\Models\Notulen;
 use App\Models\Gambar;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class NotulenController extends Controller
 {
+    /**
+     * Get user's ponpes_id
+     */
+    private function getUserPonpesId()
+    {
+        return Auth::user()->ponpes_id;
+    }
+
+    /**
+     * Check if notulen belongs to user's ponpes
+     */
+    private function checkNotulenOwnership($notulenId)
+    {
+        $userPonpesId = $this->getUserPonpesId();
+
+        $notulen = Notulen::where('id_notulen', $notulenId)
+            ->where('ponpes_id', $userPonpesId)
+            ->first();
+
+        if (!$notulen) {
+            Log::warning('Akses notulen ditolak', [
+                'user_id' => Auth::id(),
+                'ponpes_id' => $userPonpesId,
+                'notulen_id' => $notulenId
+            ]);
+            abort(403, 'Akses ditolak. Anda tidak memiliki izin untuk mengakses data ini.');
+        }
+
+        return $notulen;
+    }
+
     public function index(Request $request)
     {
-        // Ambil parameter pencarian dan filter
-        $search = $request->get('search');
-        $tanggal = $request->get('tanggal');
-        $pimpinan = $request->get('pimpinan');
+        try {
+            Log::info('Mengakses halaman notulen index', [
+                'user_id' => Auth::id(),
+                'ponpes_id' => $this->getUserPonpesId()
+            ]);
 
-        // Query dasar dengan join gambar
-        $query = Notulen::with(['user', 'gambar']);
+            $userPonpesId = $this->getUserPonpesId();
+
+        // Query dasar dengan proteksi ponpes_id
+        $query = Notulen::with(['user', 'gambar'])
+            ->where('ponpes_id', $userPonpesId);
 
         // Apply search filter
-        if ($search) {
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('agenda', 'like', "%{$search}%")
                     ->orWhere('peserta', 'like', "%{$search}%")
                     ->orWhere('tempat', 'like', "%{$search}%")
-                    ->orWhere('hasil', 'like', "%{$search}%");
+                    ->orWhere('hasil', 'like', "%{$search}%")
+                    ->orWhere('pimpinan', 'like', "%{$search}%");
             });
         }
 
         // Apply tanggal filter
-        if ($tanggal) {
-            $query->where('tanggal', $tanggal);
+        if ($request->has('tanggal') && $request->tanggal != '') {
+            $query->where('tanggal', $request->tanggal);
         }
 
         // Apply pimpinan filter
-        if ($pimpinan) {
-            $query->where('pimpinan', 'like', "%{$pimpinan}%");
+        if ($request->has('pimpinan') && $request->pimpinan != '') {
+            $query->where('pimpinan', 'like', "%{$request->pimpinan}%");
         }
 
         // Data untuk tabel dengan pagination
@@ -46,71 +83,110 @@ class NotulenController extends Controller
             ->orderBy('waktu', 'desc')
             ->paginate(10);
 
-        // Data untuk filter dropdown
-        $pimpinans = Notulen::distinct()->pluck('pimpinan')->filter();
-        $tanggalOptions = Notulen::distinct()->pluck('tanggal')->sortDesc();
+        // Data untuk filter dropdown (hanya data ponpes user)
+        $pimpinans = Notulen::where('ponpes_id', $userPonpesId)
+            ->distinct()
+            ->pluck('pimpinan')
+            ->filter();
 
-        $recentGambar = \App\Models\Gambar::with('notulen')
-            ->whereNotNull('id_notulen') // Hanya gambar yang punya relasi notulen
+        $tanggalOptions = Notulen::where('ponpes_id', $userPonpesId)
+            ->distinct()
+            ->pluck('tanggal')
+            ->sortDesc();
+
+        // Recent gambar dengan proteksi ponpes_id
+        $recentGambar = Gambar::with(['notulen' => function($query) use ($userPonpesId) {
+                $query->where('ponpes_id', $userPonpesId);
+            }])
+            ->whereHas('notulen', function($query) use ($userPonpesId) {
+                $query->where('ponpes_id', $userPonpesId);
+            })
+            ->whereNotNull('id_notulen')
             ->orderBy('created_at', 'desc')
             ->take(6)
             ->get();
 
-
-        // Data untuk statistik
-        $totalGambar = \App\Models\Gambar::whereNotNull('id_notulen')->count();
-        $rapatBulanIni = \App\Models\Notulen::whereMonth('tanggal', now()->month)->count();
-        $topPimpinan = \App\Models\Notulen::select('pimpinan')
-            ->groupBy('pimpinan')
-            ->orderByRaw('COUNT(*) DESC')
-            ->first();
-
-        $recentlyGambar = \App\Models\Gambar::with(['notulen' => function ($query) {
-            $query->select('id_notulen', 'agenda');
-        }])
+        // Data untuk statistik (hanya data ponpes user)
+        $totalGambar = Gambar::whereHas('notulen', function($query) use ($userPonpesId) {
+                $query->where('ponpes_id', $userPonpesId);
+            })
             ->whereNotNull('id_notulen')
-            ->whereNotNull('path_gambar') // Hanya yang punya gambar
-            ->orderBy('created_at', 'desc')
-            ->take(2)
-            ->get();
+            ->count();
 
-        // Data untuk statistik
-        $totalGambar = \App\Models\Gambar::whereNotNull('id_notulen')->whereNotNull('path_gambar')->count();
-        $rapatBulanIni = \App\Models\Notulen::whereMonth('tanggal', now()->month)->count();
-        $topPimpinan = \App\Models\Notulen::select('pimpinan')
+        $rapatBulanIni = Notulen::where('ponpes_id', $userPonpesId)
+            ->whereMonth('tanggal', now()->month)
+            ->count();
+
+        $topPimpinan = Notulen::where('ponpes_id', $userPonpesId)
+            ->select('pimpinan')
             ->groupBy('pimpinan')
             ->orderByRaw('COUNT(*) DESC')
             ->first();
 
-        // Recent activities
-        $recentActivities = \App\Models\Notulen::with('user')
+        // Recent activities dengan proteksi ponpes_id
+        $recentActivities = Notulen::with('user')
+            ->where('ponpes_id', $userPonpesId)
             ->orderBy('created_at', 'desc')
             ->take(4)
             ->get();
+
+        Log::info('Berhasil memuat data notulen', [
+            'user_id' => Auth::id(),
+            'total_notulen' => $notulen->total(),
+            'filters' => $request->all()
+        ]);
 
         return view('pages.notulensi', compact(
             'notulen',
             'pimpinans',
             'tanggalOptions',
-            'search',
-            'tanggal',
-            'pimpinan',
             'recentGambar',
-            'recentlyGambar',
             'totalGambar',
             'rapatBulanIni',
             'topPimpinan',
             'recentActivities'
         ));
+
+        } catch (\Exception $e) {
+            Log::error('Error pada notulen index', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memuat data notulen.');
+        }
     }
 
     public function create()
     {
-        return view('pages.action.create_notulensi');
+        try {
+            Log::info('Mengakses form create notulen', [
+                'user_id' => Auth::id(),
+                'ponpes_id' => $this->getUserPonpesId()
+            ]);
+
+            return view('pages.action.create_notulensi');
+        } catch (\Exception $e) {
+            Log::error('Error pada notulen create form', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('notulen.index')->with('error', 'Terjadi kesalahan saat memuat form tambah data.');
+        }
     }
 
     public function store(Request $request)
-    {
+{
+    try {
+        Log::info('Memproses store notulen', [
+            'user_id' => Auth::id(),
+            'ponpes_id' => $this->getUserPonpesId(),
+            'input_data' => $request->except(['_token', 'gambar'])
+        ]);
+
+        $userPonpesId = $this->getUserPonpesId();
+
         $request->validate([
             'agenda' => 'required|string|max:255',
             'pimpinan' => 'required|string|max:100',
@@ -123,7 +199,6 @@ class NotulenController extends Controller
             'keterangan' => 'nullable|string',
             'hasil' => 'required|array|min:1',
             'hasil.*' => 'required|string',
-            'ponpes_id' => 'nullable|string|max:64',
             'gambar.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048'
         ]);
 
@@ -131,10 +206,44 @@ class NotulenController extends Controller
         $pesertaString = implode(', ', array_filter($request->peserta));
         $hasilString = implode("\n", array_filter($request->hasil));
 
-        // Create notulen
-        $notulen = Notulen::create([
-            'ponpes_id' => $request->ponpes_id ?? auth()->user()->ponpes_id ?? null,
-            'user_id' => auth()->id(),
+        // 🔥 PERBAIKAN: Dapatkan user ID yang benar
+        $authUser = Auth::user();
+        
+        // Debug informasi user
+        Log::debug('User info', [
+            'auth_id' => Auth::id(),
+            'auth_user' => $authUser,
+            'user_attributes' => $authUser ? get_object_vars($authUser) : 'No user'
+        ]);
+
+        // Coba beberapa kemungkinan kolom ID
+        $userId = null;
+        if ($authUser) {
+            // Coba berbagai kemungkinan nama kolom ID
+            $userId = $authUser->id_user ?? $authUser->id ?? $authUser->user_id ?? null;
+            
+            // Jika masih null, coba dapatkan dari query
+            if (!$userId) {
+                $userFromDb = \App\Models\User::where('email', $authUser->email)->first();
+                $userId = $userFromDb ? ($userFromDb->id_user ?? $userFromDb->id) : null;
+            }
+        }
+
+        // Jika masih tidak dapat ID, gunakan fallback
+        if (!$userId) {
+            Log::warning('Tidak dapat menemukan user ID, menggunakan fallback', [
+                'email' => $authUser->email ?? 'Unknown'
+            ]);
+            // Fallback: cari user berdasarkan email
+            $fallbackUser = \App\Models\User::where('email', 'lembong@gmail.com')->first();
+            $userId = $fallbackUser ? $fallbackUser->id_user : 1; // Default ke 1 jika tidak ditemukan
+        }
+
+        Log::debug('Final user ID yang akan digunakan', ['user_id' => $userId]);
+
+        $notulenData = [
+            'ponpes_id' => $userPonpesId,
+            'user_id' => $userId, // 🔥 SEKARANG PASTI INTEGER
             'agenda' => $request->agenda,
             'pimpinan' => $request->pimpinan,
             'peserta' => $pesertaString,
@@ -144,7 +253,12 @@ class NotulenController extends Controller
             'waktu' => $request->waktu,
             'keterangan' => $request->keterangan,
             'hasil' => $hasilString
-        ]);
+        ];
+
+        Log::debug('Data notulen yang akan disimpan', $notulenData);
+
+        // Create notulen
+        $notulen = Notulen::create($notulenData);
 
         // Handle gambar upload
         if ($request->hasFile('gambar')) {
@@ -156,229 +270,390 @@ class NotulenController extends Controller
                     // Store file to storage
                     $path = $file->storeAs('notulensi', $filename, 'public');
 
-                    // DEBUG: Log storage info
-                    \Log::info('File stored:', [
-                        'storage_path' => storage_path('app/public/' . $path),
-                        'public_path' => public_path('storage/' . $path),
-                        'storage_exists' => file_exists(storage_path('app/public/' . $path)),
-                        'public_exists' => file_exists(public_path('storage/' . $path)),
-                        'asset_url' => asset('storage/' . $path)
-                    ]);
-
                     // Create gambar record
                     Gambar::create([
                         'id_notulen' => $notulen->id_notulen,
-                        'user_id' => auth()->id(),
+                        'user_id' => $userId, // 🔥 GUNAKAN INTEGER YANG SAMA
                         'path_gambar' => $path,
                         'keterangan' => 'Dokumentasi rapat: ' . $request->agenda
                     ]);
+
+                    Log::info('Gambar berhasil diupload', [
+                        'notulen_id' => $notulen->id_notulen,
+                        'filename' => $filename,
+                        'path' => $path
+                    ]);
+
                 } catch (\Exception $e) {
-                    \Log::error('Error storing image: ' . $e->getMessage());
+                    Log::error('Error storing image: ' . $e->getMessage(), [
+                        'notulen_id' => $notulen->id_notulen,
+                        'error' => $e->getMessage()
+                    ]);
                 }
             }
         }
 
-        return redirect()->route('notulen.index')
-            ->with('success', 'Notulen rapat berhasil disimpan!');
-    }
+        Log::info('Berhasil membuat notulen baru', [
+            'user_id' => $userId,
+            'notulen_id' => $notulen->id_notulen,
+            'agenda' => $notulen->agenda
+        ]);
 
+        return redirect()->route('notulen.index')
+            ->with('success', 'Notulen rapat <strong>' . $notulen->agenda . '</strong> berhasil disimpan!');
+
+    } catch (\Exception $e) {
+        Log::error('Error pada notulen store', [
+            'user_id' => Auth::id(),
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ]);
+        return redirect()->back()
+            ->with('error', 'Terjadi kesalahan saat menyimpan notulen.')
+            ->withInput();
+    }
+}
 
     public function show($id)
     {
-        $notulen = Notulen::with(['user', 'gambar'])->findOrFail($id);
+        try {
+            Log::info('Mengakses detail notulen', [
+                'user_id' => Auth::id(),
+                'notulen_id' => $id
+            ]);
 
-        return view('pages.action.show_notulensi', compact('notulen'));
+            // Cek kepemilikan data notulen
+            $notulen = $this->checkNotulenOwnership($id);
+            $notulen->load(['user', 'gambar']);
+
+            return view('pages.action.show_notulensi', compact('notulen'));
+
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            Log::warning('Akses tidak diizinkan untuk show notulen', [
+                'user_id' => Auth::id(),
+                'notulen_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('notulen.index')->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Error pada notulen show', [
+                'user_id' => Auth::id(),
+                'notulen_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('notulen.index')->with('error', 'Terjadi kesalahan saat memuat detail notulen.');
+        }
     }
 
     public function edit($id)
     {
-        $notulen = Notulen::with('gambar')->findOrFail($id);
+        try {
+            Log::info('Mengakses form edit notulen', [
+                'user_id' => Auth::id(),
+                'notulen_id' => $id
+            ]);
 
-        // Authorization check - hanya pembuat yang bisa edit
-        if ($notulen->user_id !== auth()->id()) {
-            abort(403, 'Anda tidak memiliki akses untuk mengedit notulen ini.');
+            // Cek kepemilikan data notulen
+            $notulen = $this->checkNotulenOwnership($id);
+            $notulen->load('gambar');
+
+            // Authorization check - hanya pembuat yang bisa edit
+            if ($notulen->user_id !== Auth::id()) {
+                Log::warning('User tidak diizinkan mengedit notulen', [
+                    'user_id' => Auth::id(),
+                    'notulen_user_id' => $notulen->user_id
+                ]);
+                abort(403, 'Anda tidak memiliki akses untuk mengedit notulen ini.');
+            }
+
+            return view('pages.action.edit_notulensi', compact('notulen'));
+
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            Log::warning('Akses tidak diizinkan untuk edit notulen', [
+                'user_id' => Auth::id(),
+                'notulen_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('notulen.index')->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Error pada notulen edit', [
+                'user_id' => Auth::id(),
+                'notulen_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('notulen.index')->with('error', 'Terjadi kesalahan saat memuat form edit.');
         }
-
-        return view('pages.action.edit_notulensi', compact('notulen'));
     }
 
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'agenda' => 'required|string|max:255',
-            'pimpinan' => 'required|string|max:100',
-            'peserta' => 'required|string',
-            'tempat' => 'required|string|max:150',
-            'alur_rapat' => 'required|string',
-            'tanggal' => 'required|date',
-            'waktu' => 'required',
-            'keterangan' => 'nullable|string',
-            'hasil' => 'required|string',
-            'gambar.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'hapus_gambar' => 'nullable|array',
-            'hapus_gambar.*' => 'integer'
-        ]);
+        try {
+            Log::info('Memproses update notulen', [
+                'user_id' => Auth::id(),
+                'notulen_id' => $id,
+                'input_data' => $request->except(['_token', '_method', 'gambar', 'hapus_gambar'])
+            ]);
 
-        $notulen = Notulen::findOrFail($id);
+            // Cek kepemilikan data notulen
+            $notulen = $this->checkNotulenOwnership($id);
 
-        // Authorization check
-        if ($notulen->user_id !== auth()->id()) {
-            abort(403, 'Anda tidak memiliki akses untuk mengedit notulen ini.');
-        }
+            // Authorization check
+            if ($notulen->user_id !== Auth::id()) {
+                Log::warning('User tidak diizinkan mengupdate notulen', [
+                    'user_id' => Auth::id(),
+                    'notulen_user_id' => $notulen->user_id
+                ]);
+                abort(403, 'Anda tidak memiliki akses untuk mengedit notulen ini.');
+            }
 
-        $notulen->update([
-            'agenda' => $request->agenda,
-            'pimpinan' => $request->pimpinan,
-            'peserta' => $request->peserta,
-            'tempat' => $request->tempat,
-            'alur_rapat' => $request->alur_rapat,
-            'tanggal' => $request->tanggal,
-            'waktu' => $request->waktu,
-            'keterangan' => $request->keterangan,
-            'hasil' => $request->hasil
-        ]);
+            $request->validate([
+                'agenda' => 'required|string|max:255',
+                'pimpinan' => 'required|string|max:100',
+                'peserta' => 'required|string',
+                'tempat' => 'required|string|max:150',
+                'alur_rapat' => 'required|string',
+                'tanggal' => 'required|date',
+                'waktu' => 'required',
+                'keterangan' => 'nullable|string',
+                'hasil' => 'required|string',
+                'gambar.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'hapus_gambar' => 'nullable|array',
+                'hapus_gambar.*' => 'integer'
+            ]);
 
-        // Handle hapus gambar
-        if ($request->has('hapus_gambar')) {
-            foreach ($request->hapus_gambar as $gambarId) {
-                $gambar = Gambar::where('id_gambar', $gambarId)
-                    ->where('id_notulen', $id)
-                    ->first();
+            $notulen->update([
+                'agenda' => $request->agenda,
+                'pimpinan' => $request->pimpinan,
+                'peserta' => $request->peserta,
+                'tempat' => $request->tempat,
+                'alur_rapat' => $request->alur_rapat,
+                'tanggal' => $request->tanggal,
+                'waktu' => $request->waktu,
+                'keterangan' => $request->keterangan,
+                'hasil' => $request->hasil
+            ]);
 
-                if ($gambar) {
-                    // Hapus file dari storage
-                    Storage::disk('public')->delete($gambar->path);
-                    // Hapus record dari database
-                    $gambar->delete();
+            // Handle hapus gambar
+            if ($request->has('hapus_gambar')) {
+                foreach ($request->hapus_gambar as $gambarId) {
+                    $gambar = Gambar::where('id_gambar', $gambarId)
+                        ->where('id_notulen', $id)
+                        ->first();
+
+                    if ($gambar) {
+                        // Hapus file dari storage
+                        if ($gambar->path_gambar) {
+                            Storage::disk('public')->delete($gambar->path_gambar);
+                        }
+                        // Hapus record dari database
+                        $gambar->delete();
+                        
+                        Log::info('Gambar berhasil dihapus', [
+                            'gambar_id' => $gambarId,
+                            'notulen_id' => $id
+                        ]);
+                    }
                 }
             }
-        }
 
-        // Handle tambah gambar baru
-        if ($request->hasFile('gambar')) {
-            foreach ($request->file('gambar') as $file) {
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('notulensi', $filename, 'public');
+            // Handle tambah gambar baru
+            if ($request->hasFile('gambar')) {
+                foreach ($request->file('gambar') as $file) {
+                    $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs('notulensi', $filename, 'public');
 
-                Gambar::create([
-                    'id_notulen' => $notulen->id_notulen,
-                    'user_id' => auth()->id(),
-                    'path_gambar' => $path,
-                    'keterangan' => 'Dokumentasi rapat: ' . $request->agenda
-                ]);
+                    Gambar::create([
+                        'id_notulen' => $notulen->id_notulen,
+                        'user_id' => Auth::id(),
+                        'path_gambar' => $path,
+                        'keterangan' => 'Dokumentasi rapat: ' . $request->agenda
+                    ]);
+
+                    Log::info('Gambar baru ditambahkan', [
+                        'notulen_id' => $notulen->id_notulen,
+                        'filename' => $filename
+                    ]);
+                }
             }
-        }
 
-        return redirect()->route('notulen.index')
-            ->with('success', 'Notulen rapat berhasil diperbarui!');
+            Log::info('Berhasil update notulen', [
+                'user_id' => Auth::id(),
+                'notulen_id' => $notulen->id_notulen,
+                'agenda' => $notulen->agenda
+            ]);
+
+            return redirect()->route('notulen.index')
+                ->with('success', 'Notulen rapat <strong>' . $notulen->agenda . '</strong> berhasil diperbarui!');
+
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            Log::warning('Akses tidak diizinkan untuk update notulen', [
+                'user_id' => Auth::id(),
+                'notulen_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('notulen.index')->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Error pada notulen update', [
+                'user_id' => Auth::id(),
+                'notulen_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat memperbarui notulen.')
+                ->withInput();
+        }
     }
 
     public function destroy($id)
-{
-    $notulen = Notulen::with('gambar')->findOrFail($id);
+    {
+        try {
+            Log::info('Memproses delete notulen', [
+                'user_id' => Auth::id(),
+                'notulen_id' => $id
+            ]);
 
-    // Authorization check - hanya pembuat yang bisa hapus
-    if ($notulen->user_id !== auth()->id()) {
-        abort(403, 'Anda tidak memiliki akses untuk menghapus notulen ini.');
-    }
+            // Cek kepemilikan data notulen
+            $notulen = $this->checkNotulenOwnership($id);
 
-    // Hapus semua gambar terkait - PERBAIKAN: cek path_gambar tidak null
-    foreach ($notulen->gambar as $gambar) {
-        if ($gambar->path_gambar) {
-            Storage::disk('public')->delete($gambar->path_gambar);
+            // Authorization check - hanya pembuat yang bisa hapus
+            if ($notulen->user_id !== Auth::id()) {
+                Log::warning('User tidak diizinkan menghapus notulen', [
+                    'user_id' => Auth::id(),
+                    'notulen_user_id' => $notulen->user_id
+                ]);
+                abort(403, 'Anda tidak memiliki akses untuk menghapus notulen ini.');
+            }
+
+            $notulenData = [
+                'id_notulen' => $notulen->id_notulen,
+                'agenda' => $notulen->agenda,
+                'user_id' => $notulen->user_id
+            ];
+
+            // Hapus semua gambar terkait
+            foreach ($notulen->gambar as $gambar) {
+                if ($gambar->path_gambar) {
+                    Storage::disk('public')->delete($gambar->path_gambar);
+                }
+                $gambar->delete();
+            }
+
+            $notulen->delete();
+
+            Log::info('Berhasil delete notulen', [
+                'user_id' => Auth::id(),
+                'deleted_notulen' => $notulenData
+            ]);
+
+            return redirect()->route('notulen.index')
+                ->with('success', 'Notulen rapat berhasil dihapus!');
+
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            Log::warning('Akses tidak diizinkan untuk delete notulen', [
+                'user_id' => Auth::id(),
+                'notulen_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('notulen.index')->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Error pada notulen delete', [
+                'user_id' => Auth::id(),
+                'notulen_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('notulen.index')->with('error', 'Terjadi kesalahan saat menghapus notulen.');
         }
-        $gambar->delete();
     }
-
-    $notulen->delete();
-
-    return redirect()->route('notulen.index')
-        ->with('success', 'Notulen rapat berhasil dihapus!');
-}
 
     // Method untuk menghapus gambar individual
     public function hapusGambar($id)
-{
-    $gambar = Gambar::findOrFail($id);
-
-    // Authorization check - hanya pemilik gambar yang bisa hapus
-    if ($gambar->user_id !== auth()->id()) {
-        abort(403, 'Anda tidak memiliki akses untuk menghapus gambar ini.');
-    }
-
-    // Hapus file dari storage - PERBAIKAN: cek path_gambar tidak null
-    if ($gambar->path_gambar) {
-        Storage::disk('public')->delete($gambar->path_gambar);
-    }
-
-    // Hapus record dari database
-    $gambar->delete();
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Gambar berhasil dihapus!'
-    ]);
-}
-
-    // Method untuk menambah gambar ke notulen yang sudah ada
-    public function tambahGambar(Request $request, $id)
     {
-        $request->validate([
-            'gambar.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048'
-        ]);
+        try {
+            Log::info('Memproses hapus gambar', [
+                'user_id' => Auth::id(),
+                'gambar_id' => $id
+            ]);
 
-        $notulen = Notulen::findOrFail($id);
+            $gambar = Gambar::findOrFail($id);
 
-        // Authorization check
-        if ($notulen->user_id !== auth()->id()) {
-            abort(403, 'Anda tidak memiliki akses untuk menambah gambar.');
-        }
-
-        if ($request->hasFile('gambar')) {
-            foreach ($request->file('gambar') as $file) {
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('notulensi', $filename, 'public');
-
-                Gambar::create([
-                    'id_notulen' => $notulen->id_notulen,
-                    'user_id' => auth()->id(),
-                    'nama_file' => $filename,
-                    'path' => $path,
-                    'jenis' => 'notulensi',
-                    'deskripsi' => 'Gambar untuk notulensi: ' . $notulen->agenda
+            // Authorization check - hanya pemilik gambar yang bisa hapus
+            if ($gambar->user_id !== Auth::id()) {
+                Log::warning('User tidak diizinkan menghapus gambar', [
+                    'user_id' => Auth::id(),
+                    'gambar_user_id' => $gambar->user_id
                 ]);
+                abort(403, 'Anda tidak memiliki akses untuk menghapus gambar ini.');
             }
-        }
 
-        return redirect()->back()
-            ->with('success', 'Gambar berhasil ditambahkan!');
+            $gambarData = [
+                'id_gambar' => $gambar->id_gambar,
+                'path_gambar' => $gambar->path_gambar
+            ];
+
+            // Hapus file dari storage
+            if ($gambar->path_gambar) {
+                Storage::disk('public')->delete($gambar->path_gambar);
+            }
+
+            // Hapus record dari database
+            $gambar->delete();
+
+            Log::info('Berhasil hapus gambar', [
+                'user_id' => Auth::id(),
+                'deleted_gambar' => $gambarData
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Gambar berhasil dihapus!'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error pada hapus gambar', [
+                'user_id' => Auth::id(),
+                'gambar_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus gambar.'
+            ], 500);
+        }
     }
 
     // Quick stats untuk dashboard
     public function getStats()
     {
-        $totalNotulen = Notulen::count();
-        $notulenBulanIni = Notulen::whereMonth('tanggal', now()->month)->count();
-        $notulenMingguIni = Notulen::whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()])->count();
+        try {
+            $userPonpesId = $this->getUserPonpesId();
 
-        return response()->json([
-            'total_notulen' => $totalNotulen,
-            'notulen_bulan_ini' => $notulenBulanIni,
-            'notulen_minggu_ini' => $notulenMingguIni
-        ]);
-    }
+            $totalNotulen = Notulen::where('ponpes_id', $userPonpesId)->count();
+            $notulenBulanIni = Notulen::where('ponpes_id', $userPonpesId)
+                ->whereMonth('tanggal', now()->month)
+                ->count();
+            $notulenMingguIni = Notulen::where('ponpes_id', $userPonpesId)
+                ->whereBetween('tanggal', [now()->startOfWeek(), now()->endOfWeek()])
+                ->count();
 
-    // Export notulen
-    public function export($id)
-    {
-        $notulen = Notulen::with(['user', 'gambar'])->findOrFail($id);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_notulen' => $totalNotulen,
+                    'notulen_bulan_ini' => $notulenBulanIni,
+                    'notulen_minggu_ini' => $notulenMingguIni
+                ]
+            ]);
 
-        // Logic untuk export PDF
-        // Bisa menggunakan DomPDF atau library lainnya
-
-        return response()->json([
-            'message' => 'Export PDF feature will be implemented',
-            'data' => $notulen
-        ]);
+        } catch (\Exception $e) {
+            Log::error('Error pada getStats notulen', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengambil statistik.'
+            ], 500);
+        }
     }
 }
