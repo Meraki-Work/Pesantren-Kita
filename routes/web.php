@@ -138,9 +138,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/keuangan', [KeuanganController::class, 'index'])->name('keuangan.index');
     Route::get('/keuangan/create', [KeuanganController::class, 'create'])->name('keuangan.create');
     Route::post('/keuangan', [KeuanganController::class, 'store'])->name('keuangan.store');
-    Route::get('/keuangan/{id}/edit', [KeuanganController::class, 'edit'])->name('keuangan.edit');
-    Route::put('/keuangan/{id}', [KeuanganController::class, 'update'])->name('keuangan.update');
-    Route::delete('/keuangan/{id}', [KeuanganController::class, 'destroy'])->name('keuangan.destroy');
+    Route::get('/keuangan/{keuangan}/edit', [KeuanganController::class, 'edit'])->name('keuangan.edit');
+    Route::put('/keuangan/{keuangan}', [KeuanganController::class, 'update'])->name('keuangan.update');
+    Route::delete('/keuangan/{keuangan}', [KeuanganController::class, 'destroy'])->name('keuangan.destroy');
 
     // Cash Routes
     Route::get('/cash', [CashController::class, 'index'])->name('cash');

@@ -120,7 +120,13 @@
                         </div>
                     </div>
                     <div class="flex gap-4 mt-4">
-                        <div class="w-full">@include('pages.modal.create_kelas')</div>
+                        <div class="w-full">
+                            <a href="{{ route('kelas.index') }}"
+                                class="w-full block text-center bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200">
+                                Tambah Santri
+                            </a>
+                        </div>
+
                         <div class="w-full">@include('pages.modal.create_santri')</div>
                     </div>
 

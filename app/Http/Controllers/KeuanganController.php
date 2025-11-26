@@ -74,18 +74,14 @@ class KeuanganController extends Controller
             $userPonpesId = $this->getUserPonpesId();
             $filter = $request->get('filter', '1-tahun');
 
-            // ==========================
-            // 🔹 QUERY UNTUK CHART (dengan filter ponpes_id)
-            // ==========================
+            // Query untuk CHART
             $chartQuery = Keuangan::with(['kategori', 'user'])
                 ->where('ponpes_id', $userPonpesId);
                 
             $chartQuery = $this->applyDateFilter($chartQuery, $filter);
             $data = $chartQuery->orderBy('tanggal', 'asc')->get();
 
-            // ==========================
-            // 🔹 QUERY UNTUK TABEL (dengan filter ponpes_id)
-            // ==========================
+            // Query untuk TABEL
             $tableQuery = Keuangan::with(['kategori', 'user'])
                 ->where('ponpes_id', $userPonpesId);
 
@@ -94,7 +90,7 @@ class KeuanganController extends Controller
             $columns = ['User', 'Jumlah', 'Kategori', 'Sumber Dana', 'Tanggal', 'Status'];
             $rows = $tableData->map(function ($item) {
                 return [
-                    'id' => $item->id_keuangan,
+                    'id' => $item->id_keuangan, // Pastikan ini id_keuangan
                     'user' => $item->user->username ?? 'Tidak ada user',
                     'jumlah' => 'Rp ' . number_format($item->jumlah, 0, ',', '.') . ',00',
                     'jumlah_raw' => $item->jumlah,
@@ -109,9 +105,7 @@ class KeuanganController extends Controller
                 ];
             })->toArray();
 
-            // ==========================
-            // 🔹 Data untuk chart kategori (PIE CHART) - dari data filtered
-            // ==========================
+            // Data untuk chart kategori (PIE CHART)
             $grouped = $data->groupBy(function ($item) {
                 return $item->kategori->nama_kategori ?? 'Tidak ada kategori';
             })->map(function ($items) {
@@ -125,9 +119,7 @@ class KeuanganController extends Controller
             $values = $grouped->pluck('total')->toArray();
             $sumber_dana = $grouped->pluck('sumber_dana')->toArray();
 
-            // ==========================
-            // 🔹 Data untuk CASH FLOW CHART (LINE CHART) - dari data filtered
-            // ==========================
+            // Data untuk CASH FLOW CHART (LINE CHART)
             $dates = $data->pluck('tanggal')
                 ->filter()
                 ->map(fn($t) => Carbon::parse($t)->format('Y-m-d'))
@@ -137,7 +129,7 @@ class KeuanganController extends Controller
                 ->toArray();
 
             $dailyFlow = [];
-            $total = 0; // Mulai dari saldo 0
+            $total = 0;
 
             foreach ($dates as $tanggal) {
                 $transactions = $data->filter(
@@ -148,14 +140,13 @@ class KeuanganController extends Controller
                 $masuk = $transactions->where('status', 'Masuk')->sum('jumlah');
                 $keluar = $transactions->where('status', 'Keluar')->sum('jumlah');
 
-                // Akumulasi: saldo_hari_ini = saldo_kemarin + (pemasukan - pengeluaran)
                 $total += ($masuk - $keluar);
                 $dailyFlow[] = $total;
             }
 
             $saldo_terakhir = !empty($dailyFlow) ? end($dailyFlow) : 0;
 
-            // Hitung total untuk cards - dari data filtered
+            // Hitung total untuk cards
             $totalPemasukan = $data->where('status', 'Masuk')->sum('jumlah');
             $totalPengeluaran = $data->where('status', 'Keluar')->sum('jumlah');
             $saldo = $totalPemasukan - $totalPengeluaran;
@@ -178,7 +169,6 @@ class KeuanganController extends Controller
             ));
 
         } catch (\Exception $e) {
-            // Hapus logging untuk sementara
             return redirect()->back()->with('error', 'Terjadi kesalahan saat memuat data keuangan.');
         }
     }
@@ -188,10 +178,9 @@ class KeuanganController extends Controller
         try {
             $userPonpesId = $this->getUserPonpesId();
             
-            // Hanya ambil kategori yang milik ponpes user
             $kategories = Kategori::where('ponpes_id', $userPonpesId)->get();
             
-            return view('pages.keuangan-create', compact('kategories'));
+            return view('pages.action.create_keuangan', compact('kategories'));
 
         } catch (\Exception $e) {
             return redirect()->route('keuangan.index')->with('error', 'Terjadi kesalahan saat memuat form tambah data.');
@@ -204,7 +193,7 @@ class KeuanganController extends Controller
             $user = Auth::user();
             $userPonpesId = $this->getUserPonpesId();
 
-            // Validasi bahwa kategori yang dipilih milik ponpes user
+            // Validasi kategori
             $validKategori = Kategori::where('id_kategori', $request->id_kategori)
                 ->where('ponpes_id', $userPonpesId)
                 ->exists();
@@ -248,22 +237,29 @@ class KeuanganController extends Controller
     public function edit($id)
     {
         try {
+            \Log::info('Edit method called with ID: ' . $id); // Debug log
+            
             $userPonpesId = $this->getUserPonpesId();
             
-            // Cek kepemilikan data keuangan
-            $keuangan = $this->checkKeuanganOwnership($id);
+            // Cek kepemilikan data keuangan - PERBAIKAN DI SINI
+            $keuangan = Keuangan::where('id_keuangan', $id)
+                ->where('ponpes_id', $userPonpesId)
+                ->firstOrFail();
+            
             $keuangan->load('kategori');
             
             // Hanya ambil kategori yang milik ponpes user
             $kategories = Kategori::where('ponpes_id', $userPonpesId)->get();
             
-            return view('pages.keuangan-edit', compact('keuangan', 'kategories'));
+            \Log::info('Keuangan found: ' . $keuangan->id_keuangan); // Debug log
+            
+            return view('pages.action.edit_keuangan', compact('keuangan', 'kategories'));
 
-        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
-            return redirect()->route('keuangan.index')->with('error', $e->getMessage());
         } catch (ModelNotFoundException $e) {
+            \Log::error('Keuangan not found: ' . $id);
             return redirect()->route('keuangan.index')->with('error', 'Data keuangan tidak ditemukan.');
         } catch (\Exception $e) {
+            \Log::error('Error in edit method: ' . $e->getMessage());
             return redirect()->route('keuangan.index')->with('error', 'Terjadi kesalahan saat memuat form edit.');
         }
     }
@@ -271,10 +267,14 @@ class KeuanganController extends Controller
     public function update(Request $request, $id)
     {
         try {
+            \Log::info('Update method called with ID: ' . $id); // Debug log
+            
             $userPonpesId = $this->getUserPonpesId();
 
-            // Cek kepemilikan data keuangan
-            $keuangan = $this->checkKeuanganOwnership($id);
+            // Cek kepemilikan data keuangan - PERBAIKAN DI SINI
+            $keuangan = Keuangan::where('id_keuangan', $id)
+                ->where('ponpes_id', $userPonpesId)
+                ->firstOrFail();
 
             // Validasi bahwa kategori yang dipilih milik ponpes user
             $validKategori = Kategori::where('id_kategori', $request->id_kategori)
@@ -308,13 +308,13 @@ class KeuanganController extends Controller
 
             return redirect()->route('keuangan.index')->with('success', 'Data keuangan berhasil diperbarui!');
 
-        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
-            return redirect()->route('keuangan.index')->with('error', $e->getMessage());
+        } catch (ModelNotFoundException $e) {
+            \Log::error('Keuangan not found for update: ' . $id);
+            return redirect()->route('keuangan.index')->with('error', 'Data keuangan tidak ditemukan.');
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
-        } catch (ModelNotFoundException $e) {
-            return redirect()->route('keuangan.index')->with('error', 'Data keuangan tidak ditemukan.');
         } catch (\Exception $e) {
+            \Log::error('Error in update method: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Terjadi kesalahan saat memperbarui data keuangan.')->withInput();
         }
     }
@@ -322,18 +322,22 @@ class KeuanganController extends Controller
     public function destroy($id)
     {
         try {
-            // Cek kepemilikan data keuangan
-            $keuangan = $this->checkKeuanganOwnership($id);
+            \Log::info('Delete method called with ID: ' . $id); // Debug log
+            
+            // Cek kepemilikan data keuangan - PERBAIKAN DI SINI
+            $keuangan = Keuangan::where('id_keuangan', $id)
+                ->where('ponpes_id', Auth::user()->ponpes_id)
+                ->firstOrFail();
             
             $keuangan->delete();
 
             return redirect()->route('keuangan.index')->with('success', 'Data keuangan berhasil dihapus!');
 
-        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
-            return redirect()->route('keuangan.index')->with('error', $e->getMessage());
         } catch (ModelNotFoundException $e) {
+            \Log::error('Keuangan not found for delete: ' . $id);
             return redirect()->route('keuangan.index')->with('error', 'Data keuangan tidak ditemukan.');
         } catch (\Exception $e) {
+            \Log::error('Error in delete method: ' . $e->getMessage());
             return redirect()->route('keuangan.index')->with('error', 'Terjadi kesalahan saat menghapus data keuangan.');
         }
     }

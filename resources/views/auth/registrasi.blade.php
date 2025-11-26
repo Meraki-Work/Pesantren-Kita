@@ -1,41 +1,14 @@
-<!DOCTYPE html>
-<html lang="id">
+@extends('index')
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registrasi - PesantrenKita</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-    }
+@section('title', 'Registrasi Pengguna')
 
-    .input-custom {
-      font-family: 'Poppins';
-      font-size: 15px;
-    }
-
-    .ponpes-option {
-      display: none;
-    }
-
-    .ponpes-option.active {
-      display: block;
-    }
-  </style>
-</head>
+@section('content')
 
 <body class="min-h-screen flex items-center justify-center relative">
-  dd($ponpesList);
-
   <!-- Background gambar -->
   <div class="absolute inset-0 bg-cover bg-center"
     style="background-image: url('{{ asset('asset/masjid-hd-pc.jpg') }}');">
   </div>
-
 
   <!-- Overlay gelap -->
   <div class="absolute inset-0 bg-black/30"></div>
@@ -48,13 +21,6 @@
     $inputClass = 'w-full h-[45px] pl-3 pr-10 text-sm placeholder:text-sm bg-gray-100
     border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500';
     @endphp
-
-    {{-- ✅ DEBUG: Cek variable ponpesList --}}
-    <div class="hidden">
-      ponpesList exists: {{ isset($ponpesList) ? 'YES' : 'NO' }}<br>
-      ponpesList count: {{ isset($ponpesList) ? $ponpesList->count() : '0' }}<br>
-      ponpesList type: {{ isset($ponpesList) ? get_class($ponpesList) : 'N/A' }}
-    </div>
 
     {{-- Tampilkan pesan sukses --}}
     @if(session('success'))
@@ -74,7 +40,7 @@
     </div>
     @endif
 
-    <form method="POST" action="{{ route('register.store') }}" class="grid md:grid-cols-2 gap-6">
+    <form method="POST" action="{{ route('register.store') }}" class="grid md:grid-cols-2 gap-6" id="registrationForm">
       @csrf
 
       {{-- Kolom kiri --}}
@@ -147,12 +113,12 @@
                 Masukkan ID Pondok Pesantren yang valid
               </label>
               <input type="text"
-                name="manual_ponpes_id" 
-              id="manual_ponpes_id"
-placeholder="Contoh: a1b2c3d4e5f6g7h8i9j0"
-              value="{{ old('manual_ponpes_id') }}"
-              class="{{ $inputClass }}"
-              onkeyup="checkPonpesId(this.value)">
+                name="manual_ponpes_id"
+                id="manual_ponpes_id"
+                placeholder="Contoh: a1b2c3d4e5f6g7h8i9j0"
+                value="{{ old('manual_ponpes_id') }}"
+                class="{{ $inputClass }}"
+                onkeyup="checkPonpesId(this.value)">
               <div id="ponpes-validation" class="text-xs mt-1"></div>
             </div>
             <i class="fa-solid fa-key absolute right-3 top-20 text-gray-500"></i>
@@ -185,9 +151,22 @@ placeholder="Contoh: a1b2c3d4e5f6g7h8i9j0"
 
         {{-- Tombol --}}
         <div class="md:col-span-2 flex flex-col items-center gap-4 mt-6">
-          <button type="submit"
-            class="w-full md:w-[300px] bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg transition duration-300 font-semibold">
-            Registrasi
+          <button
+            type="submit"
+            id="submitButton"
+            class="relative w-full md:w-[300px] bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg transition duration-300 font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed">
+            <span class="button-text">Registrasi</span>
+
+            <!-- Spinner default hidden -->
+            <div class="loading-spinner hidden absolute inset-0 flex items-center justify-center">
+              <svg class="animate-spin h-6 w-6 text-white" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
+                </path>
+              </svg>
+              <span class="ml-2">Memproses...</span>
+            </div>
           </button>
 
           {{-- Link ke halaman login --}}
@@ -202,18 +181,51 @@ placeholder="Contoh: a1b2c3d4e5f6g7h8i9j0"
   </div>
 
   <script>
+    // =====================
+    // STATE
+    // =====================
+    let isSubmitting = false;
+
+    // =====================
+    // SHOW / HIDE LOADING
+    // =====================
+    function showLoading() {
+      const submitButton = document.getElementById('submitButton');
+      const buttonText = submitButton.querySelector('.button-text');
+      const loadingSpinner = submitButton.querySelector('.loading-spinner');
+
+      buttonText.style.display = 'none';
+      loadingSpinner.classList.remove('hidden');
+      submitButton.disabled = true;
+    }
+
+    function hideLoading() {
+      const submitButton = document.getElementById('submitButton');
+      const buttonText = submitButton.querySelector('.button-text');
+      const loadingSpinner = submitButton.querySelector('.loading-spinner');
+
+      buttonText.style.display = 'inline';
+      loadingSpinner.classList.add('hidden');
+      submitButton.disabled = false;
+    }
+
+    // =====================
+    // PASSWORD TOGGLE
+    // =====================
     function togglePassword(id, el) {
       const input = document.getElementById(id);
-      const icon = el;
       if (input.type === "password") {
         input.type = "text";
-        icon.classList.replace("fa-eye", "fa-eye-slash");
+        el.classList.replace("fa-eye", "fa-eye-slash");
       } else {
         input.type = "password";
-        icon.classList.replace("fa-eye-slash", "fa-eye");
+        el.classList.replace("fa-eye-slash", "fa-eye");
       }
     }
 
+    // =====================
+    // TOGGLE PONPES OPTION
+    // =====================
     function togglePonpesOptions() {
       const existingOption = document.getElementById('existing-ponpes');
       const newOption = document.getElementById('new-ponpes');
@@ -222,132 +234,163 @@ placeholder="Contoh: a1b2c3d4e5f6g7h8i9j0"
       if (existingRadio.checked) {
         existingOption.classList.add('active');
         newOption.classList.remove('active');
+
+        document.getElementById('manual_ponpes_id').disabled = false;
+        document.querySelector('input[name="new_ponpes_name"]').disabled = true;
+
+        document.querySelector('input[name="new_ponpes_name"]').value = '';
       } else {
         existingOption.classList.remove('active');
         newOption.classList.add('active');
+
+        document.getElementById('manual_ponpes_id').disabled = true;
+        document.querySelector('input[name="new_ponpes_name"]').disabled = false;
+
+        document.getElementById('manual_ponpes_id').value = '';
+        document.getElementById('ponpes-validation').innerHTML = '';
       }
     }
 
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', function() {
-      togglePonpesOptions();
-    });
+    // =====================
+    // VALIDASI PONPES ID REALTIME
+    // =====================
+    function checkPonpesId(ponpesId) {
+      const validationDiv = document.getElementById('ponpes-validation');
 
-    // Validasi konfirmasi password
-    document.querySelector('form').addEventListener('submit', function(e) {
+      if (ponpesId.length < 5) {
+        validationDiv.innerHTML = '';
+        return;
+      }
+
+      clearTimeout(window.ponpesCheckTimeout);
+      window.ponpesCheckTimeout = setTimeout(() => {
+        fetch('/check-ponpes-id', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+              ponpes_id: ponpesId
+            })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.valid) {
+              validationDiv.innerHTML = `<span class="text-green-600">${data.message} - ${data.nama_ponpes}</span>`;
+            } else {
+              validationDiv.innerHTML = `<span class="text-red-600">${data.message}</span>`;
+            }
+          })
+          .catch(() => {
+            validationDiv.innerHTML = '<span class="text-yellow-600">⚠️ Gagal memverifikasi ID</span>';
+          });
+      }, 500);
+    }
+
+    // =====================
+    // VALIDASI FORM
+    // =====================
+    function validateForm() {
       const password = document.getElementById('password').value;
       const confirmPassword = document.getElementById('password_confirmation').value;
 
       if (password !== confirmPassword) {
-        e.preventDefault();
         alert('Konfirmasi kata sandi tidak sesuai!');
         document.getElementById('password_confirmation').focus();
+        return false;
       }
-    });
-  </script>
-<script>
-// Validasi sebelum submit form
-document.querySelector('form').addEventListener('submit', function(e) {
-    const ponpesOption = document.querySelector('input[name="ponpes_option"]:checked').value;
-    
-    // ✅ HAPUS FIELD YANG TIDAK DIGUNAKAN SEBELUM SUBMIT
-    if (ponpesOption === 'existing') {
-        const newPonpesField = document.querySelector('input[name="new_ponpes_name"]');
-        if (newPonpesField) {
-            newPonpesField.disabled = true; // Non-aktifkan field yang tidak digunakan
-        }
-        
+
+      const ponpesOption = document.querySelector('input[name="ponpes_option"]:checked');
+      if (!ponpesOption) {
+        alert('Silakan pilih opsi Pondok Pesantren!');
+        return false;
+      }
+
+      if (ponpesOption.value === 'existing') {
         const manualId = document.getElementById('manual_ponpes_id').value.trim();
         if (!manualId) {
-            e.preventDefault();
-            alert('Silakan masukkan ID Pondok Pesantren yang valid.');
-            document.getElementById('manual_ponpes_id').focus();
-            return;
+          alert('Silakan masukkan ID Pondok Pesantren yang valid.');
+          return false;
         }
-    } else {
-        const manualIdField = document.getElementById('manual_ponpes_id');
-        if (manualIdField) {
-            manualIdField.disabled = true; // Non-aktifkan field yang tidak digunakan
-        }
-        
+      } else {
         const newName = document.querySelector('input[name="new_ponpes_name"]').value.trim();
         if (!newName) {
-            e.preventDefault();
-            alert('Silakan masukkan nama Pondok Pesantren baru.');
-            document.querySelector('input[name="new_ponpes_name"]').focus();
-            return;
+          alert('Silakan masukkan nama Pondok Pesantren baru.');
+          return false;
         }
-    }
-});
+      }
 
-function togglePonpesOptions() {
-    const existingOption = document.getElementById('existing-ponpes');
-    const newOption = document.getElementById('new-ponpes');
-    const existingRadio = document.querySelector('input[name="ponpes_option"][value="existing"]');
-    
-    if (existingRadio.checked) {
-        existingOption.classList.add('active');
-        newOption.classList.remove('active');
-        
-        // ✅ ENABLE/DISABLE FIELDS
-        document.getElementById('manual_ponpes_id').disabled = false;
-        document.querySelector('input[name="new_ponpes_name"]').disabled = true;
-        
-        // Clear new ponpes name ketika pilih existing
-        document.querySelector('input[name="new_ponpes_name"]').value = '';
-    } else {
-        existingOption.classList.remove('active');
-        newOption.classList.add('active');
-        
-        // ✅ ENABLE/DISABLE FIELDS
-        document.getElementById('manual_ponpes_id').disabled = true;
-        document.querySelector('input[name="new_ponpes_name"]').disabled = false;
-        
-        // Clear manual ponpes id ketika pilih new
-        document.getElementById('manual_ponpes_id').value = '';
-        document.getElementById('ponpes-validation').innerHTML = '';
+      return true;
     }
-}
 
-// Real-time validation untuk ID Ponpes
-function checkPonpesId(ponpesId) {
-    const validationDiv = document.getElementById('ponpes-validation');
-    
-    if (ponpesId.length < 5) {
-        validationDiv.innerHTML = '';
+    // =====================
+    // HANDLE FORM SUBMIT
+    // =====================
+    document.getElementById('registrationForm').addEventListener('submit', function(e) {
+      const submitButton = document.getElementById('submitButton');
+
+      // Cegah double submit
+      if (isSubmitting) {
+        e.preventDefault();
         return;
-    }
-    
-    // Debounce untuk mengurangi request
-    clearTimeout(window.ponpesCheckTimeout);
-    window.ponpesCheckTimeout = setTimeout(() => {
-        fetch('/check-ponpes-id', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({ ponpes_id: ponpesId })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.valid) {
-                validationDiv.innerHTML = `<span class="text-green-600">${data.message} - ${data.nama_ponpes}</span>`;
-            } else {
-                validationDiv.innerHTML = `<span class="text-red-600">${data.message}</span>`;
-            }
-        })
-        .catch(error => {
-            validationDiv.innerHTML = '<span class="text-yellow-600">⚠️ Gagal memverifikasi ID</span>';
-        });
-    }, 500);
-}
+      }
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    togglePonpesOptions();
-});
-</script>
+      isSubmitting = true;
+
+      // Disable tombol langsung
+      submitButton.disabled = true;
+      submitButton.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+
+      // Tampilkan loading
+      showLoading();
+
+      // Stop submit sementara → lakukan validasi dulu
+      e.preventDefault();
+
+      if (!validateForm()) {
+        hideLoading();
+        submitButton.disabled = false;
+        submitButton.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+        isSubmitting = false;
+        return;
+      }
+
+      // Hapus input sesuai pilihan ponpes
+      const option = document.querySelector('input[name="ponpes_option"]:checked');
+      if (option.value === 'existing') {
+        document.querySelector('input[name="new_ponpes_name"]').disabled = true;
+      } else {
+        document.getElementById('manual_ponpes_id').disabled = true;
+      }
+
+      // Submit form secara manual (tidak akan masuk submit event lagi)
+      this.submit();
+
+      // Fallback jika server lama tidak respon
+      setTimeout(() => {
+        if (isSubmitting) {
+          hideLoading();
+          alert('Terjadi masalah. Silakan coba lagi.');
+          submitButton.disabled = false;
+          submitButton.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+          isSubmitting = false;
+        }
+      }, 10000);
+    });
+
+    // =====================
+    // ON PAGE LOAD
+    // =====================
+    document.addEventListener('DOMContentLoaded', () => {
+      togglePonpesOptions();
+      hideLoading();
+    });
+
+    // Reset state jika user keluar halaman
+    window.addEventListener('beforeunload', hideLoading);
+  </script>
+
 
 </body>
 

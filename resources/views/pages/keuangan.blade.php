@@ -73,12 +73,12 @@
             <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 @if ($count === 0)
                 {{-- Jika kosong total --}}
-                @for ($i = 0; $i < 4; $i++)
+                @for ($i = 0; $i < 1; $i++)
                     <div class="flex flex-col rounded-xl box-bg p-4 hover:shadow-md transition">
                     <div class="flex justify-between items-center">
-                        <label class="text-lg sm:text-xl lg:text-2xl">-</label>
+                        <label class="text-lg sm:text-xl lg:text-sm">Ups Keuangan Kosong</label>
                         <button class="circle-add flex justify-center items-center">
-                            <a href="#">
+                            <a href="{{ route('kategori.create')}}">
                                 <svg xmlns="http://www.w3.org/2000/svg" height="24px"
                                     viewBox="0 -960 960 960" width="24px" fill="#fdfdfd">
                                     <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z" />
@@ -114,7 +114,7 @@
                 <div class="flex justify-between items-center">
                     <label class="text-lg sm:text-xl lg:text-2xl">-</label>
                     <button class="circle-add flex justify-center items-center">
-                        <a href="#">
+                        <a href="{{ route('kategori.create')}}">
                             <svg xmlns="http://www.w3.org/2000/svg" height="24px"
                                 viewBox="0 -960 960 960" width="24px" fill="#fdfdfd">
                                 <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z" />
@@ -321,8 +321,8 @@
         const ctxPolar = document.getElementById('polarCanvas');
         if (ctxPolar) {
             // Gunakan data real jika ada, otherwise use dummy data
-            const polarLabels = chartData.labels && chartData.labels.length > 0 ? chartData.labels : ['Pendidikan', 'Aset', 'Inventaris', 'Katering'];
-            const polarData = chartData.values && chartData.values.length > 0 ? chartData.values : [20, 25, 30, 25];
+            const polarLabels = chartData.labels && chartData.labels.length > 0 ? chartData.labels : ['', '', '', ''];
+            const polarData = chartData.values && chartData.values.length > 0 ? chartData.values : [];
             
             new Chart(ctxPolar, {
                 type: 'polarArea',

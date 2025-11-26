@@ -14,12 +14,16 @@
                 <h1 class="text-2xl font-bold text-gray-800">Data Kategori</h1>
                 <p class="text-gray-600">Kelola kategori keuangan ponpes Anda</p>
             </div>
+            
+            <!-- Tombol Tambah Kategori - Hanya tampil ketika ada data -->
+            @if($kategories->count() > 0)
             <a href="{{ route('kategori.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center transition duration-200">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
                 Tambah Kategori
             </a>
+            @endif
         </div>
 
         <!-- Alert Messages -->
@@ -81,6 +85,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
+                                    <!-- Edit Button -->
                                     <a href="{{ route('kategori.edit', $kategori->id_kategori) }}" 
                                        class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 px-3 py-1 rounded-md flex items-center transition duration-200">
                                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,12 +93,16 @@
                                         </svg>
                                         Edit
                                     </a>
+                                    
+                                    <!-- Delete Button -->
                                     <form action="{{ route('kategori.destroy', $kategori->id_kategori) }}" 
                                           method="POST" 
-                                          onsubmit="return confirm('Apakah Anda yakin ingin menghapus kategori {{ $kategori->nama_kategori }}?')">
+                                          class="delete-form">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded-md flex items-center transition duration-200">
+                                        <button type="submit" 
+                                                class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded-md flex items-center transition duration-200"
+                                                data-kategori-name="{{ $kategori->nama_kategori }}">
                                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                             </svg>
@@ -147,7 +156,7 @@
             @endif
         </div>
 
-        <!-- Stats Cards -->
+        <!-- Stats Cards - Hanya tampil ketika ada data -->
         @if($kategories->count() > 0)
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
             <div class="bg-white rounded-lg shadow-md p-6">
@@ -207,12 +216,14 @@
 <script>
     // Sweet alert untuk konfirmasi delete
     document.addEventListener('DOMContentLoaded', function() {
-        const deleteForms = document.querySelectorAll('form[onsubmit]');
+        const deleteForms = document.querySelectorAll('.delete-form');
         
         deleteForms.forEach(form => {
-            form.onsubmit = function(e) {
+            form.addEventListener('submit', function(e) {
                 e.preventDefault();
-                const kategoriName = this.closest('tr').querySelector('.text-gray-900').textContent;
+                
+                const button = this.querySelector('button[type="submit"]');
+                const kategoriName = button.getAttribute('data-kategori-name');
                 
                 Swal.fire({
                     title: 'Hapus Kategori?',
@@ -222,14 +233,70 @@
                     confirmButtonColor: '#d33',
                     cancelButtonColor: '#3085d6',
                     confirmButtonText: 'Ya, Hapus!',
-                    cancelButtonText: 'Batal'
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true
                 }).then((result) => {
                     if (result.isConfirmed) {
+                        // Tampilkan loading state
+                        button.disabled = true;
+                        button.innerHTML = `
+                            <svg class="animate-spin w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v4m0 12v4m8-10h-4M6 12H2"></path>
+                            </svg>
+                            Menghapus...
+                        `;
+                        
+                        // Submit form
                         this.submit();
                     }
                 });
-            };
+            });
+        });
+    });
+
+    // Fallback confirmation jika SweetAlert tidak tersedia
+    document.addEventListener('DOMContentLoaded', function() {
+        const deleteForms = document.querySelectorAll('.delete-form');
+        
+        deleteForms.forEach(form => {
+            // Hapus event listener default jika SweetAlert tersedia
+            if (typeof Swal !== 'undefined') {
+                return;
+            }
+            
+            // Fallback ke confirm default
+            form.addEventListener('submit', function(e) {
+                const button = this.querySelector('button[type="submit"]');
+                const kategoriName = button.getAttribute('data-kategori-name');
+                
+                if (!confirm(`Apakah Anda yakin ingin menghapus kategori "${kategoriName}"?`)) {
+                    e.preventDefault();
+                }
+            });
         });
     });
 </script>
+
+<style>
+    /* Animasi untuk loading spinner */
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+    
+    /* Hover effects untuk tombol aksi */
+    .bg-yellow-100:hover, .bg-red-100:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Transition untuk semua elemen interaktif */
+    a, button {
+        transition: all 0.2s ease-in-out;
+    }
+</style>
 @endsection
