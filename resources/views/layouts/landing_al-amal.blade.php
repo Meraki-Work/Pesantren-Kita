@@ -21,16 +21,26 @@
     <x-al-amal.navbar />
 
     {{-- CAROUSEL --}}
-    <x-al-amal.carousel />
+    <x-al-amal.carousel :carousels="$carousels"/>
+
+    {{-- ABOUT --}}
+    <section id="about" class="bg-[#344E41] text-white text-center py-16 px-4">
+        <h2 class="text-2xl md:text-3xl font-semibold mb-4">PesantrenKita</h2>
+        <p class="max-w-3xl mx-auto leading-relaxed text-gray-200">
+            PesantrenKita adalah aplikasi manajemen berbasis web yang membantu pondok pesantren 
+            dalam mengelola data santri, keuangan, dan kegiatan secara terpusat. 
+            Melalui sistem ini, proses administrasi menjadi lebih efisien, transparan, dan mudah diakses.
+        </p>
+    </section>
 
     {{-- CARD ABOUT --}}
-    <x-al-amal.card_about />
+    <x-al-amal.card_about :abouts="$abouts" />
 
     {{-- CARD GALERI --}}
-    <x-al-amal.card_galeri />
+    <x-al-amal.card_galeri :galleries="$galleries" />
 
     {{-- FOOTER --}}
-    <x-al-amal.footer />
+    <x-al-amal.footer :footer="$footer" />
 
     
     @vite('resources/js/app.js')

@@ -50,6 +50,15 @@
             Notulensi
         </a>
 
+        <!-- Kelola Landing Page -->
+        <a href="{{ route('admin.landing.index') }}"
+            class="block px-3 py-2 rounded transition
+            {{ request()->routeIs('admin.landing.*') 
+                ? 'bg-[#A8E6CF] text-[#344E41] font-semibold' 
+                : 'hover:bg-[#A8E6CF]/40' }}">
+            Kelola Landing Page
+        </a>
+
         <div class="my-3 form-label text-gray-300 uppercase text-[10px] tracking-wider">Manajemen</div>
 
         <!-- Keuangan (#) -->
