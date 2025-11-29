@@ -8,6 +8,7 @@ use App\Models\LandingCarousel;
 use App\Models\LandingAbouts;
 use App\Models\LandingGalleries;
 use App\Models\LandingFooters;
+use App\Models\Ponpes;
 
 class LandingController extends Controller
 {
@@ -21,10 +22,12 @@ class LandingController extends Controller
 
     public function storeCarousel(Request $request)
     {
+        $ponpesId = Ponpes::first()->id_ponpes;
+
         $request->validate([
             'image' => 'required|image',
-            'title' => 'required|string|max:255',
-            'subtitle' => 'required|string|max:255',
+            'title' => 'required|string',
+            'subtitle' => 'required|string',
         ]);
 
         $file = $request->file('image');
@@ -32,9 +35,10 @@ class LandingController extends Controller
         $file->move(public_path('uploads/carousel'), $nama);
 
         LandingCarousel::create([
+            'ponpes_id' => $ponpesId,
             'image' => $nama,
             'title' => $request->title,
-            'subtitle' => $request->subtitle,
+            'subtitle' => $request->subtitle
         ]);
 
         return response()->json(['message' => 'Carousel berhasil disimpan']);
@@ -69,9 +73,12 @@ class LandingController extends Controller
 
     public function updateAbout(Request $request)
     {
-        $about = LandingAbouts::first();
+        $ponpesId = Ponpes::first()->id_ponpes;
+
+        $about = LandingAbouts::where('ponpes_id', $ponpesId)->first();
         if (!$about) {
             $about = new LandingAbouts();
+            $about->ponpes_id = $ponpesId;
         }
 
         // Founder
@@ -115,16 +122,17 @@ class LandingController extends Controller
 
     public function storeGallery(Request $request)
     {
-        $request->validate([
-            'image' => 'required|image',
-        ]);
+        $ponpesId = Ponpes::first()->id_ponpes;
+
+        $request->validate(['image' => 'required|image']);
 
         $file = $request->file('image');
         $nama = time() . '.' . $file->getClientOriginalExtension();
         $file->move(public_path('uploads/gallery'), $nama);
 
         LandingGalleries::create([
-            'image' => $nama,
+            'ponpes_id' => $ponpesId,
+            'image' => $nama
         ]);
 
         return response()->json(['message' => 'Gallery berhasil disimpan']);
@@ -133,7 +141,10 @@ class LandingController extends Controller
     // ===================== FOOTER =====================
     public function storeFooter(Request $request)
     {
-        $footer = LandingFooters::first() ?? new LandingFooters();
+        $ponpesId = Ponpes::first()->id_ponpes;
+
+        $footer = LandingFooters::where('ponpes_id', $ponpesId)->first()
+            ?? new LandingFooters(['ponpes_id' => $ponpesId]);
 
         // Upload Logo
         if ($request->hasFile('logo')) {

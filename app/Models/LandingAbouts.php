@@ -9,6 +9,7 @@ class LandingAbouts extends Model
     protected $table = 'landing_abouts';
 
     protected $fillable = [
+        'ponpes_id',
         'founder_name',
         'founder_position',
         'founder_description',
@@ -18,6 +19,11 @@ class LandingAbouts extends Model
         'leader_description',
         'leader_image',
     ];
+
+    public function ponpes()
+    {
+        return $this->belongsTo(Ponpes::class, 'ponpes_id', 'id_ponpes');
+    }
 
     public $timestamps = false; 
 }

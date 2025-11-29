@@ -13,6 +13,12 @@ class LandingGalleries extends Model
 
     public $timestamps = false;
     protected $fillable = [
+        'ponpes_id',
         'image',
     ];
+
+    public function ponpes()
+    {
+        return $this->belongsTo(Ponpes::class, 'ponpes_id', 'id_ponpes');
+    }
 }

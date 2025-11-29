@@ -11,7 +11,9 @@ class Ponpes extends Model
 
     protected $table = 'ponpes';
     protected $primaryKey = 'id_ponpes';
-    public $timestamps = false; // karena created_at tidak otomatis pakai updated_at
+    public $incrementing = false;
+    protected $keyType = 'string';
+    public $timestamps = false; 
 
     protected $fillable = [
         'nama',
@@ -33,5 +35,25 @@ class Ponpes extends Model
     public function users()
     {
         return $this->hasMany(User::class, 'ponpes_id', 'id_ponpes');
+    }
+
+    public function carousels()
+    {
+        return $this->hasMany(LandingCarousel::class, 'ponpes_id', 'id_ponpes');
+    }
+
+    public function galleries()
+    {
+        return $this->hasMany(LandingGalleries::class, 'ponpes_id', 'id_ponpes');
+    }
+
+    public function footers()
+    {
+        return $this->hasMany(LandingFooters::class, 'ponpes_id', 'id_ponpes');
+    }
+
+    public function abouts()
+    {
+        return $this->hasMany(LandingAbouts::class, 'ponpes_id', 'id_ponpes');
     }
 }

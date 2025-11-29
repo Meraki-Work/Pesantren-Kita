@@ -3,20 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\LandingCarousel;
-use App\Models\LandingAbouts;
-use App\Models\LandingGalleries;
-use App\Models\LandingFooters;
+use App\Models\Ponpes;
 
 class LandingController extends Controller
 {
     public function index()
     {
+        $ponpes = Ponpes::first();
+
         return view('admin.landing.index', [
-            'carousels' => LandingCarousel::latest()->take(3)->get(),   
-            'abouts'    => LandingAbouts::first(),                     
-            'galleries' => LandingGalleries::latest()->take(8)->get(), 
-            'footers'   => LandingFooters::first(),                    
+            'carousels' => $ponpes->carousels()->latest()->take(3)->get(),
+            'abouts'    => $ponpes->abouts()->first(),
+            'galleries' => $ponpes->galleries()->latest()->take(8)->get(),
+            'footers'   => $ponpes->footers()->first(),
         ]);
     }
 }
