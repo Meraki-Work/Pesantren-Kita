@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\LoginController;
 use App\Models\Ponpes;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\Admin\LandingController;
@@ -21,7 +22,7 @@ use App\Http\Controllers\Admin\LandingController;
 Route::get('/login', function () {
     return view('auth.login');
 })->name('login');
-// Route::post('/login', [LoginController::class, 'login'])->name('login');
+Route::post('/login', [LoginController::class, 'login'])->name('login');
 // Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Registrasi
@@ -55,11 +56,26 @@ Route::get('/landing_al-amal', [LandingPageController::class, 'alAmal'])->name('
 
 Route::prefix('admin')->group(function () {
 
-    Route::get('/kepegawaian', function () {
-        return view('admin.kepegawaian');
-    })->name('admin.kepegawaian');
-
     Route::get('/landing', [LandingController::class, 'index'])
         ->name('admin.landing.index');
 
 });
+
+// Kepegawaian Routes
+use App\Http\Controllers\KepegawaianController;
+use App\Http\Controllers\Auth\AuthController as WebAuthController;
+Route::middleware(['auth'])->group(function () {
+
+    Route::get('/kepegawaian', [KepegawaianController::class, 'index'])
+        ->name('kepegawaian.index');
+
+    Route::put('/kepegawaian/{id_user}', [KepegawaianController::class, 'update'])
+        ->name('kepegawaian.update');
+
+    Route::delete('/kepegawaian/{id_user}', [KepegawaianController::class, 'destroy'])
+        ->name('kepegawaian.destroy');
+
+});
+
+// Route untuk membuat session dari API token (dipanggil oleh client setelah API-login)
+Route::post('/session/create', [WebAuthController::class, 'createSession'])->name('session.create');

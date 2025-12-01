@@ -11,6 +11,8 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   @vite('resources/css/app.css')
+  {{-- CSRF token untuk request fetch yang akan membuat session dari token API --}}
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>Login - PesantrenKita</title>
 
   {{-- Import icon dan font --}}
@@ -44,7 +46,7 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
       const email = document.getElementById('email').value;
       const password = pass.value;
 
-      const response = await fetch('http://127.0.0.1:8000/api/login', {
+      const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,7 +60,41 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
 
       if (response.ok) {
         localStorage.setItem('token', data.token);
-        window.location.href = '/landing_al-amal';
+
+          // Tukarkan token API menjadi session web supaya server membuat session
+        try {
+          const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+          const res2 = await fetch('/session/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-CSRF-TOKEN': csrf
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ token: data.token })
+          });
+
+          // Redirect berdasarkan role
+          const role = (data.user && data.user.role) ? data.user.role.toLowerCase() : null;
+          if (res2.ok) {
+            if (role === 'admin' || role === 'pengajar') {
+              window.location.href = '/kepegawaian';
+            } else {
+              window.location.href = '/';
+            }
+          } else {
+            // fallback: redirect based on role (even if session create failed)
+            if (role === 'admin' || role === 'pengajar') window.location.href = '/kepegawaian';
+            else window.location.href = '/';
+          }
+        } catch (err) {
+          console.error('Gagal membuat session dari token:', err);
+          const role = (data.user && data.user.role) ? data.user.role.toLowerCase() : null;
+          if (role === 'admin' || role === 'pengajar') window.location.href = '/kepegawaian';
+          else window.location.href = '/';
+        }
       } else {
         alert(data.message || 'Login gagal');
       }
@@ -99,8 +135,9 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
           $inputClass = 'w-full h-[40px] pl-3 pr-10 text-sm placeholder:text-sm bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500';
       @endphp
 
-      {{-- Form login --}}
-      <form id="loginForm" class="space-y-4 flex flex-col items-center w-full">
+      {{-- Form login — fallback ke server-side jika JS gagal --}}
+      <form id="loginForm" action="{{ route('login') }}" method="POST" class="space-y-4 flex flex-col items-center w-full">
+        @csrf
         
         {{-- Input Email --}}
         <div class="relative w-full max-w-[300px]">
@@ -112,7 +149,7 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
         {{-- Input Password + Toggle --}}
         <div class="relative w-full max-w-[300px]">
           <h3 class="mb-1 text-sm font-medium">Kata Sandi</h3>
-          <input type="password" id="kataSandi" name="password" class="{{ $inputClass }}" placeholder="Masukkan kata sandi" required>
+          <input type="password" id="kataSandi" name="kata_sandi" class="{{ $inputClass }}" placeholder="Masukkan kata sandi" required>
           {{-- Ikon mata untuk toggle password --}}
           <i id="togglePassword" class="fa-solid fa-eye-slash absolute right-3 top-9 text-gray-500 cursor-pointer"></i>
         </div>

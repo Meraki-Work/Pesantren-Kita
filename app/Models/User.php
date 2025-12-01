@@ -15,8 +15,15 @@ class User extends Authenticatable
     public $timestamps = false;
 
     protected $fillable = [
-        'username', 'email', 'password', 'role', 'ponpes_id',
-        'otp_code', 'otp_expired_at', 'email_verified_at'
+        'username',
+        'email',
+        'password',
+        'role',
+        'status',
+        'ponpes_id',
+        'otp_code',
+        'otp_expired_at',
+        'email_verified_at'
     ];
 
     protected $hidden = [

@@ -17,7 +17,7 @@
 <body class="bg-white font-sans text-gray-800">
     <div class="flex min-h-screen">
 
-        @include('components.sidebar')
+        @include('components.sidemenu')
 
         <main class="flex-1 p-8">
             @yield('content')

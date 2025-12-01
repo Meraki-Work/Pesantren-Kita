@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OtpMail;
 
@@ -135,5 +137,32 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Logout berhasil'
         ]);
+    }
+
+    /**
+     * Buat session web dari API token (dipanggil oleh client)
+     * Endpoint ini berjalan pada `web` middleware sehingga session cookie akan dibuat.
+     */
+    public function createSession(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string'
+        ]);
+
+        $token = $request->token;
+
+        $pat = PersonalAccessToken::findToken($token);
+
+        if (! $pat) {
+            return response()->json(['message' => 'Token tidak valid'], 401);
+        }
+
+        $user = $pat->tokenable;
+
+        // Login user pada guard web -> membuat session cookie
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return response()->json(['message' => 'Session dibuat']);
     }
 }

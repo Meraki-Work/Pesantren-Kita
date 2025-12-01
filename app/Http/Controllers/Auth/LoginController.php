@@ -29,7 +29,13 @@ class LoginController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect()->intended('/landing_al-amal')->with('success', 'Login berhasil'); // isi di sini untuk diredirect ke halaman dashboard
+
+            // Redirect berdasarkan role: Admin & Pengajar → /kepegawaian, lainnya → landing utama
+            $user = Auth::user();
+            $role = strtolower($user->role ?? '');
+            $default = in_array($role, ['admin', 'pengajar']) ? '/kepegawaian' : '/';
+
+            return redirect()->intended($default)->with('success', 'Login berhasil');
         }
 
         return back()->withErrors([

@@ -53,6 +53,7 @@
             <option value="">Pilih Role</option>
             <option value="Admin">Admin</option>
             <option value="Pengajar">Pengajar</option>
+            <option value="Keuangan">Keuangan</option>
           </select>
           <i class="fa-solid fa-user-tag absolute right-3 top-10 text-gray-500"></i>
         </div>
