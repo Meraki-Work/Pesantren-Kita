@@ -36,7 +36,7 @@ class KompetensiController extends Controller
             $userPonpesId = $this->getUserPonpesId();
 
             // Ambil pencapaian hanya dari ponpes yang sama
-            $pencapaian = Pencapaian::with(['santri', 'santri.kelas']) // 🔥 PERBAIKAN: kela -> kelas
+            $pencapaian = Pencapaian::with(['santri', 'santri.kelas'])
                 ->where('ponpes_id', $userPonpesId)
                 ->orderBy('tanggal', 'desc')
                 ->get();
@@ -44,30 +44,60 @@ class KompetensiController extends Controller
             // Ambil kelas hanya dari ponpes yang sama
             $kelas = Kelas::where('ponpes_id', $userPonpesId)->get();
 
-            // Ambil santri hanya dari ponpes yang sama
+            // Ambil santri hanya dari ponpes yang sama - DENGAN EAGER LOADING KELAS
             $santri = Santri::with('kelas')
                 ->where('ponpes_id', $userPonpesId)
                 ->select('id_santri', 'nama', 'id_kelas')
                 ->get();
 
-            $selectedKelas = $santri->first()?->id_kelas ?? null; 
-            $selectedKelasNama = $santri->first()?->kelas->nama_kelas ?? '-- Pilih Kelas --'; // 🔥 PERBAIKAN: kela -> kelas
+            // ✅ PERBAIKAN: Ambil data untuk aktivitas terbaru (5 data terbaru)
+            $aktivitasTerbaru = Pencapaian::with(['santri', 'santri.kelas'])
+                ->where('ponpes_id', $userPonpesId)
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get();
+
+            // ✅ PERBAIKAN: Hitung statistik yang real
+            $totalKompetensi = $pencapaian->count();
+            $santriDenganKelas = $santri->whereNotNull('id_kelas')->count();
+
+            // Debug: Cek data santri dan kelasnya
+            Log::debug('Data santri dengan kelas:', [
+                'santri_data' => $santri->map(function ($s) {
+                    return [
+                        'id_santri' => $s->id_santri,
+                        'nama' => $s->nama,
+                        'id_kelas' => $s->id_kelas,
+                        'kelas_relation' => $s->kelas ? [
+                            'id_kelas' => $s->kelas->id_kelas,
+                            'nama_kelas' => $s->kelas->nama_kelas,
+                            'tingkat' => $s->kelas->tingkat
+                        ] : null
+                    ];
+                })->toArray()
+            ]);
+
+            $selectedKelas = $santri->first()?->id_kelas ?? null;
+            $selectedKelasNama = $santri->first()?->kelas->nama_kelas ?? '-- Pilih Kelas --';
 
             Log::info('Berhasil memuat data kompetensi', [
                 'user_id' => Auth::id(),
-                'total_pencapaian' => $pencapaian->count(),
+                'total_pencapaian' => $totalKompetensi,
                 'total_santri' => $santri->count(),
-                'total_kelas' => $kelas->count()
+                'total_kelas' => $kelas->count(),
+                'santri_dengan_kelas' => $santriDenganKelas,
+                'aktivitas_terbaru_count' => $aktivitasTerbaru->count()
             ]);
 
             return view('pages.create_kompetensi', compact(
-                'santri', 
-                'kelas', 
-                'pencapaian', 
-                'selectedKelas', 
-                'selectedKelasNama'
+                'santri',
+                'kelas',
+                'pencapaian',
+                'selectedKelas',
+                'selectedKelasNama',
+                'aktivitasTerbaru', // ✅ TAMBAHKAN INI
+                'totalKompetensi'   // ✅ TAMBAHKAN INI
             ));
-
         } catch (\Exception $e) {
             Log::error('Error pada kompetensi index', [
                 'user_id' => Auth::id(),
@@ -75,10 +105,9 @@ class KompetensiController extends Controller
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
             ]);
-            throw $e; // Biarkan exception handler menangani
+            throw $e;
         }
     }
-
     /**
      * Menyimpan data kompetensi baru dengan proteksi
      */
@@ -92,7 +121,16 @@ class KompetensiController extends Controller
             ]);
 
             $userPonpesId = $this->getUserPonpesId();
-            
+
+            // ✅ DEBUG: Cek data user yang login
+            $user = Auth::user();
+            Log::debug('Data user yang login:', [
+                'user_id' => $user->id_user ?? $user->id,
+                'user_email' => $user->email,
+                'auth_id' => Auth::id(),
+                'all_user_data' => $user->toArray()
+            ]);
+
             // Validasi input
             $request->validate([
                 'id_santri'  => 'required|integer',
@@ -118,11 +156,34 @@ class KompetensiController extends Controller
                     ->withInput();
             }
 
+            // ✅ PERBAIKAN: Pastikan user_id adalah integer
+            $user_id = Auth::id();
+
+            // Jika Auth::id() masih mengembalikan email, coba alternatif
+            if (!is_numeric($user_id)) {
+                Log::warning('Auth::id() mengembalikan non-numeric:', ['auth_id' => $user_id]);
+                $user_id = $user->id_user ?? $user->id ?? null;
+            }
+
+            // Jika masih tidak dapat user_id yang valid, set NULL (karena kolom boleh NULL)
+            if (!$user_id || !is_numeric($user_id)) {
+                Log::warning('Tidak dapat mendapatkan user_id yang valid, set NULL');
+                $user_id = null;
+            }
+
+            Log::debug('Data yang akan disimpan ke pencapaian:', [
+                'ponpes_id' => $userPonpesId,
+                'id_santri' => $request->id_santri,
+                'user_id' => $user_id,
+                'judul' => $request->judul,
+                'tipe' => $request->tipe
+            ]);
+
             // Gunakan Eloquent untuk insert yang lebih aman
             $pencapaian = Pencapaian::create([
                 'ponpes_id'  => $userPonpesId,
                 'id_santri'  => $request->id_santri,
-                'user_id'    => Auth::id(), // Isi dengan user yang login
+                'user_id'    => $user_id, // ✅ FIXED: Sekarang harus integer atau NULL
                 'judul'      => $request->judul,
                 'deskripsi'  => $request->deskripsi,
                 'tipe'       => $request->tipe,
@@ -140,7 +201,6 @@ class KompetensiController extends Controller
 
             return redirect()->route('kompetensi.index')
                 ->with('success', 'Pencapaian berhasil ditambahkan!');
-
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::warning('Validasi gagal pada store kompetensi', [
                 'user_id' => Auth::id(),
@@ -161,7 +221,6 @@ class KompetensiController extends Controller
                 ->withInput();
         }
     }
-
     /**
      * Menampilkan form edit kompetensi dengan proteksi
      */
@@ -200,7 +259,6 @@ class KompetensiController extends Controller
             ]);
 
             return view('pages.action.kompetensi_edit', compact('pencapaian', 'santri'));
-
         } catch (\Exception $e) {
             Log::error('Error pada kompetensi edit', [
                 'user_id' => Auth::id(),
@@ -287,7 +345,6 @@ class KompetensiController extends Controller
 
             return redirect()->route('kompetensi.index')
                 ->with('success', 'Data kompetensi berhasil diupdate!');
-
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::warning('Validasi gagal pada update kompetensi', [
                 'user_id' => Auth::id(),
@@ -352,7 +409,6 @@ class KompetensiController extends Controller
 
             return redirect()->route('kompetensi.index')
                 ->with('success', 'Data kompetensi berhasil dihapus!');
-
         } catch (\Exception $e) {
             Log::error('Error pada kompetensi delete', [
                 'user_id' => Auth::id(),
@@ -404,7 +460,6 @@ class KompetensiController extends Controller
             ]);
 
             return response()->json($kompetensi);
-
         } catch (\Exception $e) {
             Log::error('Error pada getBySantri', [
                 'user_id' => Auth::id(),
@@ -444,9 +499,9 @@ class KompetensiController extends Controller
             }
 
             $kompetensi = Pencapaian::with(['santri', 'santri.kelas']) // 🔥 PERBAIKAN: kela -> kelas
-                ->whereHas('santri', function($query) use ($kelasId, $userPonpesId) {
+                ->whereHas('santri', function ($query) use ($kelasId, $userPonpesId) {
                     $query->where('id_kelas', $kelasId)
-                          ->where('ponpes_id', $userPonpesId);
+                        ->where('ponpes_id', $userPonpesId);
                 })
                 ->where('ponpes_id', $userPonpesId)
                 ->orderBy('tanggal', 'desc')
@@ -459,7 +514,6 @@ class KompetensiController extends Controller
             ]);
 
             return response()->json($kompetensi);
-
         } catch (\Exception $e) {
             Log::error('Error pada getByKelas', [
                 'user_id' => Auth::id(),

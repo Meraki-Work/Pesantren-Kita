@@ -1,113 +1,167 @@
-{{-- 
-Dikerjakan Oleh: Titho (3312401071) Front-End
-               : Muhammad Rizky (3312401071) Back-End
-Dikerjakan Pada: 10 October 2025 (Front-End) & 16 October 2025 (Back-End) 
-Deskripsi      : Membuat halaman Lupa Kata Sandi dengan form yang terstruktur dan menarik menggunakan Tailwind CSS.
-                 Form ini mencakup input untuk email, OTP, dan pengaturan ulang kata sandi.
---}}
-
 @extends('index')
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lupa Kata Sandi</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Poppins', sans-serif; }
-    .input-custom {
-      font-family: 'Poppins';
-      font-size: 15px;
-    }
-  </style>
-</head>
-<body class="min-h-screen flex items-center justify-center relative">
 
-  <!-- Background gambar -->
-  <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ asset('asset/masjid-hd-pc.jpg') }}');"></div>
+@section('title', 'Lupa Kata Sandi')
 
-  <!-- Overlay gelap -->
-  <div class="absolute inset-0 bg-black/30"></div>
+@section('content')
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-md w-full space-y-8">
+    <div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        Lupa Kata Sandi
+      </h2>
+      <p class="mt-2 text-center text-sm text-gray-600">
+        Masukkan email Anda untuk mereset kata sandi
+      </p>
+    </div>
 
-  <div class="relative z-10 bg-[#F8FFF8]/95 w-full max-w-md rounded-xl shadow-lg p-8">
-    <h2 class="text-2xl font-bold text-center mb-10">Lupa Kata Sandi</h2>
-
-    @php
-      $inputClass = 'w-full h-[45px] pl-3 pr-10 text-sm placeholder:text-sm bg-gray-100 
-      border border-[#C3C8C5] rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500';
-    @endphp
-
-    {{-- Langkah 1: Masukkan Email --}}
-    @if(!session('otp_sent') && !session('otp_verified'))
-      <form action="{{ route('password.sendOtp') }}" method="POST" class="space-y-5">
-        @csrf
-        <div class="relative">
-          <label class="block text-sm font-medium mb-2">Email</label>
-          <input type="email" name="email" placeholder="Masukkan Email" required class="{{ $inputClass }}">
-          <i class="fa-solid fa-envelope absolute right-3 top-10 text-gray-500"></i>
-        </div>
-        <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg transition duration-300">
-          Kirim OTP
-        </button>
-      </form>
+    <!-- Alert Messages -->
+    @if (session('success'))
+    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6 flex items-center">
+      <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+      </svg>
+      {{ session('success') }}
+    </div>
     @endif
 
-    {{-- Langkah 2: Masukkan OTP --}}
+    @if ($errors->any())
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+      <ul class="list-disc list-inside text-sm">
+        @foreach ($errors->all() as $error)
+        <li>{{ $error }}</li>
+        @endforeach
+      </ul>
+    </div>
+    @endif
+
+    <!-- Email Form (Default) -->
+    @if(!session('otp_sent') && !session('otp_verified'))
+    <form id="otpForm" class="mt-8 space-y-6" action="{{ route('password.otp.send') }}" method="POST">
+      @csrf
+
+      <div>
+        <label for="email" class="sr-only">Email address</label>
+        <input id="email" name="email" type="email" autocomplete="email" required
+          class="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+          placeholder="Masukkan email Anda" value="{{ old('email') }}">
+      </div>
+
+      <div>
+        <button id="btnOtpSend" type="submit"
+          class="group relative w-full flex justify-center items-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition duration-200">
+
+          <span id="btnOtpText">Kirim Kode OTP</span>
+
+          <!-- Spinner (PREFERENSI KAMU) -->
+          <svg id="btnSpinner" class="animate-spin h-4 w-4 ml-2 hidden" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10"
+              stroke="currentColor" stroke-width="4"></circle>
+            <circle class="opacity-75" cx="12" cy="12" r="10"
+              stroke="currentColor" stroke-width="4" stroke-dasharray="60" stroke-dashoffset="20"></circle>
+          </svg>
+
+        </button>
+      </div>
+    </form>
+    @endif
+
+    <!-- OTP Form (Setelah email dikirim) -->
     @if(session('otp_sent') && !session('otp_verified'))
-      <form action="{{ route('password.verifyOtp') }}" method="POST" class="space-y-5">
-        @csrf
-        <input type="hidden" name="email" value="{{ session('email') }}">
-        <div class="relative">
-          <label class="block text-sm font-medium mb-2">Kode OTP</label>
-          <input type="text" name="otp" placeholder="Masukkan Kode OTP" maxlength="6" required class="{{ $inputClass }}">
-          <i class="fa-solid fa-key absolute right-3 top-10 text-gray-500"></i>
-        </div>
-        <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg transition duration-300">
+    <form class="mt-8 space-y-6" action="{{ route('password.otp.verify') }}" method="POST">
+      @csrf
+      <div>
+        <label for="otp" class="block text-sm font-medium text-gray-700 mb-2">
+          Kode OTP
+        </label>
+        <input id="otp" name="otp" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" required
+          class="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm text-center text-lg font-mono"
+          placeholder="000000" autocomplete="one-time-code">
+        <p class="text-xs text-gray-500 mt-2 text-center">
+          Masukkan 6 digit kode OTP yang dikirim ke {{ session('email') }}
+        </p>
+      </div>
+
+      <div class="flex space-x-3">
+        <button type="submit"
+          class="flex-1 py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
           Verifikasi OTP
         </button>
-      </form>
-    @endif
-
-    {{-- Langkah 3: Ubah Password --}}
-    @if(session('otp_verified'))
-      <form action="{{ route('password.update') }}" method="POST" class="space-y-5">
-        @csrf
-        <input type="hidden" name="email" value="{{ session('email') }}">
-
-        <div class="relative">
-          <label class="block text-sm font-medium mb-2">Kata Sandi Baru</label>
-          <input type="password" name="password" id="password" placeholder="Masukkan Kata Sandi Baru" required minlength="6" class="{{ $inputClass }}">
-          <i class="fa-solid fa-eye absolute right-3 top-10 text-gray-500 cursor-pointer" onclick="togglePassword('password', this)"></i>
-        </div>
-
-        <div class="relative">
-          <label class="block text-sm font-medium mb-2">Konfirmasi Kata Sandi</label>
-          <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Konfirmasi Kata Sandi" required class="{{ $inputClass }}">
-          <i class="fa-solid fa-eye absolute right-3 top-10 text-gray-500 cursor-pointer" onclick="togglePassword('password_confirmation', this)"></i>
-        </div>
-
-        <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg transition duration-300">
-          Simpan Perubahan
+        <button type="button" onclick="resendOtp()"
+          class="flex-1 py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          Kirim Ulang
         </button>
-      </form>
-
-      <script>
-        function togglePassword(id, el) {
-          const input = document.getElementById(id);
-          const icon = el;
-          if (input.type === "password") {
-            input.type = "text";
-            icon.classList.replace("fa-eye", "fa-eye-slash");
-          } else {
-            input.type = "password";
-            icon.classList.replace("fa-eye-slash", "fa-eye");
-          }
-        }
-      </script>
+      </div>
+    </form>
     @endif
-  </div>
 
-</body>
-</html>
+    <!-- Password Form (Setelah OTP terverifikasi) -->
+    @if(session('otp_verified'))
+    <form class="mt-8 space-y-6" action="{{ route('password.update') }}" method="POST">
+      @csrf
+      <div>
+        <label for="password" class="sr-only">Kata Sandi Baru</label>
+        <input id="password" name="password" type="password" autocomplete="new-password" required
+          class="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+          placeholder="Kata sandi baru (minimal 6 karakter)">
+      </div>
+
+      <div>
+        <label for="password_confirmation" class="sr-only">Konfirmasi Kata Sandi</label>
+        <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" required
+          class="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+          placeholder="Konfirmasi kata sandi">
+      </div>
+
+      <div>
+        <button type="submit"
+          class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          Reset Kata Sandi
+        </button>
+      </div>
+    </form>
+    @endif
+
+    <!-- Back to Login -->
+    <div class="text-center">
+      <a href="{{ route('login') }}" class="font-medium text-blue-600 hover:text-blue-500">
+        Kembali ke halaman login
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('otpForm').addEventListener('submit', function() {
+    const btn = document.getElementById('btnOtpSend');
+
+    // nonaktifkan tombol
+    btn.disabled = true;
+    btn.classList.add('bg-blue-400');
+
+    // ubah teks
+    document.getElementById('btnOtpText').innerText = 'Mengirim...';
+
+    // tampilkan spinner
+    document.getElementById('btnSpinner').classList.remove('hidden');
+  });
+
+  function resendOtp() {
+    if (confirm('Kirim ulang kode OTP?')) {
+      fetch('{{ route("password.otp.resend") }}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+      }).then(response => {
+        if (response.ok) {
+          alert('Kode OTP telah dikirim ulang');
+          location.reload();
+        } else {
+          alert('Gagal mengirim ulang OTP');
+        }
+      });
+    }
+  }
+</script>
+@endsection

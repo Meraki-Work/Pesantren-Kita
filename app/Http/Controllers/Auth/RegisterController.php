@@ -22,6 +22,40 @@ class RegisterController extends Controller
         return view('auth.registrasi');
     }
 
+    private function createFreeSubscription($ponpesId)
+    {
+        // Ambil plan FREE
+        $freePlan = DB::table('plans')->where('slug', 'free')->first();
+
+        if (!$freePlan) {
+            throw new \Exception("Free Plan tidak ditemukan. Harap isi tabel plans.");
+        }
+
+        // Cek apakah ponpes sudah punya subscription
+        $existing = DB::table('subscriptions')
+            ->where('ponpes_id', $ponpesId)
+            ->where('status', 'active')
+            ->first();
+
+        if ($existing) {
+            return; // sudah ada, jangan buat lagi
+        }
+
+        // Buat subscription gratis
+        DB::table('subscriptions')->insert([
+            'ponpes_id' => $ponpesId,
+            'plan_id' => $freePlan->id,
+            'status' => 'active',
+            'billing_cycle' => 'monthly',
+            'start_date' => now()->toDateString(),
+            'current_period_end' => now()->addDays(30)->toDateString(),
+            'auto_renew' => 1,
+            'metadata' => json_encode([]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
     /**
      * Proses registrasi dengan OTP Email
      */
@@ -82,19 +116,29 @@ class RegisterController extends Controller
                 'status' => 'pending', // ✅ TAMBAH FIELD STATUS
             ]);
 
-            // ✅ KIRIM OTP
-            $emailResult = $this->sendOtpWithRetry($user->email, $otp, $user->username);
+            // ✅ KIRIM OTP VIA BREVO API
+            $this->createFreeSubscription($ponpesId);
 
-            if ($emailResult['success']) {
+            // Kirim OTP via Brevo API
+            $brevo = new \App\Services\BrevoApiService();
+            $emailResult = $brevo->sendOtp($user->email, $otp);
+
+            if ($emailResult['status'] === 'success') {
                 return redirect()->route('verify.form')->with([
                     'email' => $user->email,
-                    'user_id' => $user->id_user, // ✅ SIMPAN USER ID DI SESSION
+                    'user_id' => $user->id_user,
                     'success' => 'Kode OTP telah dikirim ke email Anda. Berlaku 10 menit.'
                 ]);
             } else {
+                // fallback - simpan ke log dan tampilkan OTP
+                Log::warning("Email OTP gagal dikirim: " . $emailResult['message']);
+
+                // Simpan ke fallback methods juga
+                $this->saveOtpToFallback($user->email, $otp, $user->username, $emailResult['message']);
+
                 return redirect()->route('verify.form')->with([
                     'email' => $user->email,
-                    'user_id' => $user->id_user, // ✅ SIMPAN USER ID DI SESSION
+                    'user_id' => $user->id_user,
                     'otp_display' => $otp,
                     'warning' => 'Email tidak terkirim. Catat kode OTP berikut: ' . $otp
                 ]);
@@ -382,5 +426,17 @@ class RegisterController extends Controller
                 'error' => 'Terjadi kesalahan saat mengirim ulang OTP.'
             ]);
         }
+    }
+
+    private function saveOtpToFallback($email, $otp, $username, $errorMessage)
+    {
+        // Simpan ke log
+        $this->saveOtpToLog($email, $otp, $username);
+
+        // Simpan ke file txt
+        $this->saveOtpToFile($email, $otp, $username);
+
+        // Log tambahan alasan gagal
+        Log::warning("OTP fallback aktif. Karena email gagal dikirim: {$errorMessage}");
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
@@ -18,11 +19,14 @@ use App\Http\Controllers\PencapaianController;
 use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\SanksiController;
 use App\Http\Controllers\LaundryController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Models\Ponpes;
 use App\Models\Gambar;
+use Illuminate\Support\Facades\Mail; // <- ini penting
+use App\Mail\TestEmail;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,10 +41,36 @@ use App\Models\Gambar;
 
 // ==================== PUBLIC ROUTES ====================
 
+use App\Services\BrevoApiService;
+
+Route::get('/test-email', function () {
+    $brevo = new BrevoApiService();
+
+    try {
+        $res = $brevo->sendEmail(
+            'sandybom21@gmail.com',
+            'Tes Email dari Brevo API',
+            '<h1>Berhasil!</h1><p>Email via API Brevo.</p>'
+        );
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $res
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ], 500);
+    }
+});
+
+
 // Landing Pages
 Route::get('/', function () {
     return view('landing_utama');
 })->name('landing_utama');
+
 
 Route::get('/about', function () {
     return view('landing_about');
@@ -53,6 +83,14 @@ Route::get('/contact', function () {
 Route::get('/landing_al-amal', function () {
     return view('landing_al-amal');
 })->name('landing_al-amal');
+
+// Subscription Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/subscription/plans', [App\Http\Controllers\SubscriptionController::class, 'plans'])->name('subscription.plans');
+    Route::get('/subscription/upgrade', [App\Http\Controllers\SubscriptionController::class, 'upgrade'])->name('subscription.upgrade');
+    Route::post('/subscription/upgrade', [App\Http\Controllers\SubscriptionController::class, 'processUpgrade'])->name('subscription.process-upgrade');
+    Route::get('/subscription/success', [App\Http\Controllers\SubscriptionController::class, 'success'])->name('subscription.success');
+});
 
 // Authentication Routes
 Route::middleware('guest')->group(function () {
@@ -67,12 +105,14 @@ Route::middleware('guest')->group(function () {
     Route::post('/verify-otp', [RegisterController::class, 'verifyOtp'])->name('verify.otp');
     Route::post('/resend-otp', [RegisterController::class, 'resendOtp'])->name('resend.otp');
 
-    // Password Reset
-    Route::get('/lupakatasandi', [ResetPasswordController::class, 'showForm'])->name('lupakatasandi');
-    Route::post('/lupakatasandi/send-otp', [ResetPasswordController::class, 'sendOtp'])->name('password.sendOtp');
-    Route::post('/lupakatasandi/verify-otp', [ResetPasswordController::class, 'verifyOtp'])->name('password.verifyOtp');
-    Route::post('/lupakatasandi/update', [ResetPasswordController::class, 'updatePassword'])->name('password.update');
+    // ✅ SIMPAN - Rute baru yang sudah diperbaiki
+    Route::get('/lupa-katasandi', [ResetPasswordController::class, 'showForm'])->name('password.reset.form');
+    Route::post('/kirim-otp', [ResetPasswordController::class, 'sendOtp'])->name('password.otp.send');
+    Route::post('/verifikasi-otp', [ResetPasswordController::class, 'verifyOtp'])->name('password.otp.verify');
+    Route::post('/reset-password', [ResetPasswordController::class, 'updatePassword'])->name('password.update');
+    Route::post('/kirim-ulang-otp', [ResetPasswordController::class, 'resendOtp'])->name('password.otp.resend');
 });
+Route::post('/lupakatasandi/send-otp', [ResetPasswordController::class, 'sendOtp'])->name('password.sendOtp');
 
 // Logout (accessible by both guest and auth)
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
@@ -125,56 +165,67 @@ if (app()->environment('local')) {
 Route::middleware(['auth'])->group(function () {
 
     // Dashboard Routes
-    Route::prefix('dashboard')->group(function () {
-        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-        Route::post('/absensi', [DashboardController::class, 'store'])->name('dashboard.absensi.store');
-        Route::get('/absensi', [DashboardController::class, 'getAbsensi'])->name('dashboard.absensi');
-        Route::get('/absensi/all', [DashboardController::class, 'getAllAbsensi'])->name('dashboard.absensi.all');
-        Route::get('/absensi/check', [DashboardController::class, 'checkTodayAbsensi'])->name('dashboard.absensi.check');
-        Route::get('/prestasi', [DashboardController::class, 'getGrafikPrestasi'])->name('dashboard.prestasi');
-    });
+    Route::prefix('dashboard')
+        ->group(function () {
+            Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+            Route::post('/absensi', [DashboardController::class, 'store'])->name('dashboard.absensi.store');
+            Route::get('/absensi', [DashboardController::class, 'getAbsensi'])->name('dashboard.absensi');
+            Route::get('/absensi/all', [DashboardController::class, 'getAllAbsensi'])->name('dashboard.absensi.all');
+            Route::get('/absensi/check', [DashboardController::class, 'checkTodayAbsensi'])->name('dashboard.absensi.check');
+            Route::get('/prestasi', [DashboardController::class, 'getGrafikPrestasi'])->name('dashboard.prestasi');
+        });
 
     // Keuangan Routes
-    Route::get('/keuangan', [KeuanganController::class, 'index'])->name('keuangan.index');
-    Route::get('/keuangan/create', [KeuanganController::class, 'create'])->name('keuangan.create');
-    Route::post('/keuangan', [KeuanganController::class, 'store'])->name('keuangan.store');
-    Route::get('/keuangan/{keuangan}/edit', [KeuanganController::class, 'edit'])->name('keuangan.edit');
-    Route::put('/keuangan/{keuangan}', [KeuanganController::class, 'update'])->name('keuangan.update');
-    Route::delete('/keuangan/{keuangan}', [KeuanganController::class, 'destroy'])->name('keuangan.destroy');
+    Route::prefix('keuangan')
+        ->middleware('feature:keuangan')
+        ->group(function () {
+            Route::get('/', [KeuanganController::class, 'index'])->name('keuangan.index');
+            Route::get('/create', [KeuanganController::class, 'create'])->name('keuangan.create');
+            Route::post('/', [KeuanganController::class, 'store'])->name('keuangan.store');
+            Route::get('/{keuangan}/edit', [KeuanganController::class, 'edit'])->name('keuangan.edit');
+            Route::put('/{keuangan}', [KeuanganController::class, 'update'])->name('keuangan.update');
+            Route::delete('/{keuangan}', [KeuanganController::class, 'destroy'])->name('keuangan.destroy');
+        });
 
     // Cash Routes
     Route::get('/cash', [CashController::class, 'index'])->name('cash');
 
     // Sanksi Routes
-    Route::get('/sanksi', [SanksiController::class, 'index'])->name('sanksi.index');
-    Route::get('/sanksi/create', [SanksiController::class, 'create'])->name('sanksi.create');
-    Route::post('/sanksi', [SanksiController::class, 'store'])->name('sanksi.store');
-    Route::get('/sanksi/{sanksi}', [SanksiController::class, 'show'])->name('sanksi.show');
-    Route::get('/sanksi/{sanksi}/edit', [SanksiController::class, 'edit'])->name('sanksi.edit');
-    Route::put('/sanksi/{sanksi}', [SanksiController::class, 'update'])->name('sanksi.update');
-    Route::delete('/sanksi/{sanksi}', [SanksiController::class, 'destroy'])->name('sanksi.destroy');
+    Route::prefix('sanksi')
+        ->middleware('feature:sanksi')
+        ->group(function () {
+            Route::get('/sanksi', [SanksiController::class, 'index'])->name('sanksi.index');
+            Route::get('/sanksi/create', [SanksiController::class, 'create'])->name('sanksi.create');
+            Route::post('/sanksi', [SanksiController::class, 'store'])->name('sanksi.store');
+            Route::get('/sanksi/{sanksi}', [SanksiController::class, 'show'])->name('sanksi.show');
+            Route::get('/sanksi/{sanksi}/edit', [SanksiController::class, 'edit'])->name('sanksi.edit');
+            Route::put('/sanksi/{sanksi}', [SanksiController::class, 'update'])->name('sanksi.update');
+            Route::delete('/sanksi/{sanksi}', [SanksiController::class, 'destroy'])->name('sanksi.destroy');
+        });
 
     // Kelas Routes
-    Route::prefix('kelas')->group(function () {
-        Route::get('/create', [KelasController::class, 'create'])->name('kelas.create');
-        Route::post('/store', [KelasController::class, 'store'])->name('kelas.store');
-        Route::get('/', [KelasController::class, 'index'])->name('kelas.index');
-        Route::get('/{id}/edit', [KelasController::class, 'edit'])->name('kelas.edit');
-        Route::put('/{id}', [KelasController::class, 'update'])->name('kelas.update');
-        Route::delete('/{id}', [KelasController::class, 'destroy'])->name('kelas.destroy');
-        Route::get('/api/get-kelas', [KelasController::class, 'getKelasByPonpes'])->name('kelas.api');
-    });
+    Route::prefix('kelas')
+        ->group(function () {
+            Route::get('/create', [KelasController::class, 'create'])->name('kelas.create');
+            Route::post('/store', [KelasController::class, 'store'])->name('kelas.store');
+            Route::get('/', [KelasController::class, 'index'])->name('kelas.index');
+            Route::get('/{id}/edit', [KelasController::class, 'edit'])->name('kelas.edit');
+            Route::put('/{id}', [KelasController::class, 'update'])->name('kelas.update');
+            Route::delete('/{id}', [KelasController::class, 'destroy'])->name('kelas.destroy');
+            Route::get('/api/get-kelas', [KelasController::class, 'getKelasByPonpes'])->name('kelas.api');
+        });
 
     // Kompetensi Routes
-    Route::prefix('kompetensi')->group(function () {
-        Route::get('/', [KompetensiController::class, 'index'])->name('kompetensi.index');
-        Route::post('/store', [KompetensiController::class, 'store'])->name('kompetensi.store');
-        Route::get('/{id}/edit', [KompetensiController::class, 'edit'])->name('kompetensi.edit');
-        Route::put('/{id}', [KompetensiController::class, 'update'])->name('kompetensi.update');
-        Route::delete('/{id}', [KompetensiController::class, 'destroy'])->name('kompetensi.destroy');
-        Route::get('/santri/{santriId}', [KompetensiController::class, 'getBySantri'])->name('kompetensi.by-santri');
-        Route::get('/kelas/{kelasId}', [KompetensiController::class, 'getByKelas'])->name('kompetensi.by-kelas');
-    });
+    Route::prefix('kompetensi')
+        ->group(function () {
+            Route::get('/', [KompetensiController::class, 'index'])->name('kompetensi.index');
+            Route::post('/store', [KompetensiController::class, 'store'])->name('kompetensi.store');
+            Route::get('/{id}/edit', [KompetensiController::class, 'edit'])->name('kompetensi.edit');
+            Route::put('/{id}', [KompetensiController::class, 'update'])->name('kompetensi.update');
+            Route::delete('/{id}', [KompetensiController::class, 'destroy'])->name('kompetensi.destroy');
+            Route::get('/santri/{santriId}', [KompetensiController::class, 'getBySantri'])->name('kompetensi.by-santri');
+            Route::get('/kelas/{kelasId}', [KompetensiController::class, 'getByKelas'])->name('kompetensi.by-kelas');
+        });
 
     // Pencapaian Routes
     Route::prefix('pencapaian')->group(function () {
@@ -185,15 +236,17 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Laundry Routes
-    Route::prefix('laundry')->group(function () {
-        Route::get('/', [LaundryController::class, 'index'])->name('laundry.index');
-        Route::post('/', [LaundryController::class, 'store'])->name('laundry.store');
-        Route::get('/{id}/edit', [LaundryController::class, 'edit'])->name('laundry.edit');
-        Route::put('/{id}', [LaundryController::class, 'update'])->name('laundry.update');
-        Route::delete('/{id}', [LaundryController::class, 'destroy'])->name('laundry.destroy');
-        Route::get('/insert-example', [LaundryController::class, 'insertExampleData']);
-        Route::get('/statistics', [LaundryController::class, 'getStatistics'])->name('laundry.statistics');
-    });
+    Route::prefix('laundry')
+        ->middleware('feature:laundry')
+        ->group(function () {
+            Route::get('/', [LaundryController::class, 'index'])->name('laundry.index');
+            Route::post('/', [LaundryController::class, 'store'])->name('laundry.store');
+            Route::get('/{id}/edit', [LaundryController::class, 'edit'])->name('laundry.edit');
+            Route::put('/{id}', [LaundryController::class, 'update'])->name('laundry.update');
+            Route::delete('/{id}', [LaundryController::class, 'destroy'])->name('laundry.destroy');
+            Route::get('/insert-example', [LaundryController::class, 'insertExampleData']);
+            Route::get('/statistics', [LaundryController::class, 'getStatistics'])->name('laundry.statistics');
+        });
 
     // Kategori Routes
     Route::prefix('kategori')->group(function () {
@@ -237,40 +290,43 @@ Route::middleware(['auth'])->group(function () {
     })->name('modal.load');
 
     // Santri Routes - SEMUA ROUTE DALAM SATU GROUP
-    Route::prefix('santri')->group(function () {
-        Route::get('/', [SantriController::class, 'index'])->name('santri.index');
-        Route::get('/create', [SantriController::class, 'create'])->name('santri.create');
-        Route::post('/', [SantriController::class, 'store'])->name('santri.store');
-        Route::get('/{id}/edit', [SantriController::class, 'edit'])->name('santri.edit');
-        Route::put('/{id}', [SantriController::class, 'update'])->name('santri.update');
-        Route::delete('/{id}', [SantriController::class, 'destroy'])->name('santri.destroy');
-        
-        // API Routes untuk Santri
-        Route::post('/check-unique', [SantriController::class, 'checkUnique'])->name('santri.check-unique');
-        Route::get('/api/santri-data', [SantriController::class, 'getSantriByPonpes'])->name('santri.api');
-        Route::get('/{id}/kompetensi', function ($id) {
-            $kompetensi = DB::table('pencapaian as p')
-                ->join('santri as s', 's.id_santri', '=', 'p.id_santri')
-                ->where('s.id_santri', $id)
-                ->select('p.judul', 'p.deskripsi', 'p.tipe', 'p.tanggal', 'p.skor')
-                ->orderBy('p.tanggal', 'desc')
-                ->get();
+    Route::prefix('santri')
+        ->middleware('feature:santri')
+        ->group(function () {
+            Route::get('/', [SantriController::class, 'index'])->name('santri.index');
+            Route::get('/create', [SantriController::class, 'create'])->name('santri.create');
+            Route::post('/', [SantriController::class, 'store'])->name('santri.store');
+            Route::get('/{id}/edit', [SantriController::class, 'edit'])->name('santri.edit');
+            Route::put('/{id}', [SantriController::class, 'update'])->name('santri.update');
+            Route::delete('/{id}', [SantriController::class, 'destroy'])->name('santri.destroy');
 
-            return response()->json($kompetensi);
-        })->name('santri.kompetensi');
-    });
+            // API Routes untuk Santri
+            Route::post('/check-unique', [SantriController::class, 'checkUnique'])->name('santri.check-unique');
+            Route::get('/api/santri-data', [SantriController::class, 'getSantriByPonpes'])->name('santri.api');
+            Route::get('/{id}/kompetensi', function ($id) {
+                $kompetensi = DB::table('pencapaian as p')
+                    ->join('santri as s', 's.id_santri', '=', 'p.id_santri')
+                    ->where('s.id_santri', $id)
+                    ->select('p.judul', 'p.deskripsi', 'p.tipe', 'p.tanggal', 'p.skor')
+                    ->orderBy('p.tanggal', 'desc')
+                    ->get();
+
+                return response()->json($kompetensi);
+            })->name('santri.kompetensi');
+        });
 
     // Inventaris Routes
-    Route::prefix('inventaris')->group(function () {
-        Route::get('/', [InventarisController::class, 'index'])->name('inventaris.index');
-        Route::get('/create', [InventarisController::class, 'create'])->name('inventaris.create');
-        Route::post('/', [InventarisController::class, 'store'])->name('inventaris.store');
-        Route::get('/{id}/edit', [InventarisController::class, 'edit'])->name('inventaris.edit');
-        Route::put('/{id}', [InventarisController::class, 'update'])->name('inventaris.update');
-        Route::delete('/{id}', [InventarisController::class, 'destroy'])->name('inventaris.destroy');
-        Route::get('/{id}', [InventarisController::class, 'show'])->name('inventaris.show');
-        Route::get('/export/export', [InventarisController::class, 'export'])->name('inventaris.export');
-    });
+    Route::prefix('inventaris')
+        ->group(function () {
+            Route::get('/', [InventarisController::class, 'index'])->name('inventaris.index');
+            Route::get('/create', [InventarisController::class, 'create'])->name('inventaris.create');
+            Route::post('/', [InventarisController::class, 'store'])->name('inventaris.store');
+            Route::get('/{id}/edit', [InventarisController::class, 'edit'])->name('inventaris.edit');
+            Route::put('/{id}', [InventarisController::class, 'update'])->name('inventaris.update');
+            Route::delete('/{id}', [InventarisController::class, 'destroy'])->name('inventaris.destroy');
+            Route::get('/{id}', [InventarisController::class, 'show'])->name('inventaris.show');
+            Route::get('/export/export', [InventarisController::class, 'export'])->name('inventaris.export');
+        });
 
     // Inventaris API Routes
     Route::prefix('api/inventaris')->group(function () {
@@ -279,18 +335,20 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Notulen Routes
-    Route::prefix('notulen')->group(function () {
-        Route::get('/notulensi', [NotulenController::class, 'index'])->name('notulen.index');
-        Route::get('/create', [NotulenController::class, 'create'])->name('notulen.create');
-        Route::post('/', [NotulenController::class, 'store'])->name('notulen.store');
-        Route::get('/{id}', [NotulenController::class, 'show'])->name('notulen.show');
-        Route::get('/{id}/edit', [NotulenController::class, 'edit'])->name('notulen.edit');
-        Route::put('/{id}', [NotulenController::class, 'update'])->name('notulen.update');
-        Route::delete('/{id}', [NotulenController::class, 'destroy'])->name('notulen.destroy');
-        Route::delete('/gambar/{id}', [NotulenController::class, 'hapusGambar'])->name('notulen.hapus-gambar');
-        Route::post('/{id}/tambah-gambar', [NotulenController::class, 'tambahGambar'])->name('notulen.tambah-gambar');
-        Route::get('/{id}/export', [NotulenController::class, 'export'])->name('notulen.export');
-    });
+    Route::prefix('notulen')
+        ->middleware('feature:notulensi')
+        ->group(function () {
+            Route::get('/notulensi', [NotulenController::class, 'index'])->name('notulen.index');
+            Route::get('/create', [NotulenController::class, 'create'])->name('notulen.create');
+            Route::post('/', [NotulenController::class, 'store'])->name('notulen.store');
+            Route::get('/{id}', [NotulenController::class, 'show'])->name('notulen.show');
+            Route::get('/{id}/edit', [NotulenController::class, 'edit'])->name('notulen.edit');
+            Route::put('/{id}', [NotulenController::class, 'update'])->name('notulen.update');
+            Route::delete('/{id}', [NotulenController::class, 'destroy'])->name('notulen.destroy');
+            Route::delete('/gambar/{id}', [NotulenController::class, 'hapusGambar'])->name('notulen.hapus-gambar');
+            Route::post('/{id}/tambah-gambar', [NotulenController::class, 'tambahGambar'])->name('notulen.tambah-gambar');
+            Route::get('/{id}/export', [NotulenController::class, 'export'])->name('notulen.export');
+        });
 
     // Notulen API Routes
     Route::get('/api/notulen/stats', [NotulenController::class, 'getStats']);
@@ -300,11 +358,11 @@ Route::middleware(['auth'])->group(function () {
         try {
             $userPonpesId = Auth::user()->ponpes_id;
             $testNisn = '00172432149';
-            
+
             $exists = \App\Models\Santri::where('nisn', $testNisn)
                 ->where('ponpes_id', $userPonpesId)
                 ->exists();
-                
+
             return response()->json([
                 'test_data' => [
                     'user_ponpes_id' => $userPonpesId,
@@ -337,11 +395,11 @@ Route::get('/test-check-unique', function () {
     try {
         $userPonpesId = Auth::user()->ponpes_id;
         $testNisn = '00172432149';
-        
+
         $exists = \App\Models\Santri::where('nisn', $testNisn)
             ->where('ponpes_id', $userPonpesId)
             ->exists();
-            
+
         return response()->json([
             'test_data' => [
                 'user_ponpes_id' => $userPonpesId,
