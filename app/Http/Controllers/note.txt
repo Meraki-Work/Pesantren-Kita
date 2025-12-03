@@ -1,0 +1,58 @@
+-- Tabel baru untuk landing page content (menggantikan landing_abouts, landing_carousels, landing_footers)
+CREATE TABLE `landing_content` (
+  `id_content` int(11) NOT NULL AUTO_INCREMENT,
+  `ponpes_id` char(64) NOT NULL,
+  `content_type` enum('carousel','about_founder','about_leader','footer','section_title') NOT NULL,
+  `title` varchar(255) DEFAULT NULL,
+  `subtitle` text DEFAULT NULL,
+  `description` text DEFAULT NULL,
+  `image` varchar(255) DEFAULT NULL,
+  `position` varchar(100) DEFAULT NULL,
+  `url` varchar(255) DEFAULT NULL, -- untuk social media links
+  `display_order` int(11) DEFAULT 0,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp DEFAULT current_timestamp(),
+  `updated_at` timestamp DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_content`),
+  KEY `ponpes_id` (`ponpes_id`),
+  CONSTRAINT `landing_content_ibfk_1` FOREIGN KEY (`ponpes_id`) REFERENCES `ponpes` (`id_ponpes`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Hapus tabel landing yang lama
+DROP TABLE IF EXISTS `landing_abouts`;
+DROP TABLE IF EXISTS `landing_carousels`;
+DROP TABLE IF EXISTS `landing_footers`;
+DROP TABLE IF EXISTS `landing_galleries`; -- sudah ada tabel gambar
+
+-- Contoh data untuk landing_content (menggantikan data dari tabel-tabel lama)
+-- 1. Data Carousel
+INSERT INTO `landing_content` (`ponpes_id`, `content_type`, `title`, `subtitle`, `description`, `image`, `display_order`, `is_active`) VALUES
+('a1b2c3d4e5f6g7h8i9j0', 'carousel', 'Selamat Datang di Pesantren Al-Amal', 'Mendidik Generasi Berakhlak Mulia', 'Pesantren Al-Amal berkomitmen mendidik santri dengan ilmu agama dan ilmu umum yang seimbang', 'carousel1.jpg', 1, 1),
+('a1b2c3d4e5f6g7h8i9j0', 'carousel', 'Program Tahfidz Al-Quran', 'Menghafal Al-Quran dengan Metode Terbaik', 'Program unggulan untuk mencetak generasi penghafal Al-Quran', 'carousel2.jpg', 2, 1),
+('z9y8x7w6v5u4t3s2r1q0', 'carousel', 'Pondok Darul Hikmah', 'Ilmu yang Bermanfaat untuk Umat', 'Berpengalaman lebih dari 25 tahun dalam pendidikan Islam', 'carousel3.jpg', 1, 1);
+
+-- 2. Data About Founder (menggantikan landing_abouts)
+INSERT INTO `landing_content` (`ponpes_id`, `content_type`, `title`, `description`, `image`, `position`, `display_order`, `is_active`) VALUES
+('a1b2c3d4e5f6g7h8i9j0', 'about_founder', 'Agnes Tachyon', '-', '1764344017_founder.png', 'Founder', 1, 1),
+('a1b2c3d4e5f6g7h8i9j0', 'about_leader', '-', '-', '1764344017_leader.png', 'Pemimpin Yayasan', 2, 1);
+
+-- 3. Data Footer (menggantikan landing_footers)
+INSERT INTO `landing_content` (`ponpes_id`, `content_type`, `title`, `description`, `image`, `url`, `display_order`, `is_active`) VALUES
+('a1b2c3d4e5f6g7h8i9j0', 'footer', 'Instagram', NULL, NULL, '-', 1, 1),
+('a1b2c3d4e5f6g7h8i9j0', 'footer', 'WhatsApp', NULL, 'logo_al-amal.png', '-', 2, 1),
+('a1b2c3d4e5f6g7h8i9j0', 'footer', 'Alamat', '-', NULL, NULL, 3, 1),
+('a1b2c3d4e5f6g7h8i9j0', 'footer', 'Copyright', '© 2025 PesantrenKita. All Rights Reserved.', NULL, NULL, 4, 1);
+
+-- 4. Data Section Titles (opsional untuk judul-judul section)
+INSERT INTO `landing_content` (`ponpes_id`, `content_type`, `title`, `subtitle`, `display_order`, `is_active`) VALUES
+('a1b2c3d4e5f6g7h8i9j0', 'section_title', 'Tentang Kami', 'Sejarah dan visi misi pesantren', 1, 1),
+('a1b2c3d4e5f6g7h8i9j0', 'section_title', 'Galeri Kegiatan', 'Momen-momen berharga di pesantren', 2, 1),
+('a1b2c3d4e5f6g7h8i9j0', 'section_title', 'Kontak Kami', 'Hubungi kami untuk informasi lebih lanjut', 3, 1);
+
+-- Tambah kolom di tabel gambar untuk menandai gambar galeri landing page
+ALTER TABLE `gambar` 
+ADD COLUMN `is_landing_gallery` tinyint(1) DEFAULT 0 AFTER `keterangan`,
+ADD COLUMN `display_order` int(11) DEFAULT 0 AFTER `is_landing_gallery`;
+
+-- Update gambar yang ingin ditampilkan di galeri landing page
+UPDATE `gambar` SET `is_landing_gallery` = 1 WHERE `ponpes_id` IS NOT NULL;

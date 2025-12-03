@@ -5,7 +5,10 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Models\Ponpes;
 use App\Http\Controllers\LandingPageController;
-use App\Http\Controllers\Admin\LandingController;
+use App\Http\Controllers\LandingController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Admin\PonpesController;
+use App\Http\Controllers\Admin\LandingContentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,18 +28,17 @@ Route::get('/login', function () {
 Route::post('/login', [LoginController::class, 'login'])->name('login');
 // Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-// Registrasi
 Route::get('/registrasi', function () {
     $ponpes = Ponpes::select('id_ponpes', 'nama_ponpes')->get();
     return view('auth.registrasi', compact('ponpes'));
 })->name('registrasi.index');
+
 Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
-// Route::get('/verify', [RegisterController::class, 'verifyForm'])->name('verify.form');
+
 Route::get('/verify-otp', function () {
     return view('auth.verify-otp');
 })->name('verify.form');
 
-// Lupa kata sandi
 Route::get('/lupakatasandi', function () {
     return view('auth.lupakatasandi');
 })->name('lupakatasandi');

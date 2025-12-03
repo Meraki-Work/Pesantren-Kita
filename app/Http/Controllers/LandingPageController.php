@@ -24,11 +24,5 @@ class LandingPageController extends Controller
     {
         $ponpes = Ponpes::first();
 
-        return view('layouts.landing_al-amal', [
-            'carousels' => $ponpes->carousels()->latest()->take(3)->get(),
-            'abouts'    => $ponpes->abouts()->first(),
-            'galleries' => $ponpes->galleries()->latest()->take(6)->get(),
-            'footer'    => $ponpes->footers()->first(),
-        ]);
     }
 }

@@ -1,4 +1,4 @@
-{{-- 
+{{--
     Nama file   : landing_about.blade.php
     Deskripsi   : Menampilkan halaman “About” yang berisi daftar pondok pesantren pengguna website dalam bentuk komponen kartu.
     Dibuat oleh : Zahrah Nazihah Ginting - NIM: 3312401077
@@ -25,10 +25,10 @@
             </a>
         </div>
         <div class="flex-1">
-          <img 
-    src="{{ asset('asset/carousel_utama.png') }}" 
-    class="w-[600px] h-[300px] object-cover rounded-2xl mx-auto md:mx-0" 
-    alt="">
+            <img
+                src="{{ asset('asset/carousel_utama.png') }}"
+                class="w-[600px] h-[300px] object-cover rounded-2xl mx-auto md:mx-0"
+                alt="">
         </div>
     </div>
 </section>
@@ -43,12 +43,11 @@
         <!-- Grid 2x2 -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             @for ($i = 0; $i < 4; $i++)
-            <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition">
-               <img 
-    src="{{ asset('asset/foto_masjid2.png') }}" 
-    alt="Pesantren Al Amal Batam" 
-    class="w-250 h-[400px] object-cover rounded-t-xl"
-/>
+                <div class="bg-white shadow-md rounded-xl overflow-hidden hover:shadow-lg transition">
+                <img
+                    src="{{ asset('asset/foto_masjid2.png') }}"
+                    alt="Pesantren Al Amal Batam"
+                    class="w-250 h-[400px] object-cover rounded-t-xl" />
 
                 <div class="p-5">
                     <h3 class="text-lg font-semibold text-gray-800 mb-1">
@@ -57,14 +56,14 @@
                     <p class="text-sm text-gray-600 mb-3">
                         Perumahan Kejaksaan No.12/4-24 Batam, Sumatera
                     </p>
-                    <a href="#" 
-                       class="inline-block text-sm bg-green-700 text-white px-4 py-1.5 rounded-md hover:bg-green-800 transition">
+                    <a href="#"
+                        class="inline-block text-sm bg-green-700 text-white px-4 py-1.5 rounded-md hover:bg-green-800 transition">
                         Lihat Profil
                     </a>
                 </div>
-            </div>
-            @endfor
         </div>
+        @endfor
+    </div>
     </div>
 </section>
 @endsection

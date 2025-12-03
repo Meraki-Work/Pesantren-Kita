@@ -5,11 +5,17 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Api\LandingController;
+use App\Http\Controllers\Api\LandingContentController;
+
+use App\Http\Controllers\Api\LandingContent;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/login', [AuthController::class, 'login']);
+
+// di web.php
+
 
 // Protected routes (requires token)
 Route::middleware('auth:sanctum')->group(function () {
