@@ -147,7 +147,7 @@
         </div>
       </div>
 
-      {{-- Kolom kanan --}}
+      {{-- Kanan --}}
       <div class="space-y-4">
         <div class="relative">
           <label class="block text-sm font-medium mb-2">Email</label>

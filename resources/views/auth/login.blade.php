@@ -9,7 +9,7 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
 
 <body class="min-h-screen flex">
 
-  <!-- Kiri: Background Masjid -->
+  {{-- ======== Bagian Kiri: Background Masjid ======== --}}
   <div class="w-1/2 relative hidden md:block">
     <img src="{{ asset('asset/foto_masjid2.png') }}" alt="Background Masjid" class="absolute inset-0 w-full h-full object-cover">
     <div class="absolute inset-0 bg-black/40"></div>
@@ -19,7 +19,7 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
     </div>
   </div>
 
-  <!-- Kanan: Form Login -->
+  {{-- ======== Bagian Kanan: Form Login ======== --}}
   <div class="w-full md:w-1/2 flex items-center justify-center bg-[#344E41]">
     <div class="bg-white bg-opacity-90 p-6 rounded-xl shadow-md max-w-md w-[400px] h-[450px] flex flex-col items-center justify-center">
 
@@ -27,6 +27,7 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
         <h2 class="text-2xl font-bold text-black">Masuk</h2>
       </div>
 
+      {{-- Styling input dinamis pakai Blade --}}
       @php
       $inputClass = 'w-full h-[40px] pl-3 pr-10 text-sm placeholder:text-sm bg-gray-100 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500';
       @endphp
@@ -79,12 +80,12 @@ Deskripsi      : Membuat halaman Login pengguna dengan form yang terstruktur dan
         </button>
       </form>
 
-      <!-- Link Lupa Kata Sandi -->
+      {{-- Link Lupa Kata Sandi --}}
       <p class="text-center text-sm text-gray-600 mt-4">
         <a href="{{ route('password.reset.form') }}" class="hover:underline">Lupa Kata Sandi?</a>
       </p>
 
-      <!-- Link Belum punya akun -->
+      {{-- Link Registrasi --}}
       <p class="text-center text-sm text-gray-600 mt-2">
         <a href="{{ route('registrasi.index') }}" class="hover:underline">Belum punya akun?</a>
       </p>

@@ -27,6 +27,12 @@ use App\Models\Ponpes;
 use App\Models\Gambar;
 use Illuminate\Support\Facades\Mail; // <- ini penting
 use App\Mail\TestEmail;
+use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\Admin\LandingController;
+use App\Http\Controllers\Admin\LandingContentController;
+use App\Http\Controllers\Admin\PonpesController;
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -70,6 +76,10 @@ Route::get('/test-email', function () {
 Route::get('/', function () {
     return view('landing_utama');
 })->name('landing_utama');
+
+Route::get('/', [LandingPageController::class, 'utama'])->name('landing_utama');
+Route::get('/landing_about', [LandingPageController::class, 'about'])->name('landing_about');
+Route::get('/landing_al-amal', [LandingPageController::class, 'alAmal'])->name('landing_al-amal');
 
 
 Route::get('/about', function () {
@@ -116,6 +126,38 @@ Route::post('/lupakatasandi/send-otp', [ResetPasswordController::class, 'sendOtp
 
 // Logout (accessible by both guest and auth)
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+
+    Route::get('/dashboard', function () {
+        return view('admin.dashboard');
+    })->name('dashboard');
+
+    Route::get('/landing', [LandingPageController::class, 'utama'])->name('landing.index');
+
+    Route::resource('ponpes', PonpesController::class);
+
+    Route::prefix('landing-content')->name('landing-content.')->group(function () {
+
+        Route::get('/', [LandingContentController::class, 'index'])->name('index');
+        Route::get('/card-view', [LandingContentController::class, 'indexCard'])->name('card');
+
+        Route::get('/create', [LandingContentController::class, 'create'])->name('create');
+        Route::get('/create/{type}', [LandingContentController::class, 'createByType'])->name('create-type');
+        Route::post('/', [LandingContentController::class, 'store'])->name('store');
+
+        Route::get('/{landingContent}', [LandingContentController::class, 'show'])->name('show');
+        Route::get('/{landingContent}/edit', [LandingContentController::class, 'edit'])->name('edit');
+        Route::put('/{landingContent}', [LandingContentController::class, 'update'])->name('update');
+        Route::delete('/{landingContent}', [LandingContentController::class, 'destroy'])->name('destroy');
+
+        Route::get('/{id}/detail', [LandingContentController::class, 'getContentDetail'])->name('detail');
+        Route::patch('/{id}/toggle-status', [LandingContentController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/{id}/update-order', [LandingContentController::class, 'updateOrderSingle'])->name('update-order-single');
+        Route::post('/update-order', [LandingContentController::class, 'updateOrder'])->name('update-order');
+    });
+});
+
 
 // Debug Routes (hanya untuk development)
 if (app()->environment('local')) {

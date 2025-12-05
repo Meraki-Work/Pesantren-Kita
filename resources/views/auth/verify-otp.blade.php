@@ -1,11 +1,3 @@
-{{-- 
-Dikerjakan Oleh: Titho (3312401071) Front-End
-               : Muhammad Rizky Febrian (3312401082) Back-End
-Dikerjakan Pada: 10 October 2025 untuk Front-End & 10 October 2025 untuk Back-End
-Deskripsi      : Membuat halaman verify-otp pengguna dengan form yang terstruktur dan menarik menggunakan Tailwind CSS.
-                 Form ini mencakup input untuk otp. 
---}}
-
 @extends('index')
 <!DOCTYPE html>
 <html lang="id">
