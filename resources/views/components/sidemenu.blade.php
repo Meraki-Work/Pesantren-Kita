@@ -38,9 +38,9 @@
             Kepegawaian
         </a>
         <!-- Kelola Landing Page -->
-        <a href="{{ route('admin.landing.index') }}"
+        <a href="{{ route('admin.landing-content.index') }}"
             class="block px-3 py-2 rounded transition 
-            {{ request()->routeIs('admin.landing.*') 
+            {{ request()->routeIs('admin.landing-content') 
                 ? 'bg-active text-white' 
                 : 'bg-mint hover:bg-active hover:text-white' }}">
             Kelola Landing Page

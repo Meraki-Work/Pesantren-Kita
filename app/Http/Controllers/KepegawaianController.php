@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class KepegawaianController extends Controller
 {
@@ -17,25 +18,26 @@ class KepegawaianController extends Controller
         }
         $q = trim($request->query('q', ''));
 
-        // Build base users query and apply search filter when ?q= is present
-        $usersQuery = User::select('id_user','username','email','role','status');
+        // Build base users query - TIDAK MENYERTAKAN STATUS
+        $usersQuery = User::select('id_user','username','email','role','ponpes_id','created_at');
+        
         if ($q !== '') {
             $qLower = mb_strtolower($q);
             $usersQuery->where(function($builder) use ($qLower) {
                 $builder->whereRaw('LOWER(username) LIKE ?', ["%{$qLower}%"])
                         ->orWhereRaw('LOWER(email) LIKE ?', ["%{$qLower}%"])
-                        ->orWhereRaw('LOWER(role) LIKE ?', ["%{$qLower}%"])
-                        ->orWhereRaw('LOWER(status) LIKE ?', ["%{$qLower}%"]);
+                        ->orWhereRaw('LOWER(role) LIKE ?', ["%{$qLower}%"]);
+                // Hapus pencarian berdasarkan status
             });
         }
 
         $users = $usersQuery->get();
 
         return view('pages.kepegawaian', [
-            // Use case-insensitive checks so stored casing doesn't break the counts
-            'aktif' => User::whereRaw("LOWER(status) = ?", ['aktif'])->count(),
-            'Tidakaktif' => User::whereRaw("LOWER(status) = ?", ['tidak aktif'])->count(),
-            // role counts used for role-specific cards
+            // Hapus hitungan berdasarkan status atau gunakan default
+            'aktif' => User::count(), // Default semua aktif jika tidak ada status
+            'Tidakaktif' => 0, // Default 0 jika tidak ada status
+            // role counts
             'countPengajar' => User::whereRaw("LOWER(role) = ?", ['pengajar'])->count(),
             'countAdmin' => User::whereRaw("LOWER(role) = ?", ['admin'])->count(),
             'countKeuangan' => User::whereRaw("LOWER(role) = ?", ['keuangan'])->count(),
@@ -55,24 +57,23 @@ class KepegawaianController extends Controller
 
         $user = User::where('id_user', $id_user)->firstOrFail();
 
-        // Validasi input agar hanya menerima nilai yang diharapkan
+        // Validasi input - HAPUS status dari validasi
         $data = $request->validate([
             'username' => ['required', 'string', 'max:255'],
             'email'    => ['required', 'email', 'max:255'],
-            'role'     => ['required', 'in:Admin,Pengajar'],
-            // status menggunakan nilai lowercase 'aktif' / 'tidak aktif' sesuai form
-            'status'   => ['required', 'in:aktif,tidak aktif'],
+            'role'     => ['required', 'in:Admin,Pengajar,Keuangan'],
+            // Hapus status dari validasi
         ]);
 
-        // Normalisasi - pastikan role menggunakan huruf kapital pada awal kata (Admin / Pengajar)
+        // Normalisasi role
         $data['role'] = ucfirst(strtolower($data['role']));
 
-        // Simpan data ke model
+        // Simpan data - HAPUS status
         $user->update([
             'username' => $data['username'],
             'role'     => $data['role'],
             'email'    => $data['email'],
-            'status'   => $data['status'],
+            // Hapus status
         ]);
 
         return back()->with('success', 'Data berhasil diupdate')
