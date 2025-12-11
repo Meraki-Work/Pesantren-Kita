@@ -23,12 +23,19 @@
             Dashboard
         </a>
 
-        <a href="{{ route('kepegawaian') }}"
+        <a href="{{ route('kepegawaian.index') }}"
             class="block px-3 py-2 rounded transition 
             {{ request()->routeIs('users.index') 
                 ? 'bg-active text-white' 
                 : 'bg-mint hover:bg-active hover:text-white' }}">
             Kepegawaian
+        </a>
+        <a href="{{ route('admin.landing-content.index') }}"
+            class="block px-3 py-2 rounded transition 
+            {{ request()->routeIs('users.index') 
+                ? 'bg-active text-white' 
+                : 'bg-mint hover:bg-active hover:text-white' }}">
+            Publikasi
         </a>
 
         <a href="{{ route('sanksi.index') }}"
@@ -39,13 +46,13 @@
             Sanksi
         </a>
 
-<a href="{{ route('notulen.index') }}"
-    class="block px-3 py-2 rounded transition 
+        <a href="{{ route('notulen.index') }}"
+            class="block px-3 py-2 rounded transition 
     {{ request()->routeIs('notulen.index') 
         ? 'bg-active text-white' 
         : 'bg-mint hover:bg-active hover:text-white' }}">
-    Notulensi
-</a>
+            Notulensi
+        </a>
 
         <div class="my-4 form-label text-gray-300 uppercase tracking-wider">Manajemen</div>
 

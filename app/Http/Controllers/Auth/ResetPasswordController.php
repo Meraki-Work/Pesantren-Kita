@@ -36,6 +36,7 @@ class ResetPasswordController extends Controller
 
         $request->validate(['email' => 'required|email']);
 
+
         $user = DB::table('user')->where('email', $request->email)->first();
 
         if (!$user) {
@@ -172,7 +173,9 @@ class ResetPasswordController extends Controller
         ]);
 
         $request->validate([
-            'password' => 'required|min:6|confirmed',
+            'email' => 'required|email',
+            'password' => 'required|min:6',
+            'password_confirmation' => 'required|same:password'
         ]);
 
         $email = session('email');
