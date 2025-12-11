@@ -10,11 +10,21 @@ class Ponpes extends Model
     protected $primaryKey = 'id_ponpes';
     public $incrementing = false;
     protected $keyType = 'string';
-    
+
+    public $timestamps = false;
+
     protected $fillable = [
-        'id_ponpes', 'nama_ponpes', 'alamat', 'tahun_berdiri',
-        'telp', 'email', 'logo_ponpes', 'jumlah_santri',
-        'jumlah_staf', 'pimpinan', 'status'
+        'id_ponpes',
+        'nama_ponpes',
+        'alamat',
+        'tahun_berdiri',
+        'telp',
+        'email',
+        'logo_ponpes',
+        'jumlah_santri',
+        'jumlah_staf',
+        'pimpinan',
+        'status'
     ];
 
     // Relationship dengan Santri
@@ -46,7 +56,6 @@ class Ponpes extends Model
     {
         return $this->hasMany(User::class, 'ponpes_id', 'id_ponpes');
     }
-}
 
     // Relationship dengan Inventaris
     public function inventaris()

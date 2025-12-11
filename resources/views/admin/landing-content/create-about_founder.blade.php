@@ -1,185 +1,220 @@
-@extends('layouts.admin')
+@extends('index')
 
 @section('title', 'Tambah Founder/Pendiri')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white border-bottom">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h4 class="card-title mb-0 fw-bold text-success">
-                                <i class="bi bi-person-badge me-2"></i>Tambah Founder/Pendiri
-                            </h4>
-                            <p class="text-muted mb-0 small">Profil pendiri pesantren</p>
-                        </div>
-                        <a href="{{ route('admin.landing-content.index') }}" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-arrow-left me-1"></i>Kembali
-                        </a>
+<div class="min-h-screen bg-gray-50 p-4 md:p-6">
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        Tambah Founder/Pendiri
+                    </h1>
+                    <p class="text-gray-600 mt-1">Profil pendiri pesantren</p>
+                </div>
+                <a href="{{ route('admin.landing-content.index') }}" 
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Kembali
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="border-b border-gray-200 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Formulir Founder</h2>
+                        <p class="text-sm text-gray-600 mt-1">Lengkapi informasi pendiri pesantren</p>
                     </div>
                 </div>
-                
-                <div class="card-body">
-                    <form action="{{ route('admin.landing-content.store') }}" method="POST" enctype="multipart/form-data">
-                        @csrf
-                        
-                        <input type="hidden" name="content_type" value="about_founder">
-                        
-                        <div class="row">
-                            <div class="col-md-4">
-                                <!-- Image Upload Card -->
-                                <div class="card border h-100">
-                                    <div class="card-header bg-light">
-                                        <h6 class="mb-0 fw-semibold">Foto Founder <span class="text-danger">*</span></h6>
-                                    </div>
-                                    <div class="card-body d-flex flex-column">
-                                        <div class="mb-3">
-                                            <label for="image" class="form-label">Upload Foto</label>
-                                            <input type="file" name="image" id="image" 
-                                                   class="form-control @error('image') is-invalid @enderror" 
-                                                   accept="image/*" required>
-                                            @error('image')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                            <small class="text-muted d-block mt-1">
-                                                Format: JPG, PNG, GIF, WEBP<br>
-                                                Maksimal: 2MB<br>
-                                                Ukuran disarankan: 400×500 px
-                                            </small>
-                                        </div>
-                                        
-                                        <!-- Image Preview -->
-                                        <div class="text-center mt-3 flex-grow-1">
-                                            <div id="imagePreview" class="mb-3" style="display: none;">
-                                                <img id="previewImage" class="img-fluid rounded border" 
-                                                     style="max-height: 300px;">
-                                            </div>
-                                            <div id="imagePlaceholder" class="text-center p-4 border rounded bg-light h-100">
-                                                <i class="bi bi-person-square text-muted display-4"></i>
-                                                <p class="mt-2 text-muted small">Foto founder akan muncul di sini</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-8">
-                                <div class="card border h-100">
-                                    <div class="card-header bg-light">
-                                        <h6 class="mb-0 fw-semibold">Informasi Founder</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="mb-3">
-                                            <label for="ponpes_id" class="form-label">Pesantren <span class="text-danger">*</span></label>
-                                            <select name="ponpes_id" id="ponpes_id" class="form-select @error('ponpes_id') is-invalid @enderror" required>
-                                                <option value="">Pilih Pesantren</option>
-                                                @foreach($ponpesList as $ponpes)
-                                                <option value="{{ $ponpes->id_ponpes }}" 
-                                                        {{ old('ponpes_id') == $ponpes->id_ponpes ? 'selected' : '' }}>
-                                                    {{ $ponpes->nama_ponpes }}
-                                                </option>
-                                                @endforeach
-                                            </select>
-                                            @error('ponpes_id')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                        
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="title" class="form-label">Nama Founder <span class="text-danger">*</span></label>
-                                                    <input type="text" name="title" id="title" 
-                                                           class="form-control @error('title') is-invalid @enderror" 
-                                                           value="{{ old('title') }}" 
-                                                           placeholder="Contoh: KH. Ahmad Dahlan" required>
-                                                    @error('title')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                    @enderror
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="position" class="form-label">Jabatan/Posisi <span class="text-danger">*</span></label>
-                                                    <input type="text" name="position" id="position" 
-                                                           class="form-control @error('position') is-invalid @enderror" 
-                                                           value="{{ old('position') }}" 
-                                                           placeholder="Contoh: Pendiri Pesantren" required>
-                                                    @error('position')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                    @enderror
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label for="description" class="form-label">Biografi <span class="text-danger">*</span></label>
-                                            <textarea name="description" id="description" 
-                                                      class="form-control @error('description') is-invalid @enderror" 
-                                                      rows="6" 
-                                                      placeholder="Tuliskan biografi lengkap founder..." required>{{ old('description') }}</textarea>
-                                            @error('description')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                        
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="url" class="form-label">Link Sosial Media (Opsional)</label>
-                                                    <input type="url" name="url" id="url" 
-                                                           class="form-control @error('url') is-invalid @enderror" 
-                                                           value="{{ old('url') }}" 
-                                                           placeholder="https://instagram.com/username">
-                                                    @error('url')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                    @enderror
-                                                    <small class="text-muted">Link ke profil sosial media founder</small>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="display_order" class="form-label">Urutan Tampilan</label>
-                                                    <input type="number" name="display_order" id="display_order" 
-                                                           class="form-control @error('display_order') is-invalid @enderror" 
-                                                           value="{{ old('display_order', 0) }}" 
-                                                           min="0">
-                                                    @error('display_order')
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                    @enderror
-                                                    <small class="text-muted">Atur urutan jika ada beberapa founder</small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" 
-                                                       name="is_active" id="is_active" value="1" 
-                                                       {{ old('is_active', true) ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="is_active">
-                                                    <span class="fw-semibold">Tampilkan di Halaman</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between mt-4">
-                            <a href="{{ route('admin.landing-content.create') }}" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left me-1"></i>Kembali ke Pilihan
-                            </a>
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-save me-1"></i>Simpan Founder
-                            </button>
-                        </div>
-                    </form>
-                </div>
             </div>
+
+            <form action="{{ route('admin.landing-content.store') }}" method="POST" enctype="multipart/form-data" class="p-6">
+                @csrf
+                <input type="hidden" name="content_type" value="about_founder">
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Kolom Kiri - Upload Foto -->
+                    <div class="lg:col-span-1">
+                        <div class="border border-gray-200 rounded-lg overflow-hidden h-full">
+                            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                                <h3 class="font-semibold text-gray-900">Foto Founder 
+                                    <span class="text-red-500">*</span>
+                                </h3>
+                            </div>
+                            <div class="p-4 h-full flex flex-col">
+                                <div class="mb-4">
+                                    <label for="image" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Upload Foto
+                                    </label>
+                                    <input type="file" name="image" id="image" 
+                                           class="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 @error('image') border-red-300 @enderror"
+                                           accept="image/*" required>
+                                    @error('image')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                    <div class="mt-2 text-sm text-gray-500 space-y-1">
+                                        <p>Format: JPG, PNG, GIF, WEBP</p>
+                                        <p>Maksimal: 2MB</p>
+                                        <p>Ukuran disarankan: 400×500 px</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Image Preview -->
+                                <div class="flex-grow flex flex-col items-center justify-center">
+                                    <div id="imagePreview" class="mb-4 hidden w-full">
+                                        <img id="previewImage" class="w-full h-auto max-h-80 object-contain rounded-lg border border-gray-200">
+                                    </div>
+                                    <div id="imagePlaceholder" class="text-center p-6 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 w-full h-full flex flex-col items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        <p class="mt-3 text-sm text-gray-500">Foto founder akan muncul di sini</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kolom Kanan - Form Informasi -->
+                    <div class="lg:col-span-2">
+                        <div class="border border-gray-200 rounded-lg overflow-hidden h-full">
+                            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                                <h3 class="font-semibold text-gray-900">Informasi Founder</h3>
+                            </div>
+                            <div class="p-6 space-y-6">
+                                <!-- Pesantren Selection -->
+                                <div>
+                                    <label for="ponpes_id" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Pesantren <span class="text-red-500">*</span>
+                                    </label>
+                                    <select name="ponpes_id" id="ponpes_id" 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 @error('ponpes_id') border-red-300 @enderror"
+                                            required>
+                                        <option value="">Pilih Pesantren</option>
+                                        @foreach($ponpesList as $ponpes)
+                                        <option value="{{ $ponpes->id_ponpes }}" 
+                                                {{ old('ponpes_id') == $ponpes->id_ponpes ? 'selected' : '' }}>
+                                            {{ $ponpes->nama_ponpes }}
+                                        </option>
+                                        @endforeach
+                                    </select>
+                                    @error('ponpes_id')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <!-- Nama dan Jabatan -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Nama Founder <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" name="title" id="title" 
+                                               value="{{ old('title') }}"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 @error('title') border-red-300 @enderror"
+                                               placeholder="Contoh: KH. Ahmad Dahlan" required>
+                                        @error('title')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="position" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Jabatan/Posisi <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" name="position" id="position" 
+                                               value="{{ old('position') }}"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 @error('position') border-red-300 @enderror"
+                                               placeholder="Contoh: Pendiri Pesantren" required>
+                                        @error('position')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <!-- Biografi -->
+                                <div>
+                                    <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Biografi <span class="text-red-500">*</span>
+                                    </label>
+                                    <textarea name="description" id="description" rows="6"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 @error('description') border-red-300 @enderror"
+                                              placeholder="Tuliskan biografi lengkap founder..." required>{{ old('description') }}</textarea>
+                                    @error('description')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <!-- Link Sosial Media dan Urutan Tampilan -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label for="url" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Link Sosial Media (Opsional)
+                                        </label>
+                                        <input type="url" name="url" id="url" 
+                                               value="{{ old('url') }}"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 @error('url') border-red-300 @enderror"
+                                               placeholder="https://instagram.com/username">
+                                        @error('url')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                        <p class="mt-1 text-xs text-gray-500">Link ke profil sosial media founder</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="display_order" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Urutan Tampilan
+                                        </label>
+                                        <input type="number" name="display_order" id="display_order" 
+                                               value="{{ old('display_order', 0) }}" min="0"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 @error('display_order') border-red-300 @enderror">
+                                        @error('display_order')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                        <p class="mt-1 text-xs text-gray-500">Atur urutan jika ada beberapa founder</p>
+                                    </div>
+                                </div>
+
+                                <!-- Toggle Aktif -->
+                                <div class="flex items-center">
+                                    <input type="checkbox" name="is_active" id="is_active" value="1" 
+                                           {{ old('is_active', true) ? 'checked' : '' }}
+                                           class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+                                    <label for="is_active" class="ml-2 block text-sm font-medium text-gray-900">
+                                        Tampilkan di Halaman
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-8 pt-6 border-t border-gray-200">
+                    <a href="{{ route('admin.landing-content.create') }}" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200 w-full sm:w-auto justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Kembali ke Pilihan
+                    </a>
+                    <button type="submit" 
+                            class="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 w-full sm:w-auto justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        </svg>
+                        Simpan Founder
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -187,25 +222,37 @@
 
 @push('scripts')
 <script>
-document.getElementById('image').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    const preview = document.getElementById('previewImage');
+document.addEventListener('DOMContentLoaded', function() {
+    const imageInput = document.getElementById('image');
+    const previewImage = document.getElementById('previewImage');
     const previewContainer = document.getElementById('imagePreview');
     const placeholder = document.getElementById('imagePlaceholder');
-    
-    if (file) {
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            preview.src = e.target.result;
-            previewContainer.style.display = 'block';
-            placeholder.style.display = 'none';
-        }
-        
-        reader.readAsDataURL(file);
-    } else {
-        previewContainer.style.display = 'none';
-        placeholder.style.display = 'block';
+
+    if (imageInput) {
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            
+            if (file) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    previewContainer.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                }
+                
+                reader.readAsDataURL(file);
+            } else {
+                previewContainer.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+            }
+        });
+    }
+
+    // Initialize preview if there's already an image (for edit page)
+    if (previewImage && previewImage.src) {
+        previewContainer.classList.remove('hidden');
+        placeholder.classList.add('hidden');
     }
 });
 </script>

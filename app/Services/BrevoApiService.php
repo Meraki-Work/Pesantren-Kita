@@ -27,6 +27,37 @@ class BrevoApiService
     /**
      * Kirim OTP ke email
      */
+
+    public function sendEmail(string $to, string $subject, string $html, string $text = null)
+    {
+        try {
+            $payload = [
+                'sender' => [
+                    'name' => config('mail.from.name'),
+                    'email' => config('mail.from.address'),
+                ],
+                'to' => [
+                    ['email' => $to]
+                ],
+                'subject' => $subject,
+                'htmlContent' => $html,
+                'textContent' => $text
+            ];
+
+            $response = $this->client->post('smtp/email', [
+                'json' => $payload
+            ]);
+
+            return [
+                'status' => 'success',
+                'data' => json_decode($response->getBody(), true)
+            ];
+        } catch (\Exception $e) {
+            Log::error("BrevoAPI Email Error: " . $e->getMessage());
+            return ['status' => 'error', 'message' => $e->getMessage()];
+        }
+    }
+
     public function sendOtp(string $to, int $otp): array
     {
         try {

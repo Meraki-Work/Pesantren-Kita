@@ -69,7 +69,7 @@ class PonpesController extends Controller
     public function show($id)
     {
         $ponpes = Ponpes::findOrFail($id);
-        
+
         // Hitung statistik
         $statistics = [
             'total_santri' => $ponpes->santri()->count(),
@@ -93,6 +93,54 @@ class PonpesController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    /**
+     * Update logo for ponpes
+     */
+    public function updateLogo(Request $request, $id)
+    {
+        $ponpes = Ponpes::findOrFail($id);
+
+        $request->validate([
+            'logo_ponpes' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'remove_logo' => 'nullable|boolean'
+        ]);
+
+        if ($request->has('remove_logo') && $request->remove_logo) {
+            // Delete existing logo
+            if ($ponpes->logo_ponpes && Storage::disk('public')->exists($ponpes->logo_ponpes)) {
+                Storage::disk('public')->delete($ponpes->logo_ponpes);
+            }
+            $ponpes->logo_ponpes = null;
+            $ponpes->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Logo berhasil dihapus'
+            ]);
+        }
+
+        if ($request->hasFile('logo_ponpes')) {
+            // Delete old logo if exists
+            if ($ponpes->logo_ponpes && Storage::disk('public')->exists($ponpes->logo_ponpes)) {
+                Storage::disk('public')->delete($ponpes->logo_ponpes);
+            }
+
+            $logoPath = $request->file('logo_ponpes')->store('ponpes-logos', 'public');
+            $ponpes->logo_ponpes = $logoPath;
+            $ponpes->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Logo berhasil diperbarui'
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Tidak ada file logo yang diunggah'
+        ]);
+    }
+
     public function update(Request $request, $id)
     {
         $ponpes = Ponpes::findOrFail($id);
@@ -116,7 +164,7 @@ class PonpesController extends Controller
             if ($ponpes->logo_ponpes && Storage::disk('public')->exists($ponpes->logo_ponpes)) {
                 Storage::disk('public')->delete($ponpes->logo_ponpes);
             }
-            
+
             $logoPath = $request->file('logo_ponpes')->store('ponpes-logos', 'public');
             $validated['logo_ponpes'] = $logoPath;
         }

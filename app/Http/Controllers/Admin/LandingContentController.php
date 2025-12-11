@@ -49,72 +49,20 @@ class LandingContentController extends Controller
     }
 
     /**
-     * Display a listing of the resource.
+     * Check ownership of landing content
      */
-    public function index(Request $request)
+    private function checkOwnership($landingContent)
     {
         $userPonpesId = $this->getUserPonpesId();
-        $contentType = $request->query('content_type');
-        $filterPonpesId = $request->query('ponpes_id');
+        $canAccessAll = $this->canAccessAllPonpes();
 
-        // Query dasar
-        $query = LandingContent::with('ponpes');
-
-        // Jika user biasa, hanya bisa akses ponpesnya sendiri
-        if (!$this->canAccessAllPonpes()) {
-            if ($userPonpesId) {
-                $query->where('ponpes_id', $userPonpesId);
-            } else {
-                // User biasa tanpa ponpes_id tidak bisa melihat data
-                $contents = collect(); // Empty collection
-                $ponpesList = collect();
-
-                return view('admin.landing-content.index', compact('contents'))->with('error', 'Anda belum ditugaskan ke pesantren manapun.');
-            }
-        }
-        // Jika admin/super admin dan memilih filter ponpes tertentu
-        elseif ($filterPonpesId) {
-            $query->where('ponpes_id', $filterPonpesId);
-        }
-        // Jika admin/super admin tanpa filter, tampilkan semua (atau batasan tertentu)
-
-        if ($contentType) {
-            $query->where('content_type', $contentType);
+        // Jika user bisa akses semua ponpes (admin/super_admin), izinkan akses
+        if ($canAccessAll) {
+            return true;
         }
 
-        $contents = $query->orderBy('ponpes_id')
-            ->orderBy('content_type')
-            ->orderBy('display_order')
-            ->paginate(10);
-
-        // Get ponpes list untuk dropdown filter
-        if ($this->canAccessAllPonpes()) {
-            // Admin bisa melihat semua ponpes aktif
-            $ponpesList = Ponpes::where('status', 'Aktif')->get();
-        } else {
-            // User biasa hanya bisa melihat ponpes mereka sendiri
-            $ponpesList = Ponpes::where('id_ponpes', $userPonpesId)->get();
-        }
-
-        // Stats untuk dashboard - berdasarkan filter yang aktif
-        $statsQuery = LandingContent::query();
-
-        if (!$this->canAccessAllPonpes() && $userPonpesId) {
-            $statsQuery->where('ponpes_id', $userPonpesId);
-        } elseif ($filterPonpesId) {
-            $statsQuery->where('ponpes_id', $filterPonpesId);
-        }
-
-        $stats = [
-            'total' => $contents->total(),
-            'active' => $statsQuery->clone()->where('is_active', true)->count(),
-            'with_images' => $statsQuery->clone()->whereNotNull('image')->count(),
-            'carousel_count' => $statsQuery->clone()->where('content_type', 'carousel')->count(),
-            'founder_count' => $statsQuery->clone()->where('content_type', 'about_founder')->count(),
-            'leader_count' => $statsQuery->clone()->where('content_type', 'about_leader')->count(),
-        ];
-
-        return view('admin.landing-content.index-card', compact('contents', 'ponpesList', 'stats'));
+        // Jika user biasa, cek apakah ponpes_id cocok
+        return $userPonpesId && $landingContent->ponpes_id == $userPonpesId;
     }
 
     /**
@@ -152,7 +100,18 @@ class LandingContentController extends Controller
                 ->with('error', 'Anda belum ditugaskan ke pesantren. Silakan hubungi administrator.');
         }
 
-        $validTypes = ['carousel', 'about_founder', 'about_leader', 'footer', 'section_title'];
+        $validTypes = [
+            'carousel',
+            'about_founder',
+            'about_leader',
+            'about_vision',
+            'about_mision',
+            'program_list',
+            'gallery',
+            'testimony',
+            'cta',
+            'footer'
+        ];
 
         if (!in_array($type, $validTypes)) {
             return redirect()->route('admin.landing-content.create')
@@ -185,7 +144,7 @@ class LandingContentController extends Controller
         }
 
         $rules = [
-            'content_type' => 'required|in:carousel,about_founder,about_leader,footer,section_title',
+            'content_type' => 'required|in:carousel,about_founder,about_leader,about_vision,about_mision,program_list,gallery,testimony,cta,footer',
             'is_active' => 'nullable|boolean',
         ];
 
@@ -215,17 +174,48 @@ class LandingContentController extends Controller
                 $rules['display_order'] = 'nullable|integer|min:0';
                 break;
 
-            case 'footer':
+            case 'about_vision':
+            case 'about_mision':
+            case 'program_list':
                 $rules['title'] = 'required|string|max:255';
-                $rules['description'] = 'required|string';
+                $rules['description'] = 'required|string|min:10';
+                $rules['image'] = 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
                 $rules['url'] = 'nullable|url|max:255';
                 $rules['display_order'] = 'required|integer|min:1';
                 break;
 
-            case 'section_title':
+            case 'gallery':
+                $rules['title'] = 'required|string|max:255';
+                $rules['description'] = 'nullable|string';
+                $rules['image'] = 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
+                $rules['position'] = 'nullable|string|max:100';
+                $rules['url'] = 'nullable|url|max:255';
+                $rules['display_order'] = 'required|integer|min:1';
+                break;
+
+            case 'testimony':
+                $rules['title'] = 'required|string|max:255';
+                $rules['position'] = 'nullable|string|max:100';
+                $rules['description'] = 'required|string|min:10';
+                $rules['image'] = 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
+                $rules['url'] = 'nullable|url|max:255';
+                $rules['display_order'] = 'required|integer|min:1';
+                break;
+
+            case 'cta':
                 $rules['title'] = 'required|string|max:255';
                 $rules['subtitle'] = 'nullable|string';
+                $rules['description'] = 'nullable|string';
+                $rules['image'] = 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
+                $rules['url'] = 'required|url|max:255';
                 $rules['position'] = 'nullable|string|max:100';
+                $rules['display_order'] = 'required|integer|min:1';
+                break;
+
+            case 'footer':
+                $rules['title'] = 'required|string|max:255';
+                $rules['description'] = 'required|string';
+                $rules['url'] = 'nullable|url|max:255';
                 $rules['display_order'] = 'required|integer|min:1';
                 break;
         }
@@ -240,7 +230,9 @@ class LandingContentController extends Controller
         }
 
         // Handle image upload untuk tipe yang membutuhkan gambar
-        if (in_array($request->content_type, ['carousel', 'about_founder', 'about_leader']) && $request->hasFile('image')) {
+        $imageTypes = ['carousel', 'about_founder', 'about_leader', 'gallery', 'testimony', 'cta', 'about_vision', 'about_mision', 'program_list'];
+
+        if (in_array($request->content_type, $imageTypes) && $request->hasFile('image')) {
             $imagePath = $request->file('image')->store('landing-content', 'public');
             $validated['image'] = $imagePath;
         }
@@ -249,34 +241,21 @@ class LandingContentController extends Controller
 
         LandingContent::create($validated);
 
-        return redirect()->route('admin.landing-content.index')
-            ->with('success', ucfirst(str_replace('_', ' ', $request->content_type)) . ' berhasil ditambahkan.');
-    }
-
-    // ... (method-method lainnya tetap sama)
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(LandingContent $landingContent)
-    {
-        // Check ownership
-        if (!$this->checkOwnership($landingContent)) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $userPonpesId = $this->getUserPonpesId();
-        $ponpesList = Ponpes::where('id_ponpes', $userPonpesId)->get();
-
-        $contentTypes = [
+        $contentTypeNames = [
             'carousel' => 'Carousel',
-            'about_founder' => 'About Founder',
-            'about_leader' => 'About Leader',
-            'footer' => 'Footer',
-            'section_title' => 'Section Title'
+            'about_founder' => 'Founder/Pendiri',
+            'about_leader' => 'Leader/Pengurus',
+            'about_vision' => 'Visi',
+            'about_mision' => 'Misi',
+            'program_list' => 'Program',
+            'gallery' => 'Galeri',
+            'testimony' => 'Testimoni',
+            'cta' => 'Call to Action',
+            'footer' => 'Footer Link'
         ];
 
-        return view('admin.landing-content.edit', compact('landingContent', 'ponpesList', 'contentTypes'));
+        return redirect()->route('admin.landing-content.index')
+            ->with('success', $contentTypeNames[$request->content_type] . ' berhasil ditambahkan.');
     }
 
     /**
@@ -292,11 +271,11 @@ class LandingContentController extends Controller
         $userPonpesId = $this->getUserPonpesId();
 
         $rules = [
-            'content_type' => 'required|in:carousel,about_founder,about_leader,footer,section_title',
+            'content_type' => 'required|in:carousel,about_founder,about_leader,about_vision,about_mision,program_list,gallery,testimony,cta,footer',
             'is_active' => 'nullable|boolean',
         ];
 
-        // Tambahkan rules berdasarkan tipe konten (sama seperti store)
+        // Tambahkan rules berdasarkan tipe konten
         switch ($request->content_type) {
             case 'carousel':
                 $rules['title'] = 'nullable|string|max:255';
@@ -317,17 +296,48 @@ class LandingContentController extends Controller
                 $rules['display_order'] = 'nullable|integer|min:0';
                 break;
 
-            case 'footer':
+            case 'about_vision':
+            case 'about_mision':
+            case 'program_list':
                 $rules['title'] = 'required|string|max:255';
-                $rules['description'] = 'required|string';
+                $rules['description'] = 'required|string|min:10';
+                $rules['image'] = 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
                 $rules['url'] = 'nullable|url|max:255';
                 $rules['display_order'] = 'required|integer|min:1';
                 break;
 
-            case 'section_title':
+            case 'gallery':
+                $rules['title'] = 'required|string|max:255';
+                $rules['description'] = 'nullable|string';
+                $rules['image'] = 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
+                $rules['position'] = 'nullable|string|max:100';
+                $rules['url'] = 'nullable|url|max:255';
+                $rules['display_order'] = 'required|integer|min:1';
+                break;
+
+            case 'testimony':
+                $rules['title'] = 'required|string|max:255';
+                $rules['position'] = 'nullable|string|max:100';
+                $rules['description'] = 'required|string|min:10';
+                $rules['image'] = 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
+                $rules['url'] = 'nullable|url|max:255';
+                $rules['display_order'] = 'required|integer|min:1';
+                break;
+
+            case 'cta':
                 $rules['title'] = 'required|string|max:255';
                 $rules['subtitle'] = 'nullable|string';
+                $rules['description'] = 'nullable|string';
+                $rules['image'] = 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
+                $rules['url'] = 'required|url|max:255';
                 $rules['position'] = 'nullable|string|max:100';
+                $rules['display_order'] = 'required|integer|min:1';
+                break;
+
+            case 'footer':
+                $rules['title'] = 'required|string|max:255';
+                $rules['description'] = 'required|string';
+                $rules['url'] = 'nullable|url|max:255';
                 $rules['display_order'] = 'required|integer|min:1';
                 break;
         }
@@ -338,7 +348,9 @@ class LandingContentController extends Controller
         $validated['ponpes_id'] = $userPonpesId;
 
         // Handle image upload
-        if ($request->hasFile('image')) {
+        $imageTypes = ['carousel', 'about_founder', 'about_leader', 'gallery', 'testimony', 'cta', 'about_vision', 'about_mision', 'program_list'];
+
+        if (in_array($request->content_type, $imageTypes) && $request->hasFile('image')) {
             // Delete old image if exists
             if ($landingContent->image && Storage::disk('public')->exists($landingContent->image)) {
                 Storage::disk('public')->delete($landingContent->image);
@@ -346,8 +358,8 @@ class LandingContentController extends Controller
 
             $imagePath = $request->file('image')->store('landing-content', 'public');
             $validated['image'] = $imagePath;
-        } elseif ($request->content_type == 'footer' || $request->content_type == 'section_title') {
-            // Hapus image jika tipe tidak memerlukan gambar
+        } elseif ($request->content_type == 'footer') {
+            // Hapus image jika tipe footer
             $validated['image'] = null;
         }
 
@@ -355,172 +367,90 @@ class LandingContentController extends Controller
 
         $landingContent->update($validated);
 
-        return redirect()->route('admin.landing-content.index')
-            ->with('success', ucfirst(str_replace('_', ' ', $request->content_type)) . ' berhasil diperbarui.');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(LandingContent $landingContent)
-    {
-        // Check ownership
-        if (!$this->checkOwnership($landingContent)) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        // Delete image if exists
-        if ($landingContent->image && Storage::disk('public')->exists($landingContent->image)) {
-            Storage::disk('public')->delete($landingContent->image);
-        }
-
-        $landingContent->delete();
+        $contentTypeNames = [
+            'carousel' => 'Carousel',
+            'about_founder' => 'Founder/Pendiri',
+            'about_leader' => 'Leader/Pengurus',
+            'about_vision' => 'Visi',
+            'about_mision' => 'Misi',
+            'program_list' => 'Program',
+            'gallery' => 'Galeri',
+            'testimony' => 'Testimoni',
+            'cta' => 'Call to Action',
+            'footer' => 'Footer Link'
+        ];
 
         return redirect()->route('admin.landing-content.index')
-            ->with('success', 'Konten landing page berhasil dihapus.');
+            ->with('success', $contentTypeNames[$request->content_type] . ' berhasil diperbarui.');
     }
 
-    /**
-     * Update display order via AJAX
-     */
-    public function updateOrder(Request $request)
+    public function index(Request $request)
     {
         $userPonpesId = $this->getUserPonpesId();
+        $contentType = $request->query('content_type');
+        $filterPonpesId = $request->query('ponpes_id');
 
-        $request->validate([
-            'items' => 'required|array',
-            'items.*.id' => 'required|exists:landing_content,id_content,ponpes_id,' . $userPonpesId,
-            'items.*.order' => 'required|integer',
-        ]);
+        // Query dasar
+        $query = LandingContent::with('ponpes');
 
-        foreach ($request->items as $item) {
-            LandingContent::where('id_content', $item['id'])
-                ->where('ponpes_id', $userPonpesId)
-                ->update(['display_order' => $item['order']]);
+        // Jika user biasa, hanya bisa akses ponpesnya sendiri
+        if (!$this->canAccessAllPonpes()) {
+            if ($userPonpesId) {
+                $query->where('ponpes_id', $userPonpesId);
+            } else {
+                // User biasa tanpa ponpes_id tidak bisa melihat data
+                $contents = collect(); // Empty collection
+                $ponpesList = collect();
+                $userPonpes = null;
+
+                return view('admin.landing-content.index', compact('contents', 'userPonpes'))->with('error', 'Anda belum ditugaskan ke pesantren manapun.');
+            }
+        }
+        // Jika admin/super admin dan memilih filter ponpes tertentu
+        elseif ($filterPonpesId) {
+            $query->where('ponpes_id', $filterPonpesId);
+        }
+        // Jika admin/super admin tanpa filter, tampilkan semua (atau batasan tertentu)
+
+        if ($contentType) {
+            $query->where('content_type', $contentType);
         }
 
-        return response()->json(['success' => true]);
-    }
+        $contents = $query->orderBy('ponpes_id')
+            ->orderBy('content_type')
+            ->orderBy('display_order')
+            ->paginate(10);
 
-    /**
-     * Get content detail
-     */
-    public function getContentDetail($id)
-    {
-        $userPonpesId = $this->getUserPonpesId();
-        $content = LandingContent::with('ponpes')
-            ->where('id_content', $id)
-            ->where('ponpes_id', $userPonpesId)
-            ->firstOrFail();
-
-        return response()->json([
-            'id_content' => $content->id_content,
-            'title' => $content->title,
-            'subtitle' => $content->subtitle,
-            'description' => $content->description,
-            'position' => $content->position,
-            'url' => $content->url,
-            'image' => $content->image,
-            'image_url' => $content->image ? Storage::url($content->image) : null,
-            'content_type' => $content->content_type,
-            'is_active' => $content->is_active,
-            'display_order' => $content->display_order,
-            'created_at_formatted' => $content->created_at->format('d M Y H:i'),
-            'updated_at_formatted' => $content->updated_at->format('d M Y H:i'),
-            'ponpes' => $content->ponpes ? [
-                'id_ponpes' => $content->ponpes->id_ponpes,
-                'nama_ponpes' => $content->ponpes->nama_ponpes
-            ] : null
-        ]);
-    }
-
-    public function apiDetail($id)
-    {
-        return $this->getContentDetail($id);
-    }
-
-    /**
-     * Toggle status aktivasi
-     */
-    public function toggleStatus(Request $request, $id)
-    {
-        $userPonpesId = $this->getUserPonpesId();
-        $content = LandingContent::where('id_content', $id)
-            ->where('ponpes_id', $userPonpesId)
-            ->firstOrFail();
-
-        $request->validate([
-            'is_active' => 'required|boolean'
-        ]);
-
-        $content->update([
-            'is_active' => $request->is_active
-        ]);
-
-        return response()->json(['success' => true]);
-    }
-
-    /**
-     * Update order single
-     */
-    public function updateOrderSingle(Request $request, $id)
-    {
-        $userPonpesId = $this->getUserPonpesId();
-        $content = LandingContent::where('id_content', $id)
-            ->where('ponpes_id', $userPonpesId)
-            ->firstOrFail();
-
-        $request->validate([
-            'display_order' => 'required|integer|min:1'
-        ]);
-
-        $content->update([
-            'display_order' => $request->display_order
-        ]);
-
-        return response()->json(['success' => true]);
-    }
-
-    /**
-     * Get detail for preview
-     */
-    public function detail($id)
-    {
-        $userPonpesId = $this->getUserPonpesId();
-        $content = LandingContent::with('ponpes')
-            ->where('id_content', $id)
-            ->where('ponpes_id', $userPonpesId)
-            ->firstOrFail();
-
-        return response()->json([
-            'id_content' => $content->id_content,
-            'title' => $content->title,
-            'subtitle' => $content->subtitle,
-            'description' => $content->description,
-            'position' => $content->position,
-            'url' => $content->url,
-            'image' => $content->image,
-            'image_url' => $content->image ? Storage::url($content->image) : null,
-            'content_type' => $content->content_type,
-            'is_active' => $content->is_active,
-            'display_order' => $content->display_order,
-            'created_at' => $content->created_at->format('d M Y H:i'),
-            'created_at_formatted' => $content->created_at->format('d M Y H:i'),
-            'updated_at_formatted' => $content->updated_at->format('d M Y H:i'),
-            'ponpes' => $content->ponpes ? [
-                'id_ponpes' => $content->ponpes->id_ponpes,
-                'nama_ponpes' => $content->ponpes->nama_ponpes
-            ] : null
-        ]);
-    }
-
-    public function show(LandingContent $landingContent)
-    {
-        // Check ownership
-        if (!$this->checkOwnership($landingContent)) {
-            abort(403, 'Unauthorized action.');
+        // Get ponpes list untuk dropdown filter
+        if ($this->canAccessAllPonpes()) {
+            // Admin bisa melihat semua ponpes aktif
+            $ponpesList = Ponpes::where('status', 'Aktif')->get();
+        } else {
+            // User biasa hanya bisa melihat ponpes mereka sendiri
+            $ponpesList = Ponpes::where('id_ponpes', $userPonpesId)->get();
         }
 
-        return view('admin.landing-content.show', compact('landingContent'));
+        // Get user's ponpes
+        $userPonpes = Ponpes::find($userPonpesId);
+
+        // Stats untuk dashboard - berdasarkan filter yang aktif
+        $statsQuery = LandingContent::query();
+
+        if (!$this->canAccessAllPonpes() && $userPonpesId) {
+            $statsQuery->where('ponpes_id', $userPonpesId);
+        } elseif ($filterPonpesId) {
+            $statsQuery->where('ponpes_id', $filterPonpesId);
+        }
+
+        $stats = [
+            'total' => $contents->total(),
+            'active' => $statsQuery->clone()->where('is_active', true)->count(),
+            'with_images' => $statsQuery->clone()->whereNotNull('image')->count(),
+            'carousel_count' => $statsQuery->clone()->where('content_type', 'carousel')->count(),
+            'founder_count' => $statsQuery->clone()->where('content_type', 'about_founder')->count(),
+            'leader_count' => $statsQuery->clone()->where('content_type', 'about_leader')->count(),
+        ];
+
+        return view('admin.landing-content.index', compact('contents', 'ponpesList', 'stats', 'userPonpes'));
     }
 }

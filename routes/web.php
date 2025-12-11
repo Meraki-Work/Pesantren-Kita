@@ -13,6 +13,7 @@ use App\Http\Controllers\TableController;
 use App\Http\Controllers\NotulenController;
 use App\Http\Controllers\CashController;
 use App\Http\Controllers\SantriController;
+
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\KompetensiController;
 use App\Http\Controllers\PencapaianController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\LaundryController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\KepegawaianController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Models\Ponpes;
 use App\Models\Gambar;
@@ -48,6 +50,34 @@ use App\Http\Controllers\Admin\PonpesController;
 // ==================== PUBLIC ROUTES ====================
 
 use App\Services\BrevoApiService;
+
+// Landing Page Public Routes
+Route::get('/landing/{identifier}', [LandingPageController::class, 'showPublic'])->name('landing.public.show');
+Route::get('/ponpes/{identifier}', [LandingPageController::class, 'showPublic'])->name('ponpes.public.show');
+Route::get('/pesantren/{identifier}', [LandingPageController::class, 'showPublic'])->name('pesantren.public.show');
+
+// List all ponpes for public
+Route::get('/ponpes-list', [LandingPageController::class, 'listPublic'])->name('landing.public.list');
+Route::get('/pesantren-list', [LandingPageController::class, 'listPublic'])->name('pesantren.public.list');
+
+// Search ponpes
+Route::get('/cari-pesantren', function () {
+    $keyword = request('q');
+    if ($keyword) {
+        $ponpesList = \App\Models\Ponpes::where('status', 'Aktif')
+            ->where(function ($query) use ($keyword) {
+                $query->where('nama_ponpes', 'like', "%{$keyword}%")
+                    ->orWhere('alamat', 'like', "%{$keyword}%")
+                    ->orWhere('pimpinan', 'like', "%{$keyword}%");
+            })
+            ->orderBy('nama_ponpes')
+            ->paginate(12);
+
+        return view('landing.search', compact('ponpesList', 'keyword'));
+    }
+
+    return redirect()->route('landing.public.list');
+})->name('landing.search');
 
 Route::get('/test-email', function () {
     $brevo = new BrevoApiService();
@@ -124,6 +154,13 @@ Route::middleware('guest')->group(function () {
 });
 Route::post('/lupakatasandi/send-otp', [ResetPasswordController::class, 'sendOtp'])->name('password.sendOtp');
 
+// Landing Page Routes (public)
+Route::get('/landing/{ponpes}', [LandingPageController::class, 'show'])->name('landing.show');
+Route::get('/landing', [LandingPageController::class, 'index'])->name('landing.index');
+Route::get('/landing/{id}', [LandingPageController::class, 'show'])->name('landing.show');
+Route::get('/landing/slug/{slug}', [LandingPageController::class, 'showBySlug'])->name('landing.show.slug');
+
+
 // Logout (accessible by both guest and auth)
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
@@ -137,8 +174,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
     Route::resource('ponpes', PonpesController::class);
 
-    Route::prefix('landing-content')->name('landing-content.')->group(function () {
+    // Logo update route harus ditempatkan SEBELUM resource
+    Route::patch('/ponpes/{id}/logo', [PonpesController::class, 'updateLogo'])->name('ponpes.update-logo');
 
+    Route::prefix('landing-content')->name('landing-content.')->group(function () {
         Route::get('/', [LandingContentController::class, 'index'])->name('index');
         Route::get('/card-view', [LandingContentController::class, 'indexCard'])->name('card');
 
@@ -146,10 +185,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::get('/create/{type}', [LandingContentController::class, 'createByType'])->name('create-type');
         Route::post('/', [LandingContentController::class, 'store'])->name('store');
 
-        Route::get('/{landingContent}', [LandingContentController::class, 'show'])->name('show');
+        // dynamic routes pindahkan ke bawah
         Route::get('/{landingContent}/edit', [LandingContentController::class, 'edit'])->name('edit');
         Route::put('/{landingContent}', [LandingContentController::class, 'update'])->name('update');
         Route::delete('/{landingContent}', [LandingContentController::class, 'destroy'])->name('destroy');
+        Route::get('/{landingContent}', [LandingContentController::class, 'show'])->name('show');
 
         Route::get('/{id}/detail', [LandingContentController::class, 'getContentDetail'])->name('detail');
         Route::patch('/{id}/toggle-status', [LandingContentController::class, 'toggleStatus'])->name('toggle-status');
@@ -157,7 +197,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         Route::post('/update-order', [LandingContentController::class, 'updateOrder'])->name('update-order');
     });
 });
-
 
 // Debug Routes (hanya untuk development)
 if (app()->environment('local')) {
@@ -419,9 +458,12 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Kepegawaian Routes
-    Route::get('/kepegawaian', function () {
-        return view('kepegawaian');
-    })->name('kepegawaian');
+    Route::prefix('kepegawaian')->name('kepegawaian.')->group(function () {
+        Route::get('/', [KepegawaianController::class, 'index'])->name('index');
+        Route::post('/', [KepegawaianController::class, 'store'])->name('store');
+        Route::put('/{id}', [KepegawaianController::class, 'update'])->name('update');
+        Route::delete('/{id}', [KepegawaianController::class, 'destroy'])->name('destroy');
+    });
 });
 
 // ==================== FALLBACK ROUTE ====================

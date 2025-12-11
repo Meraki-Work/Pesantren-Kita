@@ -30,7 +30,7 @@ use Illuminate\Notifications\Notifiable;
  */
 class User extends Authenticatable
 {
-    use HasApiTokens, Notifiable;
+    use Notifiable; // Hapus HasApiTokens
 
     protected $table = 'user';
     protected $primaryKey = 'id_user';
@@ -75,7 +75,7 @@ class User extends Authenticatable
         return $this->belongsTo(Ponpe::class, 'ponpes_id');
     }
 
-        public function scopeActive($query)
+    public function scopeActive($query)
     {
         return $query->where('status', 'active');
     }
@@ -111,11 +111,11 @@ class User extends Authenticatable
     }
 
     // Di app/Models/User.php
-public function hasActiveSubscription()
-{
-    return \Illuminate\Support\Facades\DB::table('subscriptions')
-        ->where('ponpes_id', $this->ponpes_id)
-        ->where('status', 'active')
-        ->exists();
-}
+    public function hasActiveSubscription()
+    {
+        return \Illuminate\Support\Facades\DB::table('subscriptions')
+            ->where('ponpes_id', $this->ponpes_id)
+            ->where('status', 'active')
+            ->exists();
+    }
 }
