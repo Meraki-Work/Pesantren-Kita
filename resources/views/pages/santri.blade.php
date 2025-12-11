@@ -120,7 +120,13 @@
                         </div>
                     </div>
                     <div class="flex gap-4 mt-4">
-                        <div class="w-full">@include('pages.modal.create_kelas')</div>
+                        <div class="w-full">
+                            <a href="{{ route('kelas.index') }}"
+                                class="w-full block text-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition duration-200">
+                                Tambah Kelas
+                            </a>
+                        </div>
+
                         <div class="w-full">@include('pages.modal.create_santri')</div>
                     </div>
 
@@ -133,8 +139,6 @@
                         <x-dynamic-table :columns="$columnsbio" :rows="$rowsbio" />
                     </div>
                     <div x-show="currentTab==='pencapaian'" class="flex-1 overflow-auto p-4 bg-white rounded-xl shadow-sm">
-                        <h2 class="text-lg font-bold text-black mb-4">Kompetensi Data Santri</h2>
-                        <!-- Tabel Minimalis -->
                         <!-- Table Header dengan Info -->
                         <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
                             <div class="flex justify-between items-center">
@@ -203,55 +207,54 @@
                                         <tr class="group transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 
                       {{ $index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30' }}">
 
-                                            <!-- Kolom Santri -->
-                                            <td class="px-6 py-4 whitespace-nowrap transition-colors duration-200 group-hover:text-gray-900 cursor-pointer"
-                                                onclick="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
-                                                <div class="flex items-center">
-                                                    <span class="font-semibold text-gray-900">{{ $item->nama_santri }}</span>
-                                                </div>
-                                            </td>
+<!-- Kolom Santri -->
+<td class="px-6 py-4 whitespace-nowrap transition-colors duration-200 group-hover:text-gray-900 cursor-pointer"
+    @click="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
+    <div class="flex items-center">
+        <span class="font-semibold text-gray-900">{{ $item->nama_santri }}</span>
+    </div>
+</td>
 
-                                            <!-- Kolom Kelas -->
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm transition-colors duration-200 group-hover:text-gray-900 cursor-pointer"
-                                                onclick="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
-                                                <div class="flex items-center">
-                                                    <span class="text-gray-700">{{ $item->nama_kelas }}</span>
-                                                </div>
-                                            </td>
+<!-- Kolom Kelas -->
+<td class="px-6 py-4 whitespace-nowrap text-sm transition-colors duration-200 group-hover:text-gray-900 cursor-pointer"
+    @click="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
+    <div class="flex items-center">
+        <span class="text-gray-700">{{ $item->nama_kelas }}</span>
+    </div>
+</td>
 
-                                            <!-- Kolom Pencapaian -->
-                                            <td class="px-6 py-4 transition-colors duration-200 cursor-pointer"
-                                                onclick="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
-                                                <div class="flex flex-col">
-                                                    <div class="text-sm font-medium text-gray-900">{{ $item->judul }}</div>
-                                                    <div class="text-xs text-gray-500 mt-1">{{ Str::limit($item->deskripsi, 40) }}</div>
-                                                </div>
-                                            </td>
+<!-- Kolom Pencapaian -->
+<td class="px-6 py-4 transition-colors duration-200 cursor-pointer"
+    @click="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
+    <div class="flex flex-col">
+        <div class="text-sm font-medium text-gray-900">{{ $item->judul }}</div>
+        <div class="text-xs text-gray-500 mt-1">{{ Str::limit($item->deskripsi, 40) }}</div>
+    </div>
+</td>
 
-                                            <!-- Kolom Tipe -->
-                                            <td class="px-6 py-4 whitespace-nowrap transition-colors duration-200 cursor-pointer"
-                                                onclick="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                    {{ $item->tipe }}
-                                                </span>
-                                            </td>
+<!-- Kolom Tipe -->
+<td class="px-6 py-4 whitespace-nowrap transition-colors duration-200 cursor-pointer"
+    @click="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+        {{ $item->tipe }}
+    </span>
+</td>
 
-                                            <!-- Kolom Tanggal -->
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm transition-colors duration-200 group-hover:text-gray-900 cursor-pointer"
-                                                onclick="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
-                                                <div class="flex items-center">
-                                                    <span class="text-gray-700">{{ \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y') }}</span>
-                                                </div>
-                                            </td>
+<!-- Kolom Tanggal -->
+<td class="px-6 py-4 whitespace-nowrap text-sm transition-colors duration-200 group-hover:text-gray-900 cursor-pointer"
+    @click="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
+    <div class="flex items-center">
+        <span class="text-gray-700">{{ \Carbon\Carbon::parse($item->tanggal)->format('d/m/Y') }}</span>
+    </div>
+</td>
 
-                                            <!-- Kolom Skor -->
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium transition-colors duration-200 cursor-pointer"
-                                                onclick="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
-                                                <span class="{{ $item->skor >= 80 ? 'text-green-600' : ($item->skor >= 60 ? 'text-orange-600' : 'text-red-600') }}">
-                                                    {{ $item->skor }}/100
-                                                </span>
-                                            </td>
-
+<!-- Kolom Skor -->
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium transition-colors duration-200 cursor-pointer"
+    @click="showDetail('{{ $item->id_santri }}', '{{ $item->nama_santri }}')">
+    <span class="{{ $item->skor >= 80 ? 'text-green-600' : ($item->skor >= 60 ? 'text-orange-600' : 'text-red-600') }}">
+        {{ $item->skor }}/100
+    </span>
+</td>
                                             <!-- Kolom Aksi -->
                                             <td class="px-6 py-4 whitespace-nowrap" onclick="event.stopPropagation()">
                                                 <div class="flex justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -444,12 +447,6 @@
                             @endforelse
                         </div>
                     </div>
-
-                    <div class="mt-auto">
-                        <a href="/kompetensi" class="w-full h-12 py-2 bg-[#2ECC71] text-white text-sm font-semibold rounded-lg hover:bg-green-600 transition inline-flex items-center justify-center">
-                            <span>Tambah Kompetensi</span>
-                        </a>
-                    </div>
                 </div>
             </div>
 
@@ -475,6 +472,11 @@
                         <div class="text-center text-gray-500 py-4">
                             Memuat data...
                         </div>
+                    </div>
+                    <div class="mt-3">
+                        <a href="/kompetensi" class="w-full h-12 py-2 bg-[#2ECC71] text-white text-sm font-semibold rounded-lg hover:bg-green-600 transition inline-flex items-center justify-center">
+                            <span>Tambah Kompetensi</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -615,112 +617,16 @@
         });
     }
 
-    // Inisialisasi chart ketika Alpine.js siap
-    document.addEventListener('alpine:init', () => {
-        setTimeout(initializeChart, 100);
-    });
-
-    // Juga inisialisasi saat tab diubah
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initial chart setup
-        setTimeout(initializeChart, 200);
-
-        // Observer untuk mendeteksi perubahan tab
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'attributes' && mutation.attributeName === 'x-show') {
-                    const tabPencapaian = document.querySelector('[x-show="currentTab===\'pencapaian\'"]');
-                    if (tabPencapaian && !tabPencapaian.hasAttribute('hidden')) {
-                        setTimeout(initializeChart, 50);
-                    }
-                }
-            });
-        });
-
-        // Observe the main element
-        const mainElement = document.querySelector('main[x-data]');
-        if (mainElement) {
-            observer.observe(mainElement, {
-                attributes: true,
-                attributeFilter: ['x-show']
-            });
-        }
-    });
-
-    // Refresh chart function (bisa dipanggil dari mana saja)
-    window.refreshChart = initializeChart;
-
-    function performSearchPencapaian(searchTerm) {
-        const searchTermLower = searchTerm.trim().toLowerCase();
-
-        if (!searchTermLower) {
-            // Show all rows if search is empty
-            document.querySelectorAll('#tbodyDataPencapaian tr').forEach(row => {
-                row.style.display = '';
-            });
-            return;
-        }
-
-        // Filter rows
-        document.querySelectorAll('#tbodyDataPencapaian tr').forEach(row => {
-            const rowText = row.textContent.toLowerCase();
-            if (rowText.includes(searchTermLower)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-
-    // Event handler untuk search input
-    document.getElementById('searchInputPencapaian')?.addEventListener('input', function(e) {
-        const searchTerm = e.target.value;
-
-        if (searchTimeoutPencapaian) {
-            clearTimeout(searchTimeoutPrecapaian);
-        }
-
-        // Show loading
-        const searchLoading = document.getElementById('searchLoadingPencapaian');
-        if (searchLoading) searchLoading.classList.remove('hidden');
-
-        searchTimeoutPencapaian = setTimeout(() => {
-            performSearchPencapaian(searchTerm);
-            if (searchLoading) searchLoading.classList.add('hidden');
-        }, 500);
-    });
-
-    function confirmDeletePencapaian(id, judul) {
-        if (confirm(`Apakah Anda yakin ingin menghapus kompetensi "${judul}"?`)) {
-            // Create and submit form
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `/pencapaian/${id}`;
-
-            const csrfToken = document.createElement('input');
-            csrfToken.type = 'hidden';
-            csrfToken.name = '_token';
-            csrfToken.value = '{{ csrf_token() }}';
-
-            const methodField = document.createElement('input');
-            methodField.type = 'hidden';
-            methodField.name = '_method';
-            methodField.value = 'DELETE';
-
-            form.appendChild(csrfToken);
-            form.appendChild(methodField);
-            document.body.appendChild(form);
-            form.submit();
-        }
-    }
-
+    // Alpine.js Component untuk tabel pencapaian
     function pencapaianTable() {
         return {
             selectedSantri: null,
             detailData: [],
             loading: false,
 
+            // Method yang bisa diakses dari template
             async showDetail(idSantri, namaSantri) {
+                console.log('showDetail dipanggil:', idSantri, namaSantri);
                 this.loading = true;
                 this.selectedSantri = {
                     id: idSantri,
@@ -729,7 +635,11 @@
 
                 try {
                     const response = await fetch(`/santri/${idSantri}/kompetensi`);
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
                     this.detailData = await response.json();
+                    console.log('Data diterima:', this.detailData);
                 } catch (error) {
                     console.error('Error fetching data:', error);
                     this.detailData = [];
@@ -743,7 +653,7 @@
                 this.detailData = [];
             }
         }
-    };
+    }
 
     // Search functionality
     let searchTimeoutPencapaian = null;
@@ -831,42 +741,40 @@
         }
     }
 
-    function confirmDelete(id, judul) {
-        if (confirm(`Apakah Anda yakin ingin menghapus pencapaian "${judul}"?`)) {
-            event.target.closest('form').submit();
-        }
-    }
+    // Inisialisasi chart ketika Alpine.js siap
+    document.addEventListener('alpine:init', () => {
+        setTimeout(initializeChart, 100);
+    });
 
-    function pencapaianTable() {
-        return {
-            selectedSantri: null,
-            detailData: [],
-            loading: false,
+    // Juga inisialisasi saat tab diubah
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initial chart setup
+        setTimeout(initializeChart, 200);
 
-            async showDetail(idSantri, namaSantri) {
-                this.loading = true;
-                this.selectedSantri = {
-                    id: idSantri,
-                    nama: namaSantri
-                };
-
-                try {
-                    const response = await fetch(`/santri/${idSantri}/kompetensi`);
-                    this.detailData = await response.json();
-                } catch (error) {
-                    console.error('Error fetching data:', error);
-                    this.detailData = [];
+        // Observer untuk mendeteksi perubahan tab
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'x-show') {
+                    const tabPencapaian = document.querySelector('[x-show="currentTab===\'pencapaian\'"]');
+                    if (tabPencapaian && !tabPencapaian.hasAttribute('hidden')) {
+                        setTimeout(initializeChart, 50);
+                    }
                 }
+            });
+        });
 
-                this.loading = false;
-            },
-
-            closeDetail() {
-                this.selectedSantri = null;
-                this.detailData = [];
-            }
+        // Observe the main element
+        const mainElement = document.querySelector('main[x-data]');
+        if (mainElement) {
+            observer.observe(mainElement, {
+                attributes: true,
+                attributeFilter: ['x-show']
+            });
         }
-    }
+    });
+
+    // Refresh chart function (bisa dipanggil dari mana saja)
+    window.refreshChart = initializeChart;
 </script>
 
 @endsection

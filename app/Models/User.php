@@ -109,4 +109,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(Sanksi::class);
     }
+
+    // Di app/Models/User.php
+public function hasActiveSubscription()
+{
+    return \Illuminate\Support\Facades\DB::table('subscriptions')
+        ->where('ponpes_id', $this->ponpes_id)
+        ->where('status', 'active')
+        ->exists();
+}
 }

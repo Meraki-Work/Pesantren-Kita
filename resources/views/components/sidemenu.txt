@@ -1,0 +1,355 @@
+<!-- Tambahkan Alpine.js di head jika belum ada -->
+<script src="//unpkg.com/alpinejs" defer></script>
+
+<!-- Sidebar -->
+<aside id="sidebar"
+    class="fixed inset-y-0 left-0 z-40 w-56 transform -translate-x-full transition-transform duration-300 ease-in-out 
+           bg-gradient-to-b from-emerald-900 to-emerald-700 text-white flex flex-col rounded-e-md 
+           md:translate-x-0 md:relative md:rounded-none md:w-56">
+    <div class="p-4 text-2xl font-bold border-b border-gray-700 flex items-center justify-between">
+        {{ $title ?? 'Menu' }}
+        <!-- Tombol close di mobile -->
+        <button id="closeSidebar" class="md:hidden text-white text-2xl focus:outline-none">&times;</button>
+    </div>
+
+    <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+        @php
+            // Definisikan variabel dengan benar - CEK FITUR SPESIFIK
+            $user = auth()->user();
+            $activeSubscription = null;
+            $currentPlanId = null;
+            
+            if ($user && !empty($user->ponpes_id)) {
+                $activeSubscription = \Illuminate\Support\Facades\DB::table('subscriptions')
+                    ->where('ponpes_id', $user->ponpes_id)
+                    ->where('status', 'active')
+                    ->first();
+                
+                if ($activeSubscription) {
+                    $currentPlanId = $activeSubscription->plan_id;
+                }
+            }
+
+            // Fungsi untuk cek apakah fitur enabled
+            function isFeatureEnabled($planId, $featureKey) {
+                if (!$planId) return false;
+                
+                return \Illuminate\Support\Facades\DB::table('plan_features')
+                    ->where('plan_id', $planId)
+                    ->where('feature_key', $featureKey)
+                    ->where('enabled', 1)
+                    ->exists();
+            }
+        @endphp
+
+        <!-- Debug Info -->
+        <div class="bg-red-500 p-2 rounded mb-4 text-xs">
+            <div>DEBUG INFO:</div>
+            <div>User: {{ $user->name ?? 'No user' }}</div>
+            <div>Ponpes ID: {{ $user->ponpes_id ?? 'No ponpes' }}</div>
+            <div>Active Subscription: {{ $activeSubscription ? 'YES' : 'NO' }}</div>
+            <div>Current Plan ID: {{ $currentPlanId ?? 'No plan' }}</div>
+            @if($currentPlanId)
+            <div>Plan Features:</div>
+            @php
+                $features = \Illuminate\Support\Facades\DB::table('plan_features')
+                    ->where('plan_id', $currentPlanId)
+                    ->get();
+            @endphp
+            @foreach($features as $feature)
+            <div>- {{ $feature->feature_key }}: {{ $feature->enabled ? 'ENABLED' : 'DISABLED' }}</div>
+            @endforeach
+            @endif
+        </div>
+
+        <div class="my-6 form-label text-gray-300 uppercase text-xs tracking-wider">Pengurus</div>
+
+        <!-- Dashboard - Selalu gratis -->
+        <a href="{{ route('dashboard') }}"
+            class="block px-3 py-2 rounded transition 
+            {{ request()->routeIs('dashboard') 
+                ? 'bg-active text-white' 
+                : 'bg-mint hover:bg-active hover:text-white' }} ">
+            <div class="flex items-center justify-between">
+                <span>Dashboard</span>
+            </div>
+        </a>
+
+        <!-- Kepegawaian - Plan 1: ENABLED -->
+        <a href="{{ isFeatureEnabled($currentPlanId, 'kepegawaian') ? route('kepegawaian') : '#' }}"
+            class="block px-3 py-2 rounded transition 
+            {{ request()->routeIs('users.index') 
+                ? 'bg-active text-white' 
+                : 'bg-mint hover:bg-active hover:text-white' }}
+            {{ !isFeatureEnabled($currentPlanId, 'kepegawaian') ? 'opacity-70 cursor-not-allowed' : '' }}"
+            @if(!isFeatureEnabled($currentPlanId, 'kepegawaian')) onclick="showUpgradeModal('kepegawaian')" @endif>
+            <div class="flex items-center justify-between">
+                <span>Kepegawaian</span>
+                @if(!isFeatureEnabled($currentPlanId, 'kepegawaian'))
+                <!-- Ikon gembok di sebelah kanan -->
+                <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                </svg>
+                @else
+                <span class="text-green-400 text-xs">✓</span>
+                @endif
+            </div>
+        </a>
+
+        <!-- Sanksi - Plan 1: DISABLED -->
+        <a href="{{ isFeatureEnabled($currentPlanId, 'sanksi') ? route('sanksi.index') : '#' }}"
+            class="block px-3 py-2 rounded transition 
+            {{ request()->routeIs('settings') 
+                ? 'bg-active text-white' 
+                : 'bg-mint hover:bg-active hover:text-white' }}
+            {{ !isFeatureEnabled($currentPlanId, 'sanksi') ? 'opacity-70 cursor-not-allowed' : '' }}"
+            @if(!isFeatureEnabled($currentPlanId, 'sanksi')) onclick="showUpgradeModal('sanksi')" @endif>
+            <div class="flex items-center justify-between">
+                <span>Sanksi</span>
+                @if(!isFeatureEnabled($currentPlanId, 'sanksi'))
+                <!-- Ikon gembok di sebelah kanan -->
+                <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                </svg>
+                @else
+                <span class="text-green-400 text-xs">✓</span>
+                @endif
+            </div>
+        </a>
+
+        <!-- Notulensi - Plan 1: DISABLED -->
+        <a href="{{ isFeatureEnabled($currentPlanId, 'notulensi') ? route('notulen.index') : '#' }}"
+            class="block px-3 py-2 rounded transition 
+            {{ request()->routeIs('notulen.index') 
+                ? 'bg-active text-white' 
+                : 'bg-mint hover:bg-active hover:text-white' }}
+            {{ !isFeatureEnabled($currentPlanId, 'notulensi') ? 'opacity-70 cursor-not-allowed' : '' }}"
+            @if(!isFeatureEnabled($currentPlanId, 'notulensi')) onclick="showUpgradeModal('notulensi')" @endif>
+            <div class="flex items-center justify-between">
+                <span>Notulensi</span>
+                @if(!isFeatureEnabled($currentPlanId, 'notulensi'))
+                <!-- Ikon gembok di sebelah kanan -->
+                <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                </svg>
+                @else
+                <span class="text-green-400 text-xs">✓</span>
+                @endif
+            </div>
+        </a>
+
+        <div class="my-4 form-label text-gray-300 uppercase tracking-wider">Manajemen</div>
+
+        <!-- Keuangan - Plan 1: DISABLED -->
+        <a href="{{ isFeatureEnabled($currentPlanId, 'keuangan') ? route('keuangan.index') : '#' }}"
+            class="block px-3 py-2 rounded transition 
+            {{ request()->routeIs('keuangan') 
+                ? 'bg-active text-white' 
+                : 'bg-mint hover:bg-active hover:text-white' }}
+            {{ !isFeatureEnabled($currentPlanId, 'keuangan') ? 'opacity-70 cursor-not-allowed' : '' }}"
+            @if(!isFeatureEnabled($currentPlanId, 'keuangan')) onclick="showUpgradeModal('keuangan')" @endif>
+            <div class="flex items-center justify-between">
+                <span>Keuangan</span>
+                @if(!isFeatureEnabled($currentPlanId, 'keuangan'))
+                <!-- Ikon gembok di sebelah kanan -->
+                <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                </svg>
+                @else
+                <span class="text-green-400 text-xs">✓</span>
+                @endif
+            </div>
+        </a>
+
+        <!-- Dropdown Santri & Kompetensi -->
+        <div x-data="{ open: {{ request()->routeIs('santri.*') || request()->routeIs('laundry.*') ? 'true' : 'false' }} }" class="relative">
+            <button @click="open = !open"
+                class="w-full flex justify-between items-center px-3 py-2 rounded transition 
+                {{ request()->routeIs('santri.*') || request()->routeIs('laundry.*') 
+                    ? 'bg-active text-white' 
+                    : 'bg-mint hover:bg-active hover:text-white' }}
+                {{ !isFeatureEnabled($currentPlanId, 'santri') && !isFeatureEnabled($currentPlanId, 'laundry') ? 'opacity-70 cursor-not-allowed' : '' }}"
+                @if(!isFeatureEnabled($currentPlanId, 'santri') && !isFeatureEnabled($currentPlanId, 'laundry')) onclick="showUpgradeModal('manajemen santri')" @endif>
+                <div class="flex items-center justify-between w-full">
+                    <span>Santri</span>
+                    <div class="flex items-center">
+                        @if(!isFeatureEnabled($currentPlanId, 'santri') && !isFeatureEnabled($currentPlanId, 'laundry'))
+                        <!-- Ikon gembok di sebelah kanan -->
+                        <svg class="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        @else
+                        <span class="text-green-400 text-xs mr-2">✓</span>
+                        @endif
+                        <span x-bind:class="{'rotate-180': open}" class="transition-transform">&#9662;</span>
+                    </div>
+                </div>
+            </button>
+
+            <div x-show="open" x-transition class="mt-1 ml-2 space-y-1">
+                <!-- Data Santri - Plan 1: ENABLED -->
+                <a href="{{ isFeatureEnabled($currentPlanId, 'santri') ? route('santri.index') : '#' }}"
+                    class="block px-3 py-2 rounded transition 
+                    {{ request()->routeIs('santri.index') 
+                        ? 'bg-active text-white' 
+                        : 'bg-mint hover:bg-active hover:text-white' }}
+                    {{ !isFeatureEnabled($currentPlanId, 'santri') ? 'opacity-70 cursor-not-allowed' : '' }}"
+                    @if(!isFeatureEnabled($currentPlanId, 'santri')) onclick="showUpgradeModal('data santri')" @endif>
+                    <div class="flex items-center justify-between">
+                        <span>Data Santri</span>
+                        @if(!isFeatureEnabled($currentPlanId, 'santri'))
+                        <!-- Ikon gembok di sebelah kanan -->
+                        <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        @else
+                        <span class="text-green-400 text-xs">✓</span>
+                        @endif
+                    </div>
+                </a>
+
+                <!-- Laundry - Plan 1: DISABLED -->
+                <a href="{{ isFeatureEnabled($currentPlanId, 'laundry') ? route('laundry.index') : '#' }}"
+                    class="block px-3 py-2 rounded transition 
+                    {{ request()->routeIs('laundry.index') 
+                        ? 'bg-active text-white' 
+                        : 'bg-mint hover:bg-active hover:text-white' }}
+                    {{ !isFeatureEnabled($currentPlanId, 'laundry') ? 'opacity-70 cursor-not-allowed' : '' }}"
+                    @if(!isFeatureEnabled($currentPlanId, 'laundry')) onclick="showUpgradeModal('laundry')" @endif>
+                    <div class="flex items-center justify-between">
+                        <span>Laundry</span>
+                        @if(!isFeatureEnabled($currentPlanId, 'laundry'))
+                        <!-- Ikon gembok di sebelah kanan -->
+                        <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        @else
+                        <span class="text-green-400 text-xs">✓</span>
+                        @endif
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Inventaris - Plan 1: DISABLED -->
+        <a href="{{ isFeatureEnabled($currentPlanId, 'inventaris') ? route('inventaris.index') : '#' }}"
+            class="block px-3 py-2 rounded transition 
+            {{ request()->routeIs('inventaris.index') 
+                ? 'bg-active text-white' 
+                : 'bg-mint hover:bg-active hover:text-white' }}
+            {{ !isFeatureEnabled($currentPlanId, 'inventaris') ? 'opacity-70 cursor-not-allowed' : '' }}"
+            @if(!isFeatureEnabled($currentPlanId, 'inventaris')) onclick="showUpgradeModal('inventaris')" @endif>
+            <div class="flex items-center justify-between">
+                <span>Inventaris</span>
+                @if(!isFeatureEnabled($currentPlanId, 'inventaris'))
+                <!-- Ikon gembok di sebelah kanan -->
+                <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                </svg>
+                @else
+                <span class="text-green-400 text-xs">✓</span>
+                @endif
+            </div>
+        </a>
+    </nav>
+
+    <!-- Status Subscription -->
+    <div class="p-4 border-t border-gray-700">
+        @if($activeSubscription)
+        <div class="bg-green-900/50 rounded-lg p-3 mb-3">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-sm font-medium">Plan Active (ID: {{ $currentPlanId }})</span>
+            </div>
+        </div>
+        @else
+        <div class="bg-yellow-900/50 rounded-lg p-3 mb-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="text-sm font-medium">No Active Subscription</span>
+                </div>
+                <a href="{{ route('subscription.plans') }}" 
+                   class="text-xs bg-yellow-600 hover:bg-yellow-700 px-2 py-1 rounded transition">
+                    Subscribe
+                </a>
+            </div>
+        </div>
+        @endif
+
+        <form id="logout-form" method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit"
+                class="w-full flex items-center px-3 py-2 rounded transition bg-mint hover:bg-red-600 hover:text-white text-left">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+                Logout
+            </button>
+        </form>
+    </div>
+</aside>
+
+<!-- Modal Upgrade -->
+<div id="upgradeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-6 max-w-md mx-4">
+        <div class="text-center">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
+                <svg class="h-8 w-8 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-2">Fitur Premium</h3>
+            <p class="text-gray-600 mb-4" id="modalMessage">Fitur ini membutuhkan paket premium.</p>
+            <div class="flex space-x-3">
+                <button onclick="closeUpgradeModal()" 
+                    class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition">
+                    Nanti Saja
+                </button>
+                <a href="{{ route('subscription.plans') }}" 
+                   class="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition text-center">
+                    Upgrade Sekarang
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tombol Toggle di Mobile -->
+<button id="openSidebar"
+    class="fixed top-4 left-4 z-10 md:hidden bg-emerald-800 text-white p-2 rounded-full w-10 h-10 shadow-lg focus:outline-none">
+    ☰
+</button>
+
+<!-- JS Toggle dan Modal -->
+<script>
+    const sidebar = document.getElementById('sidebar');
+    const openBtn = document.getElementById('openSidebar');
+    const closeBtn = document.getElementById('closeSidebar');
+    const upgradeModal = document.getElementById('upgradeModal');
+
+    openBtn.addEventListener('click', () => sidebar.classList.remove('-translate-x-full'));
+    closeBtn.addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
+
+    function showUpgradeModal(featureName) {
+        document.getElementById('modalMessage').textContent = 
+            `Fitur "${featureName}" membutuhkan paket premium. Upgrade untuk mengakses semua fitur.`;
+        upgradeModal.classList.remove('hidden');
+    }
+
+    function closeUpgradeModal() {
+        upgradeModal.classList.add('hidden');
+    }
+
+    // Close modal ketika klik di luar
+    upgradeModal.addEventListener('click', function(e) {
+        if (e.target === upgradeModal) {
+            closeUpgradeModal();
+        }
+    });
+</script>

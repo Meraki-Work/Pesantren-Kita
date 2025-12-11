@@ -56,7 +56,7 @@ class KelasController extends Controller
             $userPonpesId = $this->getUserPonpesId();
 
             $kelas = Kelas::where('ponpes_id', $userPonpesId)
-                ->select('id_kelas', 'nama_kelas', 'tingkat', 'created_at')
+                ->select('id_kelas', 'nama_kelas', 'tingkat')
                 ->orderBy('tingkat', 'asc')
                 ->orderBy('nama_kelas', 'asc')
                 ->paginate(10);
@@ -67,7 +67,7 @@ class KelasController extends Controller
                 'current_page' => $kelas->currentPage()
             ]);
 
-            return view('pages.kelas-index', compact('kelas'));
+            return view('pages.kelas', compact('kelas'));
         } catch (\Exception $e) {
             Log::error('Error pada kelas index', [
                 'user_id' => Auth::id(),
