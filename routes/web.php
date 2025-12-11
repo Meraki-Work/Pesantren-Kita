@@ -125,14 +125,18 @@ if (app()->environment('local')) {
 Route::middleware(['auth'])->group(function () {
 
     // Dashboard Routes
-    Route::prefix('dashboard')->group(function () {
-        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-        Route::post('/absensi', [DashboardController::class, 'store'])->name('dashboard.absensi.store');
-        Route::get('/absensi', [DashboardController::class, 'getAbsensi'])->name('dashboard.absensi');
-        Route::get('/absensi/all', [DashboardController::class, 'getAllAbsensi'])->name('dashboard.absensi.all');
-        Route::get('/absensi/check', [DashboardController::class, 'checkTodayAbsensi'])->name('dashboard.absensi.check');
-        Route::get('/prestasi', [DashboardController::class, 'getGrafikPrestasi'])->name('dashboard.prestasi');
-    });
+   Route::prefix('dashboard')->group(function () {
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/absensi', [DashboardController::class, 'store'])->name('dashboard.absensi.store');
+    Route::get('/absensi', [DashboardController::class, 'getAbsensi'])->name('dashboard.absensi');
+    Route::get('/absensi/all', [DashboardController::class, 'getAllAbsensi'])->name('dashboard.absensi.all');
+    Route::get('/absensi/check', [DashboardController::class, 'checkTodayAbsensi'])->name('dashboard.absensi.check');
+    Route::get('/prestasi', [DashboardController::class, 'getGrafikPrestasi'])->name('dashboard.prestasi');
+    
+
+    // FIXED ROUTE
+    Route::get('/absensi/riwayat', [DashboardController::class, 'riwayat'])->name('dashboard.absensi.riwayat');
+});
 
     // Keuangan Routes
     Route::get('/keuangan', [KeuanganController::class, 'index'])->name('keuangan.index');

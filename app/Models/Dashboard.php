@@ -18,6 +18,7 @@ class Dashboard extends Model
         'user_id',
         'tanggal',
         'status',
+        'jam',
         'keterangan'
     ];
 }
