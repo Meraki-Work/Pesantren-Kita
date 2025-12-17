@@ -2,115 +2,95 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verifikasi OTP</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Poppins', sans-serif; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifikasi OTP - PesantrenKita</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen flex items-center justify-center relative">
-  
-  <!-- Background -->
-  <div class="absolute inset-0 bg-cover bg-center"
-       style="background-image: url('{{ asset('asset/background masjid .png') }}');"></div>
-  <div class="absolute inset-0 backdrop-blur-sm bg-black/20"></div>
-  
-  <div class="relative z-10 bg-[#F8FFF8]/95 w-full max-w-md rounded-xl shadow-lg p-8">
-    <h2 class="text-2xl font-bold text-center mb-12">Verifikasi Kode OTP</h2>
+<body class="min-h-screen flex items-center justify-center bg-gray-100">
+    <div class="bg-white p-8 rounded-lg shadow-md w-96">
+        <h2 class="text-2xl font-bold text-center mb-6">Verifikasi OTP</h2>
 
-    <div id="alert-box" class="hidden p-3 rounded mb-6 text-center text-sm"></div>
+        {{-- ✅ TAMPILKAN OTP JIKA EMAIL GAGAL --}}
+        @if(session('otp_display'))
+            <div class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded mb-4">
+                <div class="font-bold mb-2">⚠️ Email tidak terkirim!</div>
+                <p class="mb-2">Gunakan kode OTP berikut untuk verifikasi:</p>
+                <div class="text-center">
+                    <span class="text-2xl font-bold text-red-600">{{ session('otp_display') }}</span>
+                </div>
+                <p class="text-sm mt-2">Kode berlaku 10 menit</p>
+            </div>
+        @endif
 
-    <form id="otpForm" class="space-y-6">
-      <!-- Input OTP -->
-      <div class="relative w-full">
-    <label class="block text-sm font-medium mb-2">Kode OTP</label>
+        @if(session('success'))
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                {{ session('success') }}
+            </div>
+        @endif
 
-    <input
-        id="otp"                      
-        name="otp"
-        type="text"
-        placeholder="Masukkan 6 digit OTP"
-        class="w-full h-12 p-3 pr-12 rounded-lg border border-[#C3C8C5] bg-gray-200
-               focus:ring-2 focus:ring-green-500 focus:outline-none"
-    >
+        @if(session('warning'))
+            <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+                {{ session('warning') }}
+            </div>
+        @endif
 
-    <!-- ICON KEY PRESISI TENGAH -->
-    <i class="fa-solid fa-key absolute right-4 top-[45px] text-gray-500"></i>
-</div>
+        @if($errors->any())
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                {{ $errors->first() }}
+            </div>
+        @endif
 
+        <form action="{{ route('verify.otp') }}" method="POST">
+            @csrf
+            <input type="hidden" name="email" value="{{ $email }}">
 
-      <!-- Tombol -->
-      <div class="flex justify-center">
-        <button type="submit"
-          class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg transition duration-300">
-          Verifikasi
-        </button>
-      </div>
-    </form>
-  </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Kode OTP</label>
+                <input type="text" 
+                       name="otp" 
+                       maxlength="6" 
+                       required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-center text-lg font-mono"
+                       placeholder="000000"
+                       autocomplete="off">
+                <p class="text-xs text-gray-500 mt-1">Masukkan 6 digit kode OTP</p>
+            </div>
 
-  <script>
-    const otpForm = document.getElementById('otpForm');
-    const alertBox = document.getElementById('alert-box');
+            <button type="submit" 
+                    class="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-md font-semibold">
+                Verifikasi
+            </button>
+        </form>
 
-    otpForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
+        {{-- Form untuk kirim ulang OTP --}}
+        <form action="{{ route('resend.otp') }}" method="POST" class="mt-4">
+            @csrf
+            <input type="hidden" name="email" value="{{ $email }}">
+            <button type="submit" 
+                    class="w-full bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md">
+                Kirim Ulang OTP
+            </button>
+        </form>
 
-      const email = localStorage.getItem('pendingEmail'); // ambil email dari localStorage
-      const otp = document.getElementById('otp').value.trim();
+        <p class="text-center text-sm text-gray-600 mt-4">
+            <a href="{{ route('registrasi.index') }}" class="text-green-600 hover:underline">
+                Kembali ke Registrasi
+            </a>
+        </p>
+    </div>
 
-      if (!email) {
-        showAlert('Email tidak ditemukan. Silakan registrasi ulang.', 'error');
-        return;
-      }
-
-      const submitBtn = otpForm.querySelector('button[type="submit"]');
-      submitBtn.disabled = true;
-
-      try {
-        const res = await fetch('/api/verify-otp', {   // gunakan path relatif
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({ email, otp })
+    {{-- Auto focus dan input validation --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto focus ke input OTP
+            document.querySelector('input[name="otp"]').focus();
+            
+            // Auto numeric input
+            document.querySelector('input[name="otp"]').addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
         });
-
-        const result = await res.json();
-
-        if (!res.ok) {
-          showAlert(result.message || 'Kode OTP salah atau sudah kedaluwarsa.', 'error');
-          submitBtn.disabled = false;
-          return;
-        }
-
-        showAlert('Verifikasi berhasil! Mengarahkan ke halaman login...', 'success');
-        localStorage.removeItem('pendingEmail');
-
-        setTimeout(() => window.location.href = '/login', 1500);
-
-      } catch (error) {
-        console.error(error);
-        showAlert('Terjadi kesalahan server. Silakan coba lagi.', 'error');
-        submitBtn.disabled = false;
-      }
-    });
-
-    function showAlert(message, type) {
-      alertBox.innerText = message;
-      alertBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
-
-      if (type === 'error') {
-        alertBox.classList.add('bg-red-100', 'text-red-700');
-      } else {
-        alertBox.classList.add('bg-green-100', 'text-green-700');
-      }
-    }
-  </script>
-
+    </script>
 </body>
 </html>

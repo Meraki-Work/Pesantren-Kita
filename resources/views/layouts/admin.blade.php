@@ -1,7 +1,5 @@
 @extends('index')
 
-@section('title', 'Kepegawaian - PesantrenKita')
-
 @section('content')
 
 <div class="flex">

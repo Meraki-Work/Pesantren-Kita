@@ -22,7 +22,7 @@
     <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
         <div class="my-6 form-label text-gray-300 uppercase text-xs tracking-wider">Pengurus</div>
 
-        <a 
+        <a href="{{ route('dashboard') }}"
             class="block px-3 py-2 rounded transition 
             {{ request()->routeIs('dashboard') 
                 ? 'bg-active text-white' 
@@ -110,14 +110,9 @@
     </nav>
 
     <div class="p-4 border-t border-gray-700">
-        <form id="logout-form" method="POST">
+        <form method="POST" action="{{ route('logout') }}">
             @csrf
-            <button type="submit"
-                class="w-full flex items-center px-3 py-2 rounded transition bg-mint hover:bg-red-600 hover:text-white text-left">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                </svg>
+            <button type="submit" class="w-full text-left px-3 py-2 rounded hover:bg-red-600">
                 Logout
             </button>
         </form>

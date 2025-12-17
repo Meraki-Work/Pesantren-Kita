@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Ponpes;
 
 class KepegawaianController extends Controller
 {
@@ -19,7 +20,12 @@ class KepegawaianController extends Controller
         $q = trim($request->query('q', ''));
 
         // Build base users query - TIDAK MENYERTAKAN STATUS
-        $usersQuery = User::select('id_user','username','email','role','ponpes_id','created_at');
+        $usersQuery = User::select('id_user','username','email','role','ponpes_id','created_at','status');
+
+        // Filter berdasarkan ponpes_id untuk Admin dan Pengajar
+        if (in_array($role, ['admin', 'pengajar'])) {
+            $usersQuery->where('ponpes_id', Auth::user()->ponpes_id);
+        }
         
         if ($q !== '') {
             $qLower = mb_strtolower($q);
@@ -33,18 +39,28 @@ class KepegawaianController extends Controller
 
         $users = $usersQuery->get();
 
+        // Statistik berdasarkan ponpes_id untuk Admin dan Pengajar
+        $statsQuery = User::query();
+        if (in_array($role, ['admin', 'pengajar'])) {
+            $statsQuery->where('ponpes_id', Auth::user()->ponpes_id);
+        }
+
+        // Ambil data ponpes untuk header
+        $ponpes = Ponpes::where('id_ponpes', Auth::user()->ponpes_id)->first();
+
         return view('pages.kepegawaian', [
-            // Hapus hitungan berdasarkan status atau gunakan default
-            'aktif' => User::count(), // Default semua aktif jika tidak ada status
-            'Tidakaktif' => 0, // Default 0 jika tidak ada status
+            // Hitungan berdasarkan status enum
+            'aktif' => (clone $statsQuery)->where('status', 'active')->count(),
+            'Tidakaktif' => (clone $statsQuery)->whereIn('status', ['pending', 'suspended'])->count(),
             // role counts
-            'countPengajar' => User::whereRaw("LOWER(role) = ?", ['pengajar'])->count(),
-            'countAdmin' => User::whereRaw("LOWER(role) = ?", ['admin'])->count(),
-            'countKeuangan' => User::whereRaw("LOWER(role) = ?", ['keuangan'])->count(),
-            'total' => User::count(),
+            'countPengajar' => (clone $statsQuery)->whereRaw("LOWER(role) = ?", ['pengajar'])->count(),
+            'countAdmin' => (clone $statsQuery)->whereRaw("LOWER(role) = ?", ['admin'])->count(),
+            'countKeuangan' => (clone $statsQuery)->whereRaw("LOWER(role) = ?", ['keuangan'])->count(),
+            'total' => $statsQuery->count(),
             'users' => $users,
             'q' => $q,
             'filteredCount' => $q !== '' ? $users->count() : null,
+            'ponpes' => $ponpes,
         ]);
     }
 
@@ -52,29 +68,48 @@ class KepegawaianController extends Controller
     {
         // 🔒 Hanya Admin yang boleh update
         if (strtolower(Auth::user()->role ?? '') !== 'admin') {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Akses ditolak'], 403);
+            }
             abort(403, 'Akses ditolak');
         }
 
         $user = User::where('id_user', $id_user)->firstOrFail();
 
-        // Validasi input - HAPUS status dari validasi
+        // Pastikan admin hanya bisa edit user di ponpes_id yang sama
+        if ($user->ponpes_id !== Auth::user()->ponpes_id) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Akses ditolak'], 403);
+            }
+            abort(403, 'Akses ditolak');
+        }
+
+        // Validasi input
         $data = $request->validate([
             'username' => ['required', 'string', 'max:255'],
             'email'    => ['required', 'email', 'max:255'],
             'role'     => ['required', 'in:Admin,Pengajar,Keuangan'],
-            // Hapus status dari validasi
+            'status'   => ['required', 'in:pending,active,suspended'],
         ]);
 
         // Normalisasi role
         $data['role'] = ucfirst(strtolower($data['role']));
 
-        // Simpan data - HAPUS status
+        // Simpan data
         $user->update([
             'username' => $data['username'],
             'role'     => $data['role'],
             'email'    => $data['email'],
-            // Hapus status
+            'status'   => $data['status'],
         ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Data berhasil diupdate',
+                'user' => $user,
+                'redirect' => route('kepegawaian.index'),
+            ]);
+        }
 
         return back()->with('success', 'Data berhasil diupdate')
                      ->with('close_edit', true);
@@ -84,10 +119,32 @@ class KepegawaianController extends Controller
     {
         // 🔒 Hanya Admin yang boleh hapus
         if (strtolower(Auth::user()->role ?? '') !== 'admin') {
+            if (request()->expectsJson()) {
+                return response()->json(['error' => 'Akses ditolak'], 403);
+            }
             abort(403, 'Akses ditolak');
         }
 
         User::where('id_user', $id_user)->delete();
+
+        $user = User::where('id_user', $id_user)->firstOrFail();
+
+        // Pastikan admin hanya bisa hapus user di ponpes_id yang sama
+        if ($user->ponpes_id !== Auth::user()->ponpes_id) {
+            if (request()->expectsJson()) {
+                return response()->json(['error' => 'Akses ditolak'], 403);
+            }
+            abort(403, 'Akses ditolak');
+        }
+
+        $user->delete();
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'message' => 'Data berhasil dihapus',
+                'redirect' => route('kepegawaian.index'),
+            ]);
+        }
 
         return back()->with('success', 'Data berhasil dihapus')
                      ->with('close_delete', true);

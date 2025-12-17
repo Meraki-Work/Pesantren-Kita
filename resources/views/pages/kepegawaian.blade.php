@@ -9,9 +9,9 @@
 
     <main class="flex-1 p-4 overflow-y-auto">
         <div class="flex items-center space-x-4 mb-4">
-            <img src="assets/img/orang.jpg" class="ml-4 w-16 h-16 rounded-full object-cover border-1 border-white" />
+            <img src="{{ $ponpes && $ponpes->logo_ponpes ? asset('storage/' . $ponpes->logo_ponpes) : 'assets/img/orang.jpg' }}" class="ml-4 w-16 h-16 rounded-full object-cover border-1 border-white" />
             <div>
-                <h2 class="text-lg font-semibold text-gray-800">AL-AmalBatam</h2>
+                <h2 class="text-lg font-semibold text-gray-800">{{ $ponpes->nama_ponpes ?? 'Pesantren' }}</h2>
             </div>
         </div>
 
@@ -42,7 +42,7 @@
 
         {{-- Cards Statistik (berbeda menurut role) --}}
         @if(auth()->user()->role === 'Admin')
-        <div class="grid grid-cols-4 gap-6 mb-10">
+        <div class="grid grid-cols-3 gap-6 mb-10">
             {{-- Card Aktif --}}
             <div class="flex items-center border border-gray-300 rounded-lg px-5 py-4 bg-white shadow-sm">
                 <div>
@@ -158,7 +158,7 @@
                 </svg>
 
                 <input type="search" name="q" value="{{ $q ?? '' }}"
-                    placeholder="Cari pegawai (nama, email, role, status)..."
+                    placeholder="Cari pegawai (nama, email, role)..."
                     class="flex-grow outline-none text-sm text-gray-700 placeholder-gray-400"
                 />
 
@@ -197,8 +197,8 @@
                             <td class="px-6 py-3">{{ $user->email }}</td>
 
                             <td class="px-6 py-3">
-                                <span class="px-3 py-1 rounded {{ strtolower($user->status) == 'aktif' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
-                                    {{ $user->status }}
+                                <span class="px-3 py-1 rounded {{ $user->status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
+                                    {{ $user->status === 'active' ? 'Aktif' : ($user->status === 'pending' ? 'Pending' : 'Tidak aktif') }}
                                 </span>
                             </td>
 

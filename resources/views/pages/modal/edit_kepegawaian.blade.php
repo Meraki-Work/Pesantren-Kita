@@ -64,9 +64,8 @@
 
             <!-- FORM EDIT -->
             <template x-if="mode === 'edit'">
-                <form action="{{ route('kepegawaian.update', $user->id_user) }}" method="POST">
+                <form id="edit-form-{{ $user->id_user }}" @submit.prevent="submitEdit({{ $user->id_user }})">
                     @csrf
-                    @method('PUT')
 
                     <div class="grid grid-cols-2 gap-5 mb-4">
                         <div>
@@ -93,9 +92,9 @@
                         <div>
                             <label class="text-sm font-semibold">Status</label>
                                 <select name="status" class="w-full bg-gray-200 p-2 rounded-lg mt-1">
-                                    {{-- Use consistent lowercase values so DB and comparisons are predictable --}}
-                                    <option value="aktif" {{ strtolower($user->status) == 'aktif' ? 'selected' : '' }}>Aktif</option>
-                                    <option value="tidak aktif" {{ strtolower($user->status) == 'tidak aktif' ? 'selected' : '' }}>Tidak aktif</option>
+                                    {{-- Use enum values from database --}}
+                                    <option value="active" {{ $user->status === 'active' ? 'selected' : '' }}>Aktif</option>
+                                    <option value="suspended" {{ $user->status === 'suspended' ? 'selected' : '' }}>Tidak aktif</option>
                                 </select>
                         </div>
                     </div>
@@ -114,18 +113,90 @@
                         Apakah Anda yakin ingin menghapus pegawai <strong>{{ $user->username }}</strong>?
                     </p>
 
-                    <form method="POST" action="{{ route('kepegawaian.destroy', $user->id_user) }}">
-                        @csrf
-                        @method('DELETE')
-
-                        <div class="flex justify-end gap-4">
-                            <button type="button" @click="open = false" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300">Batal</button>
-                            <button type="submit" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700">Hapus</button>
-                        </div>
-                    </form>
+                    <div class="flex justify-end gap-4">
+                        <button type="button" @click="open = false" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300">Batal</button>
+                        <button type="button" @click="submitDelete({{ $user->id_user }})" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700">Hapus</button>
+                    </div>
                 </div>
             </template>
 
         </div>
     </div>
 </div>
+
+<script>
+// Fungsi helper untuk mendapatkan CSRF token
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content || '';
+}
+
+// AJAX handler untuk Edit
+window.submitEdit = async function(userId) {
+    const form = document.getElementById(`edit-form-${userId}`);
+    const formData = new FormData(form);
+    const csrfToken = getCsrfToken();
+
+    try {
+        const response = await fetch(`/api/kepegawaian/${userId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                username: formData.get('username'),
+                email: formData.get('email'),
+                role: formData.get('role'),
+                status: formData.get('status')
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Tampilkan success message dan refresh halaman
+            alert('Data berhasil diupdate');
+            window.location.href = data.redirect;
+        } else {
+            alert('Error: ' + (data.message || 'Terjadi kesalahan'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat mengupdate data');
+    }
+};
+
+// AJAX handler untuk Delete
+window.submitDelete = async function(userId) {
+    if (!confirm('Apakah Anda benar-benar ingin menghapus pegawai ini?')) {
+        return;
+    }
+
+    const csrfToken = getCsrfToken();
+
+    try {
+        const response = await fetch(`/api/kepegawaian/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // Tampilkan success message dan refresh halaman
+            alert('Data berhasil dihapus');
+            window.location.href = data.redirect;
+        } else {
+            alert('Error: ' + (data.message || 'Terjadi kesalahan'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat menghapus data');
+    }
+};
+</script>

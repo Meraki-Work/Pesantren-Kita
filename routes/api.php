@@ -4,10 +4,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\ResetPasswordController;
-use App\Http\Controllers\Api\LandingController;
+// use App\Http\Controllers\Api\LandingController;
 use App\Http\Controllers\Api\LandingContentController;
 
 use App\Http\Controllers\Api\LandingContent;
+use App\Http\Controllers\Api\KepegawaianController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -23,6 +24,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+    // Kepegawaian API
+    Route::get('/kepegawaian', [KepegawaianController::class, 'index']);
+    Route::put('/kepegawaian/{id_user}', [KepegawaianController::class, 'update']);
+    Route::delete('/kepegawaian/{id_user}', [KepegawaianController::class, 'destroy']);
 });
 
 // Password reset routes
@@ -43,21 +49,21 @@ Route::post('/password/update', [ResetPasswordController::class, 'updatePassword
 | Seluruh endpoint digunakan oleh admin untuk update konten landing page.
 */
 // ================= LANDING PAGE =================
-Route::prefix('landing')->group(function () {
+// Route::prefix('landing')->group(function () {
 
-    // Carousel
-    Route::get('/carousel', [LandingController::class, 'getCarousel']);
-    Route::post('/carousel', [LandingController::class, 'storeCarousel']);
+//     // Carousel
+//     Route::get('/carousel', [LandingController::class, 'getCarousel']);
+//     Route::post('/carousel', [LandingController::class, 'storeCarousel']);
 
-    // About
-    Route::get('/about', [LandingController::class, 'getAbout']);
-    Route::post('/about/update', [LandingController::class, 'updateAbout']);
+//     // About
+//     Route::get('/about', [LandingController::class, 'getAbout']);
+//     Route::post('/about/update', [LandingController::class, 'updateAbout']);
 
-    // Gallery
-    Route::get('/gallery', [LandingController::class, 'getGallery']);
-    Route::post('/gallery', [LandingController::class, 'storeGallery']);
+//     // Gallery
+//     Route::get('/gallery', [LandingController::class, 'getGallery']);
+//     Route::post('/gallery', [LandingController::class, 'storeGallery']);
 
-    // Footer
-    Route::post('/footer', [LandingController::class, 'storeFooter']);
-});
+//     // Footer
+//     Route::post('/footer', [LandingController::class, 'storeFooter']);
+// });
 
