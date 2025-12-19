@@ -110,7 +110,6 @@ class LaundryController extends Controller
             }
 
             $keuangan = $query->orderBy('k.tanggal', 'desc')
-                            ->orderBy('k.created_at', 'desc')
                             ->paginate(10);
 
             // Ambil data santri untuk dropdown (hanya santri dari ponpes user)

@@ -8,7 +8,7 @@
         <x-sidemenu title="PesantrenKita" class="h-full min-h-screen" />
 
         <main class="flex-1 p-4 overflow-y-auto">
-            <div class="flex items-center space-x-4 mb-4">
+            <div class="flex items-center space-x-4">
                 <img src="assets/img/orang.jpg" class="ml-4 w-16 h-16 rounded-full object-cover border-1 border-white" />
                 <div>
                     <h2 class="text-lg font-semibold text-gray-800">AL-AmalBatam</h2>
@@ -60,12 +60,12 @@
                         </script>
 
                         <div class="flex space-x-4 mt-9">
-                            <button class="btn-absen px-4 py-2 bg-green-500 text-white rounded shadow-xl hover:bg-green-700"
+                            <button class="w-full h-8 px-5 bg-[#2ECC71] text-white text-sm font-semibold rounded-lg hover:bg-green-600 transition inline-flex items-center justify-center"
                                 data-status="Hadir">Absen</button>
-                            <button class="btn-absen px-7 py-2 bg-blue-400 text-white rounded shadow-xl hover:bg-blue-600"
+                            <button class="w-full h-8 px-5 bg-[#2ECC71] text-white text-sm font-semibold rounded-lg hover:bg-green-600 transition inline-flex items-center justify-center"
                                 data-status="Izin">Izin</button>
                             <button
-                                class="btn-absen px-7 py-2 bg-yellow-500 text-white rounded shadow-xl hover:bg-yellow-600"
+                                class="w-full h-8 px-5 bg-[#2ECC71] text-white text-sm font-semibold rounded-lg hover:bg-green-600 transition inline-flex items-center justify-center"
                                 data-status="Cuti">Cuti</button>
                         </div>
                     </div>
@@ -517,7 +517,7 @@
                             </table>
                             <div class="flex justify-end -mt-2">
                                 <a href="{{ route('dashboard.absensi.riwayat') }}"
-                                    class="px-4 py-1.5 text-sm bg-blue-500 text-white rounded-full shadow-md hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center gap-1">
+                                    class="flex items-center">
                                     Selengkapnya
                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -658,14 +658,6 @@
                 <div class="box-bg row-span-4 col-start-4 bg-white p-4 rounded-lg">
                     <p class="text-lg font-semibold text-gray-800 mb-4">Logs Absen</p>
 
-                    <div id="logAbsen" class="space-y-3 mt-4 flex flex-col">
-                        <img src="{{ asset('assets/img/orang.jpg') }}"
-                            class="w-12 h-12 rounded-full object-cover border-2 border-green-500" />
-                        <div>
-                            <p class="text-sm font-medium text-gray-700">Today</p>
-                            <p class="text-xs text-gray-500"><span class="text-green-600 font-semibold">06:42 AM</span></p>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="box-bg col-start-1 row-start-4 bg-white p-2 rounded flex items-center">
@@ -803,7 +795,7 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     @foreach ($akademikTerbaik as $index => $santri)
                                         <div
-                                            class="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4 transition-all duration-200 hover:shadow-md">
+                                            class="box-bg p-4 transition-all duration-200 hover:shadow-md">
                                             <div class="flex items-center justify-between">
                                                 <div class="flex items-center space-x-3">
                                                     <!-- Ranking Badge -->

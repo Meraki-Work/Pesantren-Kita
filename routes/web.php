@@ -1,6 +1,5 @@
 <?php
 
-
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
@@ -246,18 +245,18 @@ if (app()->environment('local')) {
 Route::middleware(['auth'])->group(function () {
 
     // Dashboard Routes
-   Route::prefix('dashboard')->group(function () {
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::post('/absensi', [DashboardController::class, 'store'])->name('dashboard.absensi.store');
-    Route::get('/absensi', [DashboardController::class, 'getAbsensi'])->name('dashboard.absensi');
-    Route::get('/absensi/all', [DashboardController::class, 'getAllAbsensi'])->name('dashboard.absensi.all');
-    Route::get('/absensi/check', [DashboardController::class, 'checkTodayAbsensi'])->name('dashboard.absensi.check');
-    Route::get('/prestasi', [DashboardController::class, 'getGrafikPrestasi'])->name('dashboard.prestasi');
-    
+    Route::prefix('dashboard')->group(function () {
+        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::post('/absensi', [DashboardController::class, 'store'])->name('dashboard.absensi.store');
+        Route::get('/absensi', [DashboardController::class, 'getAbsensi'])->name('dashboard.absensi');
+        Route::get('/absensi/all', [DashboardController::class, 'getAllAbsensi'])->name('dashboard.absensi.all');
+        Route::get('/absensi/check', [DashboardController::class, 'checkTodayAbsensi'])->name('dashboard.absensi.check');
+        Route::get('/prestasi', [DashboardController::class, 'getGrafikPrestasi'])->name('dashboard.prestasi');
 
-    // FIXED ROUTE
-    Route::get('/absensi/riwayat', [DashboardController::class, 'riwayat'])->name('dashboard.absensi.riwayat');
-});
+
+        // FIXED ROUTE
+        Route::get('/absensi/riwayat', [DashboardController::class, 'riwayat'])->name('dashboard.absensi.riwayat');
+    });
 
     // Keuangan Routes
     Route::prefix('keuangan')
@@ -276,17 +275,21 @@ Route::middleware(['auth'])->group(function () {
 
     // Sanksi Routes
     Route::prefix('sanksi')
-        ->middleware('feature:sanksi')
-        ->group(function () {
-            Route::get('/sanksi', [SanksiController::class, 'index'])->name('sanksi.index');
-            Route::get('/sanksi/create', [SanksiController::class, 'create'])->name('sanksi.create');
-            Route::post('/sanksi', [SanksiController::class, 'store'])->name('sanksi.store');
-            Route::get('/sanksi/{sanksi}', [SanksiController::class, 'show'])->name('sanksi.show');
-            Route::get('/sanksi/{sanksi}/edit', [SanksiController::class, 'edit'])->name('sanksi.edit');
-            Route::put('/sanksi/{sanksi}', [SanksiController::class, 'update'])->name('sanksi.update');
-            Route::delete('/sanksi/{sanksi}', [SanksiController::class, 'destroy'])->name('sanksi.destroy');
-        });
-
+    ->middleware('feature:sanksi')
+    ->group(function () {
+        // Halaman utama sanksi - Ganti jadi '/'
+        Route::get('/', [SanksiController::class, 'index'])->name('sanksi.index');
+        Route::get('/create', [SanksiController::class, 'create'])->name('sanksi.create');
+        Route::post('/', [SanksiController::class, 'store'])->name('sanksi.store');
+        Route::get('/{sanksi}', [SanksiController::class, 'show'])->name('sanksi.show');
+        Route::get('/{sanksi}/edit', [SanksiController::class, 'edit'])->name('sanksi.edit');
+        Route::put('/{sanksi}', [SanksiController::class, 'update'])->name('sanksi.update');
+        Route::delete('/{sanksi}', [SanksiController::class, 'destroy'])->name('sanksi.destroy');
+        
+        // Route untuk update status (jika diperlukan)
+        Route::patch('/{sanksi}/status', [SanksiController::class, 'updateStatus'])->name('sanksi.status');
+    });
+    
     // Kelas Routes
     Route::prefix('kelas')
         ->group(function () {
@@ -377,7 +380,13 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('santri')
         ->middleware('feature:santri')
         ->group(function () {
+            // Halaman utama biodata santri
             Route::get('/', [SantriController::class, 'index'])->name('santri.index');
+
+            // Halaman manajemen kompetensi (BARU)
+            Route::get('/kompetensi', [SantriController::class, 'kompetensi'])->name('santri.kompetensi.index');
+
+            // CRUD Santri
             Route::get('/create', [SantriController::class, 'create'])->name('santri.create');
             Route::post('/', [SantriController::class, 'store'])->name('santri.store');
             Route::get('/{id}/edit', [SantriController::class, 'edit'])->name('santri.edit');
@@ -387,6 +396,8 @@ Route::middleware(['auth'])->group(function () {
             // API Routes untuk Santri
             Route::post('/check-unique', [SantriController::class, 'checkUnique'])->name('santri.check-unique');
             Route::get('/api/santri-data', [SantriController::class, 'getSantriByPonpes'])->name('santri.api');
+
+            // 🔥 PERBAIKAN: Ubah nama route untuk API kompetensi
             Route::get('/{id}/kompetensi', function ($id) {
                 $kompetensi = DB::table('pencapaian as p')
                     ->join('santri as s', 's.id_santri', '=', 'p.id_santri')
@@ -396,7 +407,10 @@ Route::middleware(['auth'])->group(function () {
                     ->get();
 
                 return response()->json($kompetensi);
-            })->name('santri.kompetensi');
+            })->name('santri.kompetensi.api'); // 🔥 UBAH NAMA ROUTE INI
+
+            // 🔥 OPTIONAL: Tambahkan route untuk chart data
+            Route::get('/chart-data', [SantriController::class, 'getChartData'])->name('santri.chart.data');
         });
 
     // Inventaris Routes
@@ -418,20 +432,27 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/stats', [InventarisController::class, 'getStats']);
     });
 
-    // Notulen Routes
+    // ================================================================
+    // 🔥 PERBAIKAN PENTING: NOTULEN ROUTES YANG SUDAH DIPERBAIKI
+    // ================================================================
     Route::prefix('notulen')
         ->middleware('feature:notulensi')
         ->group(function () {
+            // 1. Rute spesifik (TANPA parameter) diletakkan SEBELUM rute parameter
             Route::get('/notulensi', [NotulenController::class, 'index'])->name('notulen.index');
             Route::get('/create', [NotulenController::class, 'create'])->name('notulen.create');
             Route::post('/', [NotulenController::class, 'store'])->name('notulen.store');
+
+            // 2. Rute API (jika ada) diletakkan di sini
+            Route::delete('/gambar/{id}', [NotulenController::class, 'hapusGambar'])->name('notulen.hapus-gambar');
+            Route::post('/{id}/tambah-gambar', [NotulenController::class, 'tambahGambar'])->name('notulen.tambah-gambar');
+            Route::get('/{id}/export', [NotulenController::class, 'export'])->name('notulen.export');
+
+            // 3. Rute parameter diletakkan SETELAH rute spesifik
             Route::get('/{id}', [NotulenController::class, 'show'])->name('notulen.show');
             Route::get('/{id}/edit', [NotulenController::class, 'edit'])->name('notulen.edit');
             Route::put('/{id}', [NotulenController::class, 'update'])->name('notulen.update');
             Route::delete('/{id}', [NotulenController::class, 'destroy'])->name('notulen.destroy');
-            Route::delete('/gambar/{id}', [NotulenController::class, 'hapusGambar'])->name('notulen.hapus-gambar');
-            Route::post('/{id}/tambah-gambar', [NotulenController::class, 'tambahGambar'])->name('notulen.tambah-gambar');
-            Route::get('/{id}/export', [NotulenController::class, 'export'])->name('notulen.export');
         });
 
     // Notulen API Routes

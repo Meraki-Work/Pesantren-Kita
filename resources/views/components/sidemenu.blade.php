@@ -25,14 +25,14 @@
 
         <a href="{{ route('kepegawaian.index') }}"
             class="block px-3 py-2 rounded transition 
-            {{ request()->routeIs('users.index') 
+            {{ request()->routeIs('kepegawaian.index') 
                 ? 'bg-active text-white' 
                 : 'bg-mint hover:bg-active hover:text-white' }}">
             Kepegawaian
         </a>
         <a href="{{ route('admin.landing-content.index') }}"
             class="block px-3 py-2 rounded transition 
-            {{ request()->routeIs('users.index') 
+            {{ request()->routeIs('admin.landing-content.index') 
                 ? 'bg-active text-white' 
                 : 'bg-mint hover:bg-active hover:text-white' }}">
             Publikasi
@@ -40,7 +40,7 @@
 
         <a href="{{ route('sanksi.index') }}"
             class="block px-3 py-2 rounded transition 
-            {{ request()->routeIs('settings') 
+            {{ request()->routeIs('sanksi.index') 
                 ? 'bg-active text-white' 
                 : 'bg-mint hover:bg-active hover:text-white' }}">
             Sanksi
@@ -63,6 +63,13 @@
                 : 'bg-mint hover:bg-active hover:text-white' }}">
             Keuangan
         </a>
+        <a href="{{ route('kategori.index') }}"
+            class="block px-3 py-2 rounded transition 
+            {{ request()->routeIs('kategori.index') 
+                ? 'bg-active text-white' 
+                : 'bg-mint hover:bg-active hover:text-white' }}">
+            Kategori
+        </a>
 
         <!-- Dropdown Santri & Kompetensi -->
         <div x-data="{ open: {{ request()->routeIs('santri.*') || request()->routeIs('laundry.*') ? 'true' : 'false' }} }" class="relative">
@@ -82,6 +89,13 @@
                         ? 'bg-active text-white' 
                         : 'bg-mint hover:bg-active hover:text-white' }}">
                     Santri
+                </a>
+                <a href="{{ route('santri.kompetensi.index') }}"
+                    class="block px-3 py-2 rounded transition 
+                    {{ request()->routeIs('santri.kompetensi.index') 
+                        ? 'bg-active text-white' 
+                        : 'bg-mint hover:bg-active hover:text-white' }}">
+                    Kompetensi
                 </a>
                 <a href="{{ route('laundry.index') }}"
                     class="block px-3 py-2 rounded transition 

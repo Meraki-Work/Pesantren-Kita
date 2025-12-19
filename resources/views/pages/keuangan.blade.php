@@ -76,7 +76,7 @@
                 @for ($i = 0; $i < 1; $i++)
                     <div class="flex flex-col rounded-xl box-bg p-4 hover:shadow-md transition">
                     <div class="flex justify-between items-center">
-                        <label class="text-lg sm:text-xl lg:text-sm">Ups Keuangan Kosong</label>
+                        <label class="text-lg sm:text-xl lg:text-sm">Klik untuk menambahkan Kategori</label>
                         <button class="circle-add flex justify-center items-center">
                             <a href="{{ route('kategori.create')}}">
                                 <svg xmlns="http://www.w3.org/2000/svg" height="24px"

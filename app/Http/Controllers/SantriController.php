@@ -71,10 +71,13 @@ class SantriController extends Controller
         return $kelas;
     }
 
+    // =====================================================================
+    // METHOD 1: UNTUK HALAMAN BIODATA SANTRI (santri.blade.php)
+    // =====================================================================
     public function index(Request $request)
     {
         try {
-            Log::info('Mengakses halaman santri index', [
+            Log::info('Mengakses halaman biodata santri', [
                 'user_id' => Auth::id(),
                 'ponpes_id' => $this->getUserPonpesId(),
                 'kelas_filter' => $request->input('kelas')
@@ -102,29 +105,23 @@ class SantriController extends Controller
 
             $santri = $querySantri->get();
 
-            // Ambil data pencapaian bergabung dengan santri dan kelas - hanya data ponpes user
-            $pencapaian = DB::table('pencapaian as p')
+            // Ambil data pencapaian untuk sidebar info (hitung saja, tidak perlu detail)
+            $pencapaianCount = DB::table('pencapaian as p')
                 ->join('santri as s', 's.id_santri', '=', 'p.id_santri')
-                ->join('kelas as k', 'k.id_kelas', '=', 's.id_kelas')
                 ->where('s.ponpes_id', $userPonpesId)
-                ->when($selectedKelas, fn($q) => $q->where('k.id_kelas', $selectedKelas))
-                ->select(
-                    'p.id_pencapaian',
-                    's.id_santri',
-                    's.nama as nama_santri',
-                    'k.nama_kelas',
-                    'p.judul',
-                    'p.deskripsi',
-                    'p.tipe',
-                    'p.tanggal',
-                    'p.skor'
-                )
-                ->orderBy('s.id_santri')
-                ->orderBy('p.tanggal')
-                ->get();
+                ->when($selectedKelas, fn($q) => $q->where('s.id_kelas', $selectedKelas))
+                ->count();
 
-            // Ambil daftar kompetensi unik dari kolom "judul" pencapaian
-            $kompetensi = $pencapaian->pluck('judul')->unique()->filter()->values();
+            // Ambil daftar kompetensi unik untuk sidebar
+            $kompetensi = DB::table('pencapaian as p')
+                ->join('santri as s', 's.id_santri', '=', 'p.id_santri')
+                ->where('s.ponpes_id', $userPonpesId)
+                ->when($selectedKelas, fn($q) => $q->where('s.id_kelas', $selectedKelas))
+                ->select('p.judul')
+                ->distinct()
+                ->pluck('judul')
+                ->filter()
+                ->values();
 
             // Kolom & rows untuk Bio (format tanggal)
             $columnsbio = [
@@ -168,26 +165,10 @@ class SantriController extends Controller
                 ];
             })->toArray();
 
-            // Hitung statistik untuk dashboard
-            $statistics = [
-                'total_santri' => $santri->count(),
-                'total_pencapaian' => $pencapaian->count(),
-                'rata_rata_skor' => $pencapaian->avg('skor') ? round($pencapaian->avg('skor'), 1) : 0,
-                'santri_berprestasi' => $pencapaian->unique('nama_santri')->count(),
-            ];
-
-            // Distribusi tipe pencapaian
-            $distribusiTipe = $pencapaian->groupBy('tipe')->map(function ($group, $tipe) use ($pencapaian) {
-                return [
-                    'count' => $group->count(),
-                    'percentage' => $pencapaian->count() > 0 ? round(($group->count() / $pencapaian->count()) * 100, 1) : 0
-                ];
-            });
-
-            Log::info('Berhasil memuat data santri', [
+            Log::info('Berhasil memuat data biodata santri', [
                 'user_id' => Auth::id(),
                 'total_santri' => $santri->count(),
-                'total_pencapaian' => $pencapaian->count(),
+                'total_pencapaian' => $pencapaianCount,
                 'kelas_filter' => $selectedKelas
             ]);
 
@@ -197,9 +178,6 @@ class SantriController extends Controller
                 'kompetensi',
                 'columnsbio',
                 'rowsbio',
-                'pencapaian',
-                'statistics',
-                'distribusiTipe',
                 'santri'
             ));
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
@@ -219,6 +197,172 @@ class SantriController extends Controller
         }
     }
 
+    // =====================================================================
+    // METHOD 2: UNTUK HALAMAN KOMPETENSI SANTRI (kompetensi.blade.php)
+    // =====================================================================
+    public function kompetensi(Request $request)
+    {
+        try {
+            Log::info('Mengakses halaman kompetensi santri', [
+                'user_id' => Auth::id(),
+                'ponpes_id' => $this->getUserPonpesId(),
+                'kelas_filter' => $request->input('kelas')
+            ]);
+
+            $userPonpesId = $this->getUserPonpesId();
+
+            // Ambil semua kelas untuk dropdown filter (hanya milik ponpes user)
+            $kelas = Kelas::where('ponpes_id', $userPonpesId)->get();
+
+            // Filter kelas yang dipilih
+            $selectedKelas = $request->input('kelas');
+
+            // Validasi bahwa kelas yang dipilih milik ponpes user
+            if ($selectedKelas) {
+                $this->checkKelasOwnership($selectedKelas);
+            }
+
+            // Ambil data pencapaian dengan detail lengkap - hanya data ponpes user
+            $queryPencapaian = DB::table('pencapaian as p')
+                ->join('santri as s', 's.id_santri', '=', 'p.id_santri')
+                ->join('kelas as k', 'k.id_kelas', '=', 's.id_kelas')
+                ->where('s.ponpes_id', $userPonpesId)
+                ->select(
+                    'p.id_pencapaian',
+                    's.id_santri',
+                    's.nama as nama_santri',
+                    'k.nama_kelas',
+                    'p.judul',
+                    'p.deskripsi',
+                    'p.tipe',
+                    'p.tanggal',
+                    'p.skor'
+                );
+
+            // Terapkan filter kelas jika ada
+            if ($selectedKelas) {
+                $queryPencapaian->where('k.id_kelas', $selectedKelas);
+            }
+
+            $pencapaian = $queryPencapaian
+                ->orderBy('p.tanggal', 'desc')
+                ->orderBy('s.nama')
+                ->get();
+
+            // Hitung statistik untuk dashboard
+            $statistics = [
+                'total_santri' => Santri::where('ponpes_id', $userPonpesId)
+                    ->when($selectedKelas, fn($q) => $q->where('id_kelas', $selectedKelas))
+                    ->count(),
+                'total_pencapaian' => $pencapaian->count(),
+                'rata_rata_skor' => $pencapaian->avg('skor') ? round($pencapaian->avg('skor'), 1) : 0,
+                'santri_berprestasi' => $pencapaian->unique('nama_santri')->count(),
+            ];
+
+            // Distribusi tipe pencapaian untuk chart
+            $distribusiTipe = $pencapaian->groupBy('tipe')->map(function ($group, $tipe) use ($pencapaian) {
+                return [
+                    'count' => $group->count(),
+                    'percentage' => $pencapaian->count() > 0 ? round(($group->count() / $pencapaian->count()) * 100, 1) : 0
+                ];
+            });
+
+            Log::info('Berhasil memuat data kompetensi santri', [
+                'user_id' => Auth::id(),
+                'total_pencapaian' => $pencapaian->count(),
+                'kelas_filter' => $selectedKelas,
+                'rata_rata_skor' => $statistics['rata_rata_skor']
+            ]);
+
+            return view('pages.kompetensi', compact(
+                'kelas',
+                'selectedKelas',
+                'pencapaian',
+                'statistics',
+                'distribusiTipe'
+            ));
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            Log::warning('Akses tidak diizinkan untuk kompetensi santri', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('santri.kompetensi')->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Error pada kompetensi santri', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memuat data kompetensi.');
+        }
+    }
+
+    // =====================================================================
+    // METHOD 3: API UNTUK CHART DATA (digunakan oleh kompetensi.blade.php)
+    // =====================================================================
+    public function getChartData(Request $request)
+    {
+        try {
+            $userPonpesId = $this->getUserPonpesId();
+
+            // Ambil distribusi tipe pencapaian untuk chart
+            $distribusi = DB::table('pencapaian as p')
+                ->join('santri as s', 's.id_santri', '=', 'p.id_santri')
+                ->where('s.ponpes_id', $userPonpesId)
+                ->select('p.tipe', DB::raw('COUNT(*) as count'))
+                ->groupBy('p.tipe')
+                ->orderBy('count', 'desc')
+                ->get();
+
+            // Jika tidak ada data, kembalikan data default
+            if ($distribusi->isEmpty()) {
+                return response()->json([
+                    'labels' => ['Tidak ada data'],
+                    'data' => [1],
+                    'colors' => ['#e5e7eb']
+                ]);
+            }
+
+            // Warna untuk chart
+            $colorPalette = [
+                '#3b82f6', // blue-500
+                '#10b981', // emerald-500
+                '#8b5cf6', // violet-500
+                '#f59e0b', // amber-500
+                '#ef4444', // red-500
+                '#06b6d4', // cyan-500
+                '#84cc16', // lime-500
+                '#f97316', // orange-500
+            ];
+
+            // Format data untuk chart
+            $labels = $distribusi->pluck('tipe')->toArray();
+            $data = $distribusi->pluck('count')->toArray();
+            $colors = array_slice($colorPalette, 0, count($labels));
+
+            return response()->json([
+                'labels' => $labels,
+                'data' => $data,
+                'colors' => $colors
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error pada getChartData', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'labels' => ['Error'],
+                'data' => [1],
+                'colors' => ['#ef4444']
+            ], 500);
+        }
+    }
+
+    // =====================================================================
+    // METHOD 4: CRUD SANTRI (Shared Methods)
+    // =====================================================================
     public function create()
     {
         try {
@@ -389,6 +533,73 @@ class SantriController extends Controller
         }
     }
 
+    public function edit($id)
+    {
+        try {
+            Log::info('Mengakses form edit santri', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id
+            ]);
+
+            $userPonpesId = $this->getUserPonpesId();
+
+            // Cek kepemilikan data santri
+            $santri = $this->checkSantriOwnership($id);
+
+            // 🔥 PERBAIKAN: Format tanggal_lahir untuk input type="date"
+            if ($santri->tanggal_lahir) {
+                // Jika tanggal_lahir adalah Carbon instance, format ke Y-m-d
+                if ($santri->tanggal_lahir instanceof \Carbon\Carbon) {
+                    $santri->tanggal_lahir_formatted = $santri->tanggal_lahir->format('Y-m-d');
+                } else {
+                    // Jika string, coba parse dan format
+                    try {
+                        $santri->tanggal_lahir_formatted = \Carbon\Carbon::parse($santri->tanggal_lahir)->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        $santri->tanggal_lahir_formatted = $santri->tanggal_lahir;
+                    }
+                }
+            } else {
+                $santri->tanggal_lahir_formatted = null;
+            }
+
+            // Hanya ambil kelas yang milik ponpes user
+            $kelas = Kelas::where('ponpes_id', $userPonpesId)->get();
+
+            Log::debug('Data untuk form edit santri', [
+                'santri_id' => $santri->id_santri,
+                'nama' => $santri->nama,
+                'tanggal_lahir_original' => $santri->tanggal_lahir,
+                'tanggal_lahir_formatted' => $santri->tanggal_lahir_formatted,
+                'kelas_count' => $kelas->count()
+            ]);
+
+            return view('pages.action.edit_santri', compact('santri', 'kelas'));
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            Log::warning('Akses tidak diizinkan untuk edit santri', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()->route('santri.index')->with('error', $e->getMessage());
+        } catch (ModelNotFoundException $e) {
+            Log::warning('Santri tidak ditemukan untuk edit', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id
+            ]);
+            return redirect()->route('santri.index')->with('error', 'Data santri tidak ditemukan.');
+        } catch (\Exception $e) {
+            Log::error('Error pada santri edit', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return redirect()->route('santri.index')->with('error', 'Terjadi kesalahan saat memuat form edit.');
+        }
+    }
+
     public function update(Request $request, $id)
     {
         try {
@@ -502,103 +713,6 @@ class SantriController extends Controller
         }
     }
 
-    /**
-     * Check if NISN or NIK is unique for real-time validation
-     */
-    public function checkUnique(Request $request)
-    {
-        try {
-            $userPonpesId = $this->getUserPonpesId();
-
-            $request->validate([
-                'field' => 'required|in:nisn,nik',
-                'value' => 'required|string|max:20'
-            ]);
-
-            $exists = Santri::where($request->field, $request->value)
-                ->where('ponpes_id', $userPonpesId)
-                ->exists();
-
-            return response()->json([
-                'available' => !$exists,
-                'message' => $exists ? "{$request->field} \"{$request->value}\" sudah digunakan oleh santri lain" : "{$request->field} tersedia"
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'available' => false,
-                'message' => 'Terjadi kesalahan saat validasi'
-            ], 500);
-        }
-    }
-
-    public function edit($id)
-    {
-        try {
-            Log::info('Mengakses form edit santri', [
-                'user_id' => Auth::id(),
-                'santri_id' => $id
-            ]);
-
-            $userPonpesId = $this->getUserPonpesId();
-
-            // Cek kepemilikan data santri
-            $santri = $this->checkSantriOwnership($id);
-
-            // 🔥 PERBAIKAN: Format tanggal_lahir untuk input type="date"
-            if ($santri->tanggal_lahir) {
-                // Jika tanggal_lahir adalah Carbon instance, format ke Y-m-d
-                if ($santri->tanggal_lahir instanceof \Carbon\Carbon) {
-                    $santri->tanggal_lahir_formatted = $santri->tanggal_lahir->format('Y-m-d');
-                } else {
-                    // Jika string, coba parse dan format
-                    try {
-                        $santri->tanggal_lahir_formatted = \Carbon\Carbon::parse($santri->tanggal_lahir)->format('Y-m-d');
-                    } catch (\Exception $e) {
-                        $santri->tanggal_lahir_formatted = $santri->tanggal_lahir;
-                    }
-                }
-            } else {
-                $santri->tanggal_lahir_formatted = null;
-            }
-
-            // Hanya ambil kelas yang milik ponpes user
-            $kelas = Kelas::where('ponpes_id', $userPonpesId)->get();
-
-            Log::debug('Data untuk form edit santri', [
-                'santri_id' => $santri->id_santri,
-                'nama' => $santri->nama,
-                'tanggal_lahir_original' => $santri->tanggal_lahir,
-                'tanggal_lahir_formatted' => $santri->tanggal_lahir_formatted,
-                'kelas_count' => $kelas->count()
-            ]);
-
-            return view('pages.action.edit_santri', compact('santri', 'kelas'));
-        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
-            Log::warning('Akses tidak diizinkan untuk edit santri', [
-                'user_id' => Auth::id(),
-                'santri_id' => $id,
-                'error' => $e->getMessage()
-            ]);
-            return redirect()->route('santri.index')->with('error', $e->getMessage());
-        } catch (ModelNotFoundException $e) {
-            Log::warning('Santri tidak ditemukan untuk edit', [
-                'user_id' => Auth::id(),
-                'santri_id' => $id
-            ]);
-            return redirect()->route('santri.index')->with('error', 'Data santri tidak ditemukan.');
-        } catch (\Exception $e) {
-            Log::error('Error pada santri edit', [
-                'user_id' => Auth::id(),
-                'santri_id' => $id,
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
-            return redirect()->route('santri.index')->with('error', 'Terjadi kesalahan saat memuat form edit.');
-        }
-    }
-
-
     public function destroy($id)
     {
         try {
@@ -662,6 +776,35 @@ class SantriController extends Controller
     }
 
     /**
+     * Check if NISN or NIK is unique for real-time validation
+     */
+    public function checkUnique(Request $request)
+    {
+        try {
+            $userPonpesId = $this->getUserPonpesId();
+
+            $request->validate([
+                'field' => 'required|in:nisn,nik',
+                'value' => 'required|string|max:20'
+            ]);
+
+            $exists = Santri::where($request->field, $request->value)
+                ->where('ponpes_id', $userPonpesId)
+                ->exists();
+
+            return response()->json([
+                'available' => !$exists,
+                'message' => $exists ? "{$request->field} \"{$request->value}\" sudah digunakan oleh santri lain" : "{$request->field} tersedia"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'available' => false,
+                'message' => 'Terjadi kesalahan saat validasi'
+            ], 500);
+        }
+    }
+
+    /**
      * Get santri data for API (optional)
      */
     public function getSantriByPonpes()
@@ -703,5 +846,40 @@ class SantriController extends Controller
         }
     }
 
-    
+    /**
+     * API: Get kompetensi by santri ID (untuk modal detail di halaman kompetensi)
+     */
+    public function getKompetensiBySantri($id)
+    {
+        try {
+            Log::debug('Mengambil data kompetensi untuk santri', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id
+            ]);
+
+            // Cek kepemilikan data santri
+            $santri = $this->checkSantriOwnership($id);
+
+            // Ambil data kompetensi santri
+            $kompetensi = DB::table('pencapaian as p')
+                ->where('p.id_santri', $id)
+                ->select('p.judul', 'p.deskripsi', 'p.tipe', 'p.tanggal', 'p.skor')
+                ->orderBy('p.tanggal', 'desc')
+                ->get();
+
+            Log::debug('Data kompetensi santri berhasil diambil', [
+                'santri_id' => $id,
+                'data_count' => $kompetensi->count()
+            ]);
+
+            return response()->json($kompetensi);
+        } catch (\Exception $e) {
+            Log::error('Error pada getKompetensiBySantri API', [
+                'user_id' => Auth::id(),
+                'santri_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([], 500);
+        }
+    }
 }

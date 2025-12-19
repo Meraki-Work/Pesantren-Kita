@@ -14,7 +14,7 @@ class KepegawaianController extends Controller
     {
         // Hanya Admin dan Pengajar yang boleh mengakses halaman ini
         $userRole = strtolower(Auth::user()->role ?? '');
-        if (!in_array($userRole, ['admin', 'pengajar'])) {
+        if (!in_array($userRole, ['admin'])) {
             return redirect('/')->with('error', 'Akses hanya untuk Admin & Pengajar');
         }
 
@@ -32,15 +32,17 @@ class KepegawaianController extends Controller
         // Filter pencarian
         if ($q !== '') {
             $qLower = mb_strtolower($q);
-            $usersQuery->where(function($builder) use ($qLower) {
+            $usersQuery->where(function ($builder) use ($qLower) {
                 $builder->whereRaw('LOWER(username) LIKE ?', ["%{$qLower}%"])
-                        ->orWhereRaw('LOWER(email) LIKE ?', ["%{$qLower}%"])
-                        ->orWhereRaw('LOWER(role) LIKE ?', ["%{$qLower}%"])
-                        ->orWhereRaw('LOWER(status) LIKE ?', ["%{$qLower}%"]);
+                    ->orWhereRaw('LOWER(email) LIKE ?', ["%{$qLower}%"])
+                    ->orWhereRaw('LOWER(role) LIKE ?', ["%{$qLower}%"])
+                    ->orWhereRaw('LOWER(status) LIKE ?', ["%{$qLower}%"]);
             });
         }
 
-        $users = $usersQuery->get();
+        // Gunakan pagination dengan 10 item per halaman
+        $perPage = 10;
+        $users = $usersQuery->paginate($perPage)->appends(['q' => $q]);
 
         // Hitung statistik berdasarkan ponpes_id user yang login
         $queryStats = User::where('ponpes_id', $ponpesId);
@@ -59,13 +61,15 @@ class KepegawaianController extends Controller
             'countKeuangan' => $queryStats->clone()->where('role', 'Keuangan')->count(),
         ];
 
-        return view('pages.kepegawaian', array_merge([
-            'users' => $users,
-            'q' => $q,
-            'filteredCount' => $q !== '' ? $users->count() : null,
-        ], 
-        // Sesuaikan statistik berdasarkan role user
-        $userRole === 'admin' ? $statsForAdmin : $statsForPengajar));
+        return view('pages.kepegawaian', array_merge(
+            [
+                'users' => $users,
+                'q' => $q,
+                'filteredCount' => $q !== '' ? $users->total() : null,
+            ],
+            // Sesuaikan statistik berdasarkan role user
+            $userRole === 'admin' ? $statsForAdmin : $statsForPengajar
+        ));
     }
 
     public function update(Request $request, $id_user)
@@ -108,7 +112,7 @@ class KepegawaianController extends Controller
         ]);
 
         return back()->with('success', 'Data pegawai berhasil diperbarui')
-                     ->with('close_edit', true);
+            ->with('close_edit', true);
     }
 
     public function store(Request $request)
@@ -170,7 +174,7 @@ class KepegawaianController extends Controller
         $user->delete();
 
         return back()->with('success', 'Pegawai berhasil dihapus')
-                     ->with('close_delete', true);
+            ->with('close_delete', true);
     }
 
     public function toggleStatus($id_user)
@@ -181,9 +185,9 @@ class KepegawaianController extends Controller
         }
 
         $user = User::where('id_user', $id_user)->firstOrFail();
-        
+
         $newStatus = $user->status == 'aktif' ? 'tidak aktif' : 'aktif';
-        
+
         $user->update(['status' => $newStatus]);
 
         return response()->json([
@@ -234,15 +238,15 @@ class KepegawaianController extends Controller
             'Content-Disposition' => 'attachment; filename="data-pegawai-' . date('Y-m-d') . '.csv"',
         ];
 
-        $callback = function() use ($users) {
+        $callback = function () use ($users) {
             $file = fopen('php://output', 'w');
-            
+
             // Add BOM for UTF-8
             fwrite($file, "\xEF\xBB\xBF");
-            
+
             // Header
             fputcsv($file, ['Nama', 'Email', 'Jabatan', 'Status', 'Tanggal Bergabung']);
-            
+
             // Data
             foreach ($users as $user) {
                 fputcsv($file, [
@@ -253,7 +257,7 @@ class KepegawaianController extends Controller
                     $user->created_at->format('d/m/Y')
                 ]);
             }
-            
+
             fclose($file);
         };
 

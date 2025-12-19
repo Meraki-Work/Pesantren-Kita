@@ -87,7 +87,7 @@ class KeuanganController extends Controller
 
             $tableData = $tableQuery->orderBy('tanggal', 'desc')->paginate(10);
 
-            $columns = ['User', 'Jumlah', 'Kategori', 'Sumber Dana', 'Tanggal', 'Status'];
+            $columns = ['User', 'Jumlah', 'Kategori', 'Sumber Dana', 'Keterangan','Tanggal', 'Status'];
             $rows = $tableData->map(function ($item) {
                 return [
                     'id' => $item->id_keuangan, // Pastikan ini id_keuangan

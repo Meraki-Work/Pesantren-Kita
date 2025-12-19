@@ -38,7 +38,7 @@
                                id="agenda"
                                value="{{ old('agenda', $notulen->agenda) }}"
                                required
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                                placeholder="Contoh: Rapat Koordinasi Bulanan, Evaluasi Program Tahunan, dll">
                         @error('agenda')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -56,7 +56,7 @@
                                    id="pimpinan"
                                    value="{{ old('pimpinan', $notulen->pimpinan) }}"
                                    required
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                                   class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                    placeholder="Nama pimpinan rapat">
                             @error('pimpinan')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -73,7 +73,7 @@
                                    id="tempat"
                                    value="{{ old('tempat', $notulen->tempat) }}"
                                    required
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                                   class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                    placeholder="Contoh: Aula Utama, Ruang Rapat, dll">
                             @error('tempat')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -92,7 +92,7 @@
                                    id="tanggal"
                                    value="{{ old('tanggal', $notulen->tanggal->format('Y-m-d')) }}"
                                    required
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                                   class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             @error('tanggal')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -108,7 +108,7 @@
                                    id="waktu"
                                    value="{{ old('waktu', $notulen->waktu_formatted) }}"
                                    required
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                                   class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             @error('waktu')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -124,7 +124,7 @@
                                   id="peserta"
                                   rows="3"
                                   required
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                                  class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                   placeholder="Tulis nama-nama peserta rapat, pisahkan dengan koma atau enter">{{ old('peserta', $notulen->peserta) }}</textarea>
                         @error('peserta')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -140,7 +140,7 @@
                                   id="alur_rapat"
                                   rows="4"
                                   required
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                                  class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                   placeholder="Jelaskan urutan acara dan proses rapat yang dilakukan">{{ old('alur_rapat', $notulen->alur_rapat) }}</textarea>
                         @error('alur_rapat')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -156,7 +156,7 @@
                                   id="hasil"
                                   rows="4"
                                   required
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                                  class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                   placeholder="Tuliskan hasil pembahasan, keputusan, dan action items yang disepakati">{{ old('hasil', $notulen->hasil) }}</textarea>
                         @error('hasil')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -171,7 +171,7 @@
                         <textarea name="keterangan" 
                                   id="keterangan"
                                   rows="3"
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                                  class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                   placeholder="Catatan tambahan, lampiran, atau informasi pendukung">{{ old('keterangan', $notulen->keterangan) }}</textarea>
                         @error('keterangan')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

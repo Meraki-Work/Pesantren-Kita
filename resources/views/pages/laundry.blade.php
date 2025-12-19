@@ -179,7 +179,7 @@
                 @if($keuangan->count() > 0)
                 <div class="overflow-x-auto rounded-lg border border-gray-200">
                     <table class="w-full">
-                        <thead class="bg-gray-50">
+                        <thead class="bg-gray-50/80 backdrop-blur-sm">
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">Tanggal</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">Santri</th>

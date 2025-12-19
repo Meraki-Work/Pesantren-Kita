@@ -141,7 +141,7 @@ class SanksiController extends Controller
                     'user_id' => Auth::id(),
                     'ponpes_id' => $userPonpesId
                 ]);
-                return redirect()->route('sanksi')
+                return redirect()->route('sanksi.index')
                     ->with('error', 'Tidak ada user aktif yang tersedia. Silakan tambahkan user terlebih dahulu.');
             }
 
@@ -157,7 +157,7 @@ class SanksiController extends Controller
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
             ]);
-            return redirect()->route('sanksi')->with('error', 'Terjadi kesalahan saat memuat form tambah data.');
+            return redirect()->route('sanksi.index')->with('error', 'Terjadi kesalahan saat memuat form tambah data.');
         }
     }
 
@@ -230,7 +230,7 @@ class SanksiController extends Controller
                 'jenis' => $sanksi->jenis
             ]);
 
-            return redirect()->route('sanksi')
+            return redirect()->route('sanksi.index')
                 ->with('success', 'Data sanksi untuk <strong>' . $selectedUser->username . '</strong> berhasil ditambahkan!');
         } catch (\Exception $e) {
             Log::error('Error pada sanksi store', [
@@ -265,14 +265,14 @@ class SanksiController extends Controller
                 'user' => $sanksi->user->username
             ]);
 
-            return view('pages.action.show', compact('sanksi'));
+            return view('pages.action.show_sanksi', compact('sanksi'));
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             Log::warning('Akses tidak diizinkan untuk show sanksi', [
                 'user_id' => Auth::id(),
                 'sanksi_id' => $id,
                 'error' => $e->getMessage()
             ]);
-            return redirect()->route('sanksi')->with('error', $e->getMessage());
+            return redirect()->route('sanksi.index')->with('error', $e->getMessage());
         } catch (\Exception $e) {
             Log::error('Error pada sanksi show_sanksi', [
                 'user_id' => Auth::id(),
@@ -281,7 +281,7 @@ class SanksiController extends Controller
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
             ]);
-            return redirect()->route('sanksi')->with('error', 'Terjadi kesalahan saat memuat detail sanksi.');
+            return redirect()->route('sanksi.index')->with('error', 'Terjadi kesalahan saat memuat detail sanksi.');
         }
     }
 
@@ -312,14 +312,14 @@ class SanksiController extends Controller
                 'users_count' => $users->count()
             ]);
 
-            return view('pages.sanksi-edit', compact('sanksi', 'users'));
+            return view('pages.action.edit_sanksi', compact('sanksi', 'users'));
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             Log::warning('Akses tidak diizinkan untuk edit sanksi', [
                 'user_id' => Auth::id(),
                 'sanksi_id' => $id,
                 'error' => $e->getMessage()
             ]);
-            return redirect()->route('sanksi')->with('error', $e->getMessage());
+            return redirect()->route('sanksi.index')->with('error', $e->getMessage());
         } catch (\Exception $e) {
             Log::error('Error pada sanksi edit', [
                 'user_id' => Auth::id(),
@@ -328,7 +328,7 @@ class SanksiController extends Controller
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
             ]);
-            return redirect()->route('sanksi')->with('error', 'Terjadi kesalahan saat memuat form edit.');
+            return redirect()->route('sanksi.index')->with('error', 'Terjadi kesalahan saat memuat form edit.');
         }
     }
 
@@ -403,7 +403,7 @@ class SanksiController extends Controller
                 'user_target' => $sanksi->user_id
             ]);
 
-            return redirect()->route('sanksi')
+            return redirect()->route('sanksi.index')
                 ->with('success', 'Data sanksi untuk <strong>' . $selectedUser->username . '</strong> berhasil diperbarui!');
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             Log::warning('Akses tidak diizinkan untuk update sanksi', [
@@ -411,7 +411,7 @@ class SanksiController extends Controller
                 'sanksi_id' => $id,
                 'error' => $e->getMessage()
             ]);
-            return redirect()->route('sanksi')->with('error', $e->getMessage());
+            return redirect()->route('sanksi.index')->with('error', $e->getMessage());
         } catch (\Exception $e) {
             Log::error('Error pada sanksi update', [
                 'user_id' => Auth::id(),

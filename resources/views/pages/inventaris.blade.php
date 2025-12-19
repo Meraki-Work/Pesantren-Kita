@@ -74,7 +74,7 @@
             </form>
             <div class="bg-white rounded-lg shadow overflow-hidden mt-4">
                 <table class="w-full text-sm">
-                    <thead class="bg-gray-50 text-gray-700">
+                    <thead class="bg-gray-50/80 backdrop-blur-sm">
                         <tr>
                             <th class="px-6 py-3 text-left font-semibold">Nama Barang</th>
                             <th class="px-6 py-3 text-left font-semibold">Kategori</th>

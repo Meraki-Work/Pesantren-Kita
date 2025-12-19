@@ -29,7 +29,7 @@
                         @endif
 
                         <a href="{{ route('admin.landing-content.create') }}"
-                            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
+                            class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                             </svg>
@@ -39,31 +39,7 @@
                 </div>
 
                 <!-- Info Ponpes -->
-                @if($userPonpes)
-                <div class="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                    <div class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">Anda mengelola konten untuk:</p>
-                            <p class="text-lg font-bold text-blue-700">{{ $userPonpes->nama_ponpes }}</p>
-                        </div>
-                    </div>
-                </div>
-                @else
-                <div class="mt-4 p-3 bg-yellow-50 border border-yellow-100 rounded-lg">
-                    <div class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                        </svg>
-                        <div>
-                            <p class="text-sm font-medium text-gray-900">Informasi Pesantren Tidak Ditemukan</p>
-                            <p class="text-sm text-yellow-700">Silakan hubungi administrator untuk menetapkan pesantren Anda</p>
-                        </div>
-                    </div>
-                </div>
-                @endif
+
             </div>
 
             <!-- Info Ponpes dengan Logo -->
@@ -1057,7 +1033,7 @@
             </script>
             <!-- Stats Overview -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                <div class="box-bg p-4">
                     <div class="flex items-center">
                         <div class="p-2 bg-blue-100 rounded-lg mr-3">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1071,7 +1047,7 @@
                     </div>
                 </div>
 
-                <div class="bg-green-50 border border-green-100 rounded-lg p-4">
+                <div class="box-bg p-4">
                     <div class="flex items-center">
                         <div class="p-2 bg-green-100 rounded-lg mr-3">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1085,7 +1061,7 @@
                     </div>
                 </div>
 
-                <div class="bg-cyan-50 border border-cyan-100 rounded-lg p-4">
+                <div class="box-bg p-4">
                     <div class="flex items-center">
                         <div class="p-2 bg-cyan-100 rounded-lg mr-3">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1099,7 +1075,7 @@
                     </div>
                 </div>
 
-                <div class="bg-amber-50 border border-amber-100 rounded-lg p-4">
+                <div class="box-bg p-4">
                     <div class="flex items-center">
                         <div class="p-2 bg-amber-100 rounded-lg mr-3">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1118,29 +1094,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- View Toggle -->
-            <div class="flex justify-between items-center mb-6">
-                <div class="flex items-center space-x-2">
-                    <span class="text-sm text-gray-600">Tampilan:</span>
-                    <button id="tableViewBtn" class="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                        </svg>
-                        Table
-                    </button>
-                    <button id="cardViewBtn" class="px-3 py-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-medium">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                        </svg>
-                        Card
-                    </button>
-                </div>
-                <div class="text-sm text-gray-600">
-                    Total: <span class="font-semibold">{{ $contents->total() }}</span> konten
-                </div>
-            </div>
-
             <!-- Table View (Default) -->
             <div id="tableView" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="overflow-x-auto">
@@ -1290,7 +1243,7 @@
                                         <p class="mt-1 text-gray-500">Mulai dengan menambahkan konten pertama Anda</p>
                                         <div class="mt-6">
                                             <a href="{{ route('admin.landing-content.create') }}"
-                                                class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                                class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                                 </svg>

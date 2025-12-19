@@ -3,6 +3,7 @@
 @section('title', 'Notulen Rapat - PesantrenKita')
 
 @section('content')
+
 <div class="flex bg-gray-100 min-h-screen">
 
     <x-sidemenu title="PesantrenKita" />
@@ -22,7 +23,7 @@
 
         <!-- Stats Cards -->
         <div class="mt-3 grid sm:grid-cols-3 lg:grid-cols-3 gap-4 mb-6">
-            <div class="box-bg bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6">
+            <div class="box-bg p-6">
                 <div class="flex items-center">
                     <!-- <span class="w-2 h-full bg-green-500 rounded-xl flex"></span>     -->
                     <div>
@@ -32,7 +33,7 @@
                 </div>
             </div>
 
-            <div class="box-bg bg-gradient-to-r from-[#2ECC71] to-[#17b459] rounded-xl p-6">
+            <div class="box-bg p-6">
                 <div class="flex items-center">
                     <div>
                         <p class="text-base sm:text-lg' : 'text-lg sm:text-xl lg:text-2xl">Bulan Ini</p>
@@ -112,8 +113,8 @@
                             <span>{{ $gambar->created_at ? \Carbon\Carbon::parse($gambar->created_at)->diffForHumans() : '' }}</span>
                         </div>
                         @if($gambar->notulen)
-                        <a href="{{ route('notulen.show', $gambar->notulen->id_notulen) }}" 
-                           class="text-blue-600 hover:text-blue-800 font-medium transition-colors">
+                        <a href="{{ route('notulen.show', $gambar->notulen->id_notulen) }}"
+                            class="text-blue-600 hover:text-blue-800 font-medium transition-colors">
                             Lihat Detail →
                         </a>
                         @endif
@@ -160,7 +161,7 @@
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full">
-                            <thead class="bg-gray-50">
+                            <thead class="bg-gray-50/80 backdrop-blur-sm">
                                 <tr>
                                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Agenda</th>
                                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Pimpinan</th>
@@ -199,35 +200,70 @@
                                     <td class="px-6 py-4">
                                         <span class="text-sm text-gray-700">{{ $item->tempat }}</span>
                                     </td>
+                                    @php
+                                    // Dapatkan user ID yang benar dari model User
+                                    $authUser = auth()->user();
+                                    $authUserId = $authUser->id_user ?? $authUser->id;
+                                    @endphp
+
                                     <td class="px-6 py-4">
-                                        <div class="flex items-center space-x-2">
-                                            <a href="{{ route('notulen.show', $item->id_notulen) }}"
-                                                class="text-blue-600 hover:text-blue-900 text-sm font-medium">
-                                                Lihat
-                                            </a>
-                                            @if($item->user_id === auth()->id())
-                                            <a href="{{ route('notulen.edit', $item->id_notulen) }}"
-                                                class="text-blue-600 hover:text-blue-900 transition duration-200 inline-flex items-center">
-                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        <div class="relative">
+                                            <!-- DEBUG - Hapus setelah fix -->
+                                            <div class="text-xs text-gray-400 mb-1">
+                                                DB user_id: {{ $item->user_id }},
+                                                Auth ID: {{ $authUserId }},
+                                                Email: {{ auth()->user()->email }}
+                                            </div>
+
+                                            <button type="button"
+                                                class="dropdown-toggle px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition duration-200 inline-flex items-center">
+                                                <span>Aksi</span>
+                                                <svg class="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                                 </svg>
-                                                Edit
-                                            </a>
-                                            <form action="{{ route('notulen.destroy', $item->id_notulen) }}"
-                                                method="POST" class="inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit"
-                                                    class="btn-delete text-red-600 hover:text-red-900 transition duration-200 inline-flex items-center"
-                                                    onclick="return confirm('Hapus notulen ini?')">
-                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            </button>
+
+                                            <div class="dropdown-menu absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-10 hidden">
+                                                <!-- Lihat -->
+                                                <a href="{{ route('notulen.show', $item->id_notulen) }}"
+                                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                     </svg>
-                                                    Hapus
-                                                </button>
-                                            </form>
-                                            @endif
+                                                    Lihat Detail
+                                                </a>
+
+                                                <!-- FIXED: Gunakan $authUserId untuk comparison -->
+                                                @if($item->user_id == $authUserId)
+                                                <!-- Edit -->
+                                                <a href="{{ route('notulen.edit', $item->id_notulen) }}"
+                                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                    Edit
+                                                </a>
+
+                                                <!-- Hapus -->
+                                                <form action="{{ route('notulen.destroy', $item->id_notulen) }}" method="POST" class="block">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                        class="w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50 flex items-center btn-delete"
+                                                        onclick="return confirm('Hapus notulen ini?')">
+                                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                        Hapus
+                                                    </button>
+                                                </form>
+                                                @endif
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
@@ -349,19 +385,19 @@
                     </div>
                     <div class="p-4 space-y-3">
                         @if(isset($recentActivities) && $recentActivities->count() > 0)
-                            @foreach($recentActivities as $activity)
-                            <div class="flex items-start space-x-3">
-                                <div class="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 truncate">
-                                        {{ Str::limit($activity->agenda, 40) }}
-                                    </p>
-                                    <p class="text-xs text-gray-500">
-                                        {{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->diffForHumans() : 'Tanggal tidak tersedia' }} • {{ $activity->user->username ?? 'System' }}
-                                    </p>
-                                </div>
+                        @foreach($recentActivities as $activity)
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">
+                                    {{ Str::limit($activity->agenda, 40) }}
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                    {{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->diffForHumans() : 'Tanggal tidak tersedia' }} • {{ $activity->user->username ?? 'System' }}
+                                </p>
                             </div>
-                            @endforeach
+                        </div>
+                        @endforeach
                         @else
                         <div class="text-center py-4">
                             <p class="text-gray-500 text-sm">Belum ada aktivitas</p>
@@ -395,7 +431,7 @@
     function showImageModal(element) {
         const imageUrl = element.getAttribute('data-image');
         const imageTitle = element.getAttribute('data-title');
-        
+
         document.getElementById('modalImage').src = imageUrl;
         document.getElementById('modalTitle').textContent = imageTitle;
         document.getElementById('imageModal').classList.remove('hidden');
@@ -428,15 +464,42 @@
             console.log(`Image ${index}:`, img.src, img.complete ? 'loaded' : 'loading');
         });
     });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+
+        dropdownToggles.forEach(toggle => {
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const dropdown = this.nextElementSibling;
+                dropdown.classList.toggle('hidden');
+            });
+        });
+
+        // Tutup dropdown ketika klik di luar
+        document.addEventListener('click', function() {
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                menu.classList.add('hidden');
+            });
+        });
+
+        // Fungsi konfirmasi hapus
+        function confirmDelete() {
+            return confirm('Apakah Anda yakin ingin menghapus notulen ini? Tindakan ini tidak dapat dibatalkan.');
+        }
+
+        // Assign fungsi ke semua tombol hapus
+        document.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (!confirmDelete()) {
+                    e.preventDefault();
+                }
+            });
+        });
+    });
 </script>
 
 <style>
-    .box-bg {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
     #imageModal {
         backdrop-filter: blur(4px);
     }

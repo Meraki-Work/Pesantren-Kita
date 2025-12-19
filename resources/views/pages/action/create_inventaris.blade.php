@@ -40,7 +40,7 @@
                                 id="nama_barang"
                                 value="{{ old('nama_barang') }}"
                                 required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                                 placeholder="Contoh: Meja Belajar, Kursi, Lemari, dll">
                             @error('nama_barang')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -56,7 +56,7 @@
                                 <select name="kategori"
                                     id="kategori"
                                     required
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
                                     <option value="">Pilih Kategori</option>
                                     <option value="Furniture" {{ old('kategori') == 'Furniture' ? 'selected' : '' }}>Furniture</option>
                                     <option value="Elektronik" {{ old('kategori') == 'Elektronik' ? 'selected' : '' }}>Elektronik</option>
@@ -78,7 +78,7 @@
                                 <select name="kondisi"
                                     id="kondisi"
                                     required
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
                                     <option value="">Pilih Kondisi</option>
                                     <option value="Baik" {{ old('kondisi') == 'Baik' ? 'selected' : '' }}>Baik</option>
                                     <option value="Rusak" {{ old('kondisi') == 'Rusak' ? 'selected' : '' }}>Rusak</option>
@@ -102,7 +102,7 @@
                                     value="{{ old('jumlah') }}"
                                     min="1"
                                     required
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                                     placeholder="0">
                                 @error('jumlah')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -118,7 +118,7 @@
                                     name="tanggal_beli"
                                     id="tanggal_beli"
                                     value="{{ old('tanggal_beli') }}"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
                                 @error('tanggal_beli')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -135,7 +135,7 @@
                                 id="lokasi"
                                 value="{{ old('lokasi') }}"
                                 required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                                 placeholder="Contoh: Ruang Kelas 1, Gudang A, Perpustakaan">
                             @error('lokasi')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -150,7 +150,7 @@
                             <textarea name="keterangan"
                                 id="keterangan"
                                 rows="4"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                                 placeholder="Deskripsi barang, spesifikasi, atau catatan tambahan...">{{ old('keterangan') }}</textarea>
                             @error('keterangan')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

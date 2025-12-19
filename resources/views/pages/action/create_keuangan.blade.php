@@ -19,7 +19,7 @@
                                id="jumlah"
                                step="0.01"
                                required 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                     
                     <div>
@@ -27,7 +27,7 @@
                         <select name="id_kategori" 
                                 id="id_kategori"
                                 required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent>
                             <option value="">Pilih Kategori</option>
                             @foreach($kategories as $kategori)
                                 <option value="{{ $kategori->id_kategori }}">{{ $kategori->nama_kategori }}</option>
@@ -41,7 +41,7 @@
                                name="sumber_dana" 
                                id="sumber_dana"
                                required 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                     
                     <div>
@@ -49,7 +49,7 @@
                         <select name="status" 
                                 id="status"
                                 required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">Pilih Status</option>
                             <option value="Masuk">Pemasukan</option>
                             <option value="Keluar">Pengeluaran</option>
@@ -62,7 +62,7 @@
                                name="tanggal" 
                                id="tanggal"
                                required 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                     
                     <div class="md:col-span-2">
@@ -70,7 +70,7 @@
                         <textarea name="keterangan" 
                                   id="keterangan"
                                   rows="3"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                                  class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
                     </div>
                 </div>
                 

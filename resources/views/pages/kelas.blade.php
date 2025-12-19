@@ -162,7 +162,7 @@
                     <!-- Table -->
                     <div class="overflow-x-auto">
                         <table class="w-full">
-                            <thead class="bg-gray-50">
+                            <thead class="bg-gray-50/80 backdrop-blur-sm">
                                 <tr>
                                     <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         No
