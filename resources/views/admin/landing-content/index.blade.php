@@ -19,7 +19,7 @@
                         @if($userPonpes && $userPonpes->id_ponpes)
                         <a href="{{ route('landing.index', ['ponpes_id' => $userPonpes->id_ponpes]) }}"
                             target="_blank"
-                            class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200">
+                            class="inline-flex items-center px-4 py-2 bg-[#2ECC71] text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -29,7 +29,7 @@
                         @endif
 
                         <a href="{{ route('admin.landing-content.create') }}"
-                            class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
+                            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                             </svg>
@@ -87,7 +87,7 @@
                         @endif
                         <div>
                             <p class="text-sm font-medium text-gray-900">Anda mengelola konten untuk:</p>
-                            <p class="text-lg font-bold text-blue-700">{{ $userPonpes->nama_ponpes }}</p>
+                            <p class="text-lg font-bold text-[#2ECC71]">{{ $userPonpes->nama_ponpes }}</p>
                             <div class="flex items-center mt-1 space-x-3">
                                 @if($userPonpes->logo_ponpes)
                                 <button type="button"
@@ -281,7 +281,7 @@
             @endif
 
             <!-- Filter Section -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+            <div class="box-bg mb-6">
                 <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
                     <h2 class="text-lg font-semibold text-gray-900">Filter & Pencarian</h2>
                 </div>
@@ -355,11 +355,11 @@
             <!-- Quick Actions -->
             @if($userPonpes)
             <div class="mb-6">
-                <div class="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4">
+                <div class="bg-[#344E41] rounded-lg p-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between">
                         <div class="mb-4 sm:mb-0">
-                            <h3 class="text-lg font-semibold text-gray-900">Aksi Cepat</h3>
-                            <p class="text-sm text-gray-600">Kelola konten landing page Anda dengan cepat</p>
+                            <h3 class="text-lg font-semibold text-white">Aksi Cepat</h3>
+                            <p class="text-sm text-gray-200">Kelola konten landing page Anda dengan cepat</p>
                         </div>
                         <div class="flex flex-wrap gap-2">
                             @if($userPonpes->id_ponpes)
@@ -1552,7 +1552,7 @@
                             @if($userPonpes && $userPonpes->id_ponpes)
                             <a href="{{ route('landing.index', ['ponpes_id' => $userPonpes->id_ponpes]) }}"
                                 target="_blank"
-                                class="inline-flex items-center px-6 py-3 bg-green-600 border border-transparent rounded-lg font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                class="inline-flex items-center px-6 py-3 bg-[#2ECC71] border border-transparent rounded-lg font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />

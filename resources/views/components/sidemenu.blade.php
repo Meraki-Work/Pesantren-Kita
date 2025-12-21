@@ -58,7 +58,7 @@
 
         <a href="{{ route('keuangan.index') }}"
             class="block px-3 py-2 rounded transition 
-            {{ request()->routeIs('keuangan') 
+            {{ request()->routeIs('keuangan.index') 
                 ? 'bg-active text-white' 
                 : 'bg-mint hover:bg-active hover:text-white' }}">
             Keuangan

@@ -268,6 +268,10 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{keuangan}/edit', [KeuanganController::class, 'edit'])->name('keuangan.edit');
             Route::put('/{keuangan}', [KeuanganController::class, 'update'])->name('keuangan.update');
             Route::delete('/{keuangan}', [KeuanganController::class, 'destroy'])->name('keuangan.destroy');
+
+            Route::get('/import', [KeuanganController::class, 'importForm'])->name('keuangan.import.form');
+            Route::post('/import', [KeuanganController::class, 'import'])->name('keuangan.import.process');
+            Route::get('/import/template', [KeuanganController::class, 'downloadTemplate'])->name('keuangan.import.template');
         });
 
     // Cash Routes
@@ -275,21 +279,21 @@ Route::middleware(['auth'])->group(function () {
 
     // Sanksi Routes
     Route::prefix('sanksi')
-    ->middleware('feature:sanksi')
-    ->group(function () {
-        // Halaman utama sanksi - Ganti jadi '/'
-        Route::get('/', [SanksiController::class, 'index'])->name('sanksi.index');
-        Route::get('/create', [SanksiController::class, 'create'])->name('sanksi.create');
-        Route::post('/', [SanksiController::class, 'store'])->name('sanksi.store');
-        Route::get('/{sanksi}', [SanksiController::class, 'show'])->name('sanksi.show');
-        Route::get('/{sanksi}/edit', [SanksiController::class, 'edit'])->name('sanksi.edit');
-        Route::put('/{sanksi}', [SanksiController::class, 'update'])->name('sanksi.update');
-        Route::delete('/{sanksi}', [SanksiController::class, 'destroy'])->name('sanksi.destroy');
-        
-        // Route untuk update status (jika diperlukan)
-        Route::patch('/{sanksi}/status', [SanksiController::class, 'updateStatus'])->name('sanksi.status');
-    });
-    
+        ->middleware('feature:sanksi')
+        ->group(function () {
+            // Halaman utama sanksi - Ganti jadi '/'
+            Route::get('/', [SanksiController::class, 'index'])->name('sanksi.index');
+            Route::get('/create', [SanksiController::class, 'create'])->name('sanksi.create');
+            Route::post('/', [SanksiController::class, 'store'])->name('sanksi.store');
+            Route::get('/{sanksi}', [SanksiController::class, 'show'])->name('sanksi.show');
+            Route::get('/{sanksi}/edit', [SanksiController::class, 'edit'])->name('sanksi.edit');
+            Route::put('/{sanksi}', [SanksiController::class, 'update'])->name('sanksi.update');
+            Route::delete('/{sanksi}', [SanksiController::class, 'destroy'])->name('sanksi.destroy');
+
+            // Route untuk update status (jika diperlukan)
+            Route::patch('/{sanksi}/status', [SanksiController::class, 'updateStatus'])->name('sanksi.status');
+        });
+
     // Kelas Routes
     Route::prefix('kelas')
         ->group(function () {

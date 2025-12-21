@@ -44,19 +44,7 @@
                     <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                 </div>
             </div>
-            <div class="gap-2 flex">
-                <div class="h-10">
-                    <a href="/kategori" class="w-full h-full px-5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition inline-flex items-center justify-center">
-                        <span>Tambah Kategori</span>
-                    </a>
-                </div>
-                <div>
-                    <a href="{{ route('keuangan.create') }}" class="w-full h-full px-5 bg-[#2ECC71] text-white text-sm font-semibold rounded-lg hover:bg-green-600 transition inline-flex items-center justify-center">
-                        <span>Tambah Keuangan</span>
-                    </a>
-                </div>
             </div>
-        </div>
     </div>
 
     <!-- Table Container -->
