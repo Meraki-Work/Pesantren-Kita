@@ -8,10 +8,12 @@
         <x-sidemenu title="PesantrenKita" class="h-full min-h-screen" />
 
         <main class="flex-1 p-4 overflow-y-auto">
-            <div class="flex items-center space-x-4 mb-4">
-                <img src="{{ $ponpes && $ponpes->logo_ponpes ? asset('storage/' . $ponpes->logo_ponpes) : 'assets/img/orang.jpg' }}" class="ml-4 w-16 h-16 rounded-full object-cover border-1 border-white" />
-                <div>
-                    <h2 class="text-lg font-semibold text-gray-800">{{ $ponpes->nama_ponpes ?? 'Pesantren' }}</h2>
+            <div class="">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 py-2 pt-4">
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Halaman Dashboard</h1>
+                        <p class="text-gray-600 mt-1">Catat kehadiran Anda dengan cepat. Lihat riwayat absensi dan status kehadiran harian.</p>
+                    </div>
                 </div>
             </div>
 
@@ -184,8 +186,6 @@
 
                                             logContainer.insertAdjacentHTML('beforeend', `
                     <div class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition">
-                        <img src="{{ asset('assets/img/orang.jpg') }}" 
-                        class="w-12 h-12 rounded-full object-cover border-2 ${statusColor}" />
                         <div>
                             <p class="text-sm font-semibold ${statusTextColor}">${item.status}</p>
                             <p class="text-xs text-gray-500">${item.keterangan} pada
@@ -351,8 +351,6 @@
                                             // Elemen log
                                             const logItem = `
                         <div class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition">
-                            <img src="{{ asset('assets/img/orang.jpg') }}"
-                                class="w-12 h-12 rounded-full object-cover border-2 ${statusColor}" />
                             <div>
                                 <p class="text-sm font-semibold ${statusTextColor}">${item.status}</p>
                                 <p class="text-xs text-gray-500">${item.keterangan ?? '-'} pada 
@@ -659,8 +657,6 @@
                     <p class="text-lg font-semibold text-gray-800 mb-4">Logs Absen</p>
 
                     <div id="logAbsen" class="space-y-3 mt-4 flex flex-col">
-                        <img src="{{ asset('assets/img/orang.jpg') }}"
-                            class="w-12 h-12 rounded-full object-cover border-2 border-green-500" />
                         <div>
                             <p class="text-sm font-medium text-gray-700">Today</p>
                             <p class="text-xs text-gray-500"><span class="text-green-600 font-semibold">06:42 AM</span></p>

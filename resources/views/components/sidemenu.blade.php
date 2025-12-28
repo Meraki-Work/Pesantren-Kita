@@ -14,7 +14,7 @@
            bg-gradient-to-b from-emerald-900 to-emerald-700 text-white flex flex-col rounded-e-md 
            md:translate-x-0 md:relative md:rounded-none md:w-56">
     <div class="p-4 text-2xl font-bold border-b border-gray-700 flex items-center justify-between">
-        {{ $title ?? 'Menu' }}
+        {{ $title ?? 'PesantrenKita' }}
         <!-- Tombol close di mobile -->
         <button id="closeSidebar" class="md:hidden text-white text-2xl focus:outline-none">&times;</button>
     </div>

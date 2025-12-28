@@ -155,48 +155,84 @@ window.submitEdit = async function(userId) {
         const data = await response.json();
 
         if (response.ok) {
-            // Tampilkan success message dan refresh halaman
-            alert('Data berhasil diupdate');
-            window.location.href = data.redirect;
+            window.dispatchEvent(new CustomEvent('close-edit'));
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: 'Data pegawai berhasil diupdate',
+                confirmButtonColor: '#3085d6'
+            }).then(() => {
+                window.location.href = data.redirect;
+            });
         } else {
-            alert('Error: ' + (data.message || 'Terjadi kesalahan'));
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal!',
+                text: data.message || 'Terjadi kesalahan saat update'
+            });
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Terjadi kesalahan saat mengupdate data');
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Terjadi kesalahan saat mengupdate data'
+        });
     }
 };
 
 // AJAX handler untuk Delete
 window.submitDelete = async function(userId) {
-    if (!confirm('Apakah Anda benar-benar ingin menghapus pegawai ini?')) {
-        return;
-    }
-
     const csrfToken = getCsrfToken();
 
-    try {
-        const response = await fetch(`/api/kepegawaian/${userId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
+    Swal.fire({
+        title: 'Apakah Anda yakin?',
+        text: "Pegawai ini akan dihapus permanen!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, hapus!',
+        cancelButtonText: 'Batal'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch(`/api/kepegawaian/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    window.dispatchEvent(new CustomEvent('close-delete'));
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Terhapus!',
+                        text: 'Data pegawai berhasil dihapus'
+                    }).then(() => {
+                        window.location.href = data.redirect;
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: data.message || 'Terjadi kesalahan saat menghapus'
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'Terjadi kesalahan saat menghapus data'
+                });
             }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            // Tampilkan success message dan refresh halaman
-            alert('Data berhasil dihapus');
-            window.location.href = data.redirect;
-        } else {
-            alert('Error: ' + (data.message || 'Terjadi kesalahan'));
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Terjadi kesalahan saat menghapus data');
-    }
+    });
 };
 </script>
