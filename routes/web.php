@@ -188,13 +188,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
         // dynamic routes pindahkan ke bawah
         Route::get('/{landingContent}/edit', [LandingContentController::class, 'edit'])->name('edit');
         Route::put('/{landingContent}', [LandingContentController::class, 'update'])->name('update');
-        Route::delete('/{landingContent}', [LandingContentController::class, 'destroy'])->name('destroy');
+        Route::delete('/{id}', [LandingContentController::class, 'destroy'])->name('destroy');
         Route::get('/{landingContent}', [LandingContentController::class, 'show'])->name('show');
-
         Route::get('/{id}/detail', [LandingContentController::class, 'getContentDetail'])->name('detail');
-        Route::patch('/{id}/toggle-status', [LandingContentController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/{id}/toggle-status', [LandingContentController::class, 'toggleActive'])->name('toggle-status');
         Route::patch('/{id}/update-order', [LandingContentController::class, 'updateOrderSingle'])->name('update-order-single');
-        Route::post('/update-order', [LandingContentController::class, 'updateOrder'])->name('update-order');
+        Route::post('/update-order', [LandingContentController::class, 'reorder'])->name('update-order');
     });
 });
 

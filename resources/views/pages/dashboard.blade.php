@@ -19,7 +19,7 @@
 
             <div class="grid grid-cols-4 grid-rows-7 gap-4 text-gray-900 p-4 rounded-lg ">
                 <div class="flex justify-between box-bg col-span-3 row-span-3 col-start-1 px-6 py-3 rounded-lg relative overflow-hidden"
-                    style="background-image: url('{{ asset('assets/img/ji.png') }}'); background-position: center;">
+                    style="background-image: url('{{ asset('asset/img/ji.png') }}'); background-position: center;">
                     <div>
                         <div>
                             <p class="font-normal text-xl text-gray-800">Jam :</p>

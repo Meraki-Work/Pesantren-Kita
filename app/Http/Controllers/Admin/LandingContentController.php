@@ -8,6 +8,7 @@ use App\Models\Ponpes;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class LandingContentController extends Controller
 {
@@ -49,6 +50,48 @@ class LandingContentController extends Controller
     }
 
     /**
+     * Check ownership of landing content
+     * Override parent method to handle LandingContent model
+     */
+    protected function checkOwnership($table, $id = null)
+    {
+        // Jika parameter pertama adalah instance LandingContent (backward compatibility)
+        if ($table instanceof LandingContent) {
+            $landingContent = $table;
+        } 
+        // Jika parameter adalah string (table name) dan id
+        elseif (is_string($table) && $id) {
+            $landingContent = LandingContent::find($id);
+            if (!$landingContent) {
+                abort(404, 'Konten tidak ditemukan');
+            }
+        }
+        // Jika tidak valid
+        else {
+            abort(400, 'Parameter tidak valid');
+        }
+
+        $userPonpesId = $this->getUserPonpesId();
+        $canAccessAll = $this->canAccessAllPonpes();
+
+        // Jika user bisa akses semua ponpes (admin/super_admin), izinkan akses
+        if ($canAccessAll) {
+            return true;
+        }
+
+        // Jika user biasa, cek apakah ponpes_id cocok
+        return $userPonpesId && $landingContent->ponpes_id == $userPonpesId;
+    }
+
+    /**
+     * Helper method untuk check ownership dengan instance LandingContent
+     */
+    private function checkLandingContentOwnership(LandingContent $landingContent)
+    {
+        return $this->checkOwnership($landingContent);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
@@ -68,8 +111,9 @@ class LandingContentController extends Controller
                 // User biasa tanpa ponpes_id tidak bisa melihat data
                 $contents = collect(); // Empty collection
                 $ponpesList = collect();
+                $userPonpes = null;
 
-                return view('admin.landing-content.index', compact('contents'))->with('error', 'Anda belum ditugaskan ke pesantren manapun.');
+                return view('admin.landing-content.index', compact('contents', 'userPonpes'))->with('error', 'Anda belum ditugaskan ke pesantren manapun.');
             }
         }
         // Jika admin/super admin dan memilih filter ponpes tertentu
@@ -82,10 +126,11 @@ class LandingContentController extends Controller
             $query->where('content_type', $contentType);
         }
 
-        $contents = $query->orderBy('ponpes_id')
-            ->orderBy('content_type')
+        $contents = $query
+            ->orderBy('ponpes_id')
             ->orderBy('display_order')
-            ->paginate(10);
+            ->limit(100) 
+            ->get();
 
         // Get ponpes list untuk dropdown filter
         if ($this->canAccessAllPonpes()) {
@@ -95,6 +140,9 @@ class LandingContentController extends Controller
             // User biasa hanya bisa melihat ponpes mereka sendiri
             $ponpesList = Ponpes::where('id_ponpes', $userPonpesId)->get();
         }
+
+        // Get user's ponpes
+        $userPonpes = Ponpes::find($userPonpesId);
 
         // Stats untuk dashboard - berdasarkan filter yang aktif
         $statsQuery = LandingContent::query();
@@ -106,7 +154,7 @@ class LandingContentController extends Controller
         }
 
         $stats = [
-            'total' => $contents->total(),
+            'total' => $contents->count(),
             'active' => $statsQuery->clone()->where('is_active', true)->count(),
             'with_images' => $statsQuery->clone()->whereNotNull('image')->count(),
             'carousel_count' => $statsQuery->clone()->where('content_type', 'carousel')->count(),
@@ -114,7 +162,7 @@ class LandingContentController extends Controller
             'leader_count' => $statsQuery->clone()->where('content_type', 'about_leader')->count(),
         ];
 
-        return view('admin.landing-content.index-card', compact('contents', 'ponpesList', 'stats'));
+        return view('admin.landing-content.index', compact('contents', 'ponpesList', 'stats', 'userPonpes'));
     }
 
     /**
@@ -145,29 +193,29 @@ class LandingContentController extends Controller
      */
     public function createByType(Request $request, $type)
     {
-        $userPonpesId = $this->getUserPonpesId();
+        $user = Auth::user();
 
-        if (!$this->canAccessAllPonpes() && !$userPonpesId) {
-            return redirect()->route('admin.landing-content.index')
-                ->with('error', 'Anda belum ditugaskan ke pesantren. Silakan hubungi administrator.');
-        }
+        // List pesantren (untuk admin & super admin)
+        $ponpesList = Ponpes::all();
 
-        $validTypes = ['carousel', 'about_founder', 'about_leader', 'footer', 'section_title'];
-
-        if (!in_array($type, $validTypes)) {
-            return redirect()->route('admin.landing-content.create')
-                ->with('error', 'Tipe konten tidak valid');
-        }
-
+        // Tentukan ponpes_id yang dipakai
         if ($this->canAccessAllPonpes()) {
-            // Admin bisa memilih ponpes mana
-            $ponpesList = Ponpes::where('status', 'Aktif')->get();
+            $ponpesId = $request->get('ponpes_id')
+                ?? optional($ponpesList->first())->id_ponpes;
         } else {
-            // User biasa hanya ponpes mereka
-            $ponpesList = Ponpes::where('id_ponpes', $userPonpesId)->get();
+            $ponpesId = $user->ponpes_id;
         }
 
-        return view("admin.landing-content.create-{$type}", compact('ponpesList', 'type'));
+        // Hitung urutan tampil berikutnya
+        $nextOrder = $ponpesId
+            ? $this->getNextDisplayOrder($ponpesId)
+            : 1;
+
+        return view("admin.landing-content.create-{$type}", [
+            'ponpesList' => $ponpesList,
+            'type'       => $type,
+            'nextOrder'  => $nextOrder,
+        ]);
     }
 
     /**
@@ -175,129 +223,180 @@ class LandingContentController extends Controller
      */
     public function store(Request $request)
     {
-        $userPonpesId = $this->getUserPonpesId();
-        $canAccessAll = $this->canAccessAllPonpes();
+        $user = Auth::user();
 
-        // Validasi untuk user biasa tanpa ponpes_id
-        if (!$canAccessAll && !$userPonpesId) {
-            return redirect()->route('admin.landing-content.index')
-                ->with('error', 'Anda belum ditugaskan ke pesantren. Silakan hubungi administrator.');
-        }
+        $validated = $request->validate([
+            'ponpes_id'      => 'required|exists:ponpes,id_ponpes',
+            'content_type' => [
+                'required',
+                Rule::in([
+                    'carousel',
+                    'about_founder',
+                    'about_leader',
+                    'about_vision',
+                    'about_mission',
+                    'program_list',
+                    'gallery',
+                    'testimony',
+                    'cta'
+                ])
+            ],
+            'title'          => 'required|string|max:255',
+            'description'    => 'required|string',
+            'image'          => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'display_order'  => 'nullable|integer|min:1',
+            'url'            => 'nullable|url',
+            'is_active'      => 'nullable|boolean',
+        ]);
 
-        $rules = [
-            'content_type' => 'required|in:carousel,about_founder,about_leader,footer,section_title',
-            'is_active' => 'nullable|boolean',
-        ];
-
-        // Jika admin, bisa memilih ponpes_id
-        if ($canAccessAll) {
-            $rules['ponpes_id'] = 'required|exists:ponpes,id_ponpes';
-        }
-
-        // Tambahkan rules berdasarkan tipe konten
-        switch ($request->content_type) {
-            case 'carousel':
-                $rules['title'] = 'nullable|string|max:255';
-                $rules['subtitle'] = 'nullable|string';
-                $rules['description'] = 'nullable|string';
-                $rules['image'] = 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
-                $rules['url'] = 'nullable|url|max:255';
-                $rules['display_order'] = 'required|integer|min:1';
-                break;
-
-            case 'about_founder':
-            case 'about_leader':
-                $rules['title'] = 'required|string|max:255';
-                $rules['position'] = 'required|string|max:100';
-                $rules['description'] = 'required|string|min:10';
-                $rules['image'] = 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
-                $rules['url'] = 'nullable|url|max:255';
-                $rules['display_order'] = 'nullable|integer|min:0';
-                break;
-
-            case 'footer':
-                $rules['title'] = 'required|string|max:255';
-                $rules['description'] = 'required|string';
-                $rules['url'] = 'nullable|url|max:255';
-                $rules['display_order'] = 'required|integer|min:1';
-                break;
-
-            case 'section_title':
-                $rules['title'] = 'required|string|max:255';
-                $rules['subtitle'] = 'nullable|string';
-                $rules['position'] = 'nullable|string|max:100';
-                $rules['display_order'] = 'required|integer|min:1';
-                break;
-        }
-
-        $validated = $request->validate($rules);
-
-        // Set ponpes_id
-        if ($canAccessAll) {
-            $validated['ponpes_id'] = $request->ponpes_id;
-        } else {
-            $validated['ponpes_id'] = $userPonpesId;
-        }
-
-        // Handle image upload untuk tipe yang membutuhkan gambar
-        if (in_array($request->content_type, ['carousel', 'about_founder', 'about_leader']) && $request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('landing-content', 'public');
-            $validated['image'] = $imagePath;
-        }
-
+        // Pastikan is_active boolean
         $validated['is_active'] = $request->has('is_active');
+
+        // AUTO DISPLAY ORDER (FALLBACK AMAN)
+        if (empty($validated['display_order']) || $validated['display_order'] < 1) {
+            $validated['display_order'] = $this->getNextDisplayOrder(
+                $validated['ponpes_id']
+            );
+        }
+
+        // UPLOAD IMAGE
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')
+                ->store('landing-content', 'public');
+        }
 
         LandingContent::create($validated);
 
-        return redirect()->route('admin.landing-content.index')
-            ->with('success', ucfirst(str_replace('_', ' ', $request->content_type)) . ' berhasil ditambahkan.');
+        return redirect()
+            ->route('admin.landing-content.index')
+            ->with('success', 'Konten berhasil ditambahkan');
     }
 
-    // ... (method-method lainnya tetap sama)
+    private function getNextDisplayOrder($ponpesId)
+    {
+        return (LandingContent::where('ponpes_id', $ponpesId)
+            ->max('display_order') ?? 0) + 1;
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show($id)
+    {
+        $landingContent = LandingContent::findOrFail($id);
+        
+        // Check ownership
+        if (!$this->checkOwnership('landing_contents', $id)) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        return view('admin.landing-content.show', compact('landingContent'));
+    }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(LandingContent $landingContent)
+    public function edit($id)
     {
+        $landingContent = LandingContent::findOrFail($id);
+        
         // Check ownership
-        if (!$this->checkOwnership($landingContent)) {
+        if (!$this->checkOwnership('landing_contents', $id)) {
             abort(403, 'Unauthorized action.');
         }
 
-        $userPonpesId = $this->getUserPonpesId();
-        $ponpesList = Ponpes::where('id_ponpes', $userPonpesId)->get();
-
+        // Provide content types list for the edit form (value => label)
         $contentTypes = [
             'carousel' => 'Carousel',
-            'about_founder' => 'About Founder',
-            'about_leader' => 'About Leader',
-            'footer' => 'Footer',
-            'section_title' => 'Section Title'
+            'about_founder' => 'Tentang Pendiri',
+            'about_leader' => 'Tentang Pimpinan',
+            'about_vision' => 'Visi',
+            'about_mission' => 'Misi',
+            'program_list' => 'Daftar Program',
+            'gallery' => 'Galeri',
+            'testimony' => 'Testimoni',
+            'cta' => 'CTA'
         ];
 
-        return view('admin.landing-content.edit', compact('landingContent', 'ponpesList', 'contentTypes'));
+        return view('admin.landing-content.edit', compact('landingContent', 'contentTypes'));
+    }
+
+    /**
+     * Show form edit berdasarkan tipe konten
+     */
+    public function editByType($id, $type)
+    {
+        $landingContent = LandingContent::findOrFail($id);
+        
+        // Check ownership
+        if (!$this->checkOwnership('landing_contents', $id)) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $validTypes = [
+            'carousel',
+            'about_founder',
+            'about_leader',
+            'about_vision',
+            'about_mission',
+            'program_list',
+            'gallery',
+            'testimony',
+            'cta'
+        ];
+
+        // Normalize for comparison so legacy 'about_mision' matches canonical 'about_mission'
+        $normalizedType = $type === 'about_mision' ? 'about_mission' : $type;
+        $landingType = $landingContent->content_type === 'about_mision' ? 'about_mission' : $landingContent->content_type;
+
+        if (!in_array($type, $validTypes) || $landingType !== $normalizedType) {
+            return redirect()->route('admin.landing-content.edit', $id)
+                ->with('error', 'Tipe konten tidak sesuai');
+        }
+
+        return view("admin.landing-content.edit-{$type}", compact('landingContent'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, LandingContent $landingContent)
+    public function update(Request $request, $id)
     {
+        $landingContent = LandingContent::findOrFail($id);
+        
         // Check ownership
-        if (!$this->checkOwnership($landingContent)) {
+        if (!$this->checkOwnership('landing_contents', $id)) {
             abort(403, 'Unauthorized action.');
         }
 
         $userPonpesId = $this->getUserPonpesId();
 
+        $validContentTypes = [
+            'carousel',
+            'about_founder', 
+            'about_leader',
+            'about_vision',
+            'about_mission',
+            'program_list',
+            'gallery',
+            'testimony',
+            'cta'
+        ];
+
         $rules = [
-            'content_type' => 'required|in:carousel,about_founder,about_leader,footer,section_title',
+            'content_type' => ['required', Rule::in($validContentTypes)],
             'is_active' => 'nullable|boolean',
         ];
 
-        // Tambahkan rules berdasarkan tipe konten (sama seperti store)
-        switch ($request->content_type) {
+        // Tambahkan rules berdasarkan tipe konten
+        // Normalize legacy misspelling for update as well
+        $contentType = $request->content_type;
+        if ($contentType === 'about_mision') {
+            $contentType = 'about_mission';
+            $request->merge(['content_type' => $contentType]);
+        }
+        
+        switch ($contentType) {
             case 'carousel':
                 $rules['title'] = 'nullable|string|max:255';
                 $rules['subtitle'] = 'nullable|string';
@@ -317,16 +416,40 @@ class LandingContentController extends Controller
                 $rules['display_order'] = 'nullable|integer|min:0';
                 break;
 
-            case 'footer':
+            case 'about_vision':
+            case 'about_mission':  
+            case 'program_list':
                 $rules['title'] = 'required|string|max:255';
-                $rules['description'] = 'required|string';
+                $rules['description'] = 'required|string|min:10';
+                $rules['image'] = 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
                 $rules['url'] = 'nullable|url|max:255';
                 $rules['display_order'] = 'required|integer|min:1';
                 break;
 
-            case 'section_title':
+            case 'gallery':
+                $rules['title'] = 'required|string|max:255';
+                $rules['description'] = 'nullable|string';
+                $rules['image'] = 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
+                $rules['position'] = 'nullable|string|max:100';
+                $rules['url'] = 'nullable|url|max:255';
+                $rules['display_order'] = 'required|integer|min:1';
+                break;
+
+            case 'testimony':
+                $rules['title'] = 'required|string|max:255';
+                $rules['position'] = 'nullable|string|max:100';
+                $rules['description'] = 'required|string|min:10';
+                $rules['image'] = 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
+                $rules['url'] = 'nullable|url|max:255';
+                $rules['display_order'] = 'required|integer|min:1';
+                break;
+
+            case 'cta':
                 $rules['title'] = 'required|string|max:255';
                 $rules['subtitle'] = 'nullable|string';
+                $rules['description'] = 'nullable|string';
+                $rules['image'] = 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
+                $rules['url'] = 'required|url|max:255';
                 $rules['position'] = 'nullable|string|max:100';
                 $rules['display_order'] = 'required|integer|min:1';
                 break;
@@ -334,11 +457,18 @@ class LandingContentController extends Controller
 
         $validated = $request->validate($rules);
 
+        // Normalize stored content_type
+        if (isset($validated['content_type']) && $validated['content_type'] === 'about_mision') {
+            $validated['content_type'] = 'about_mission';
+        }
+
         // Set ponpes_id dari user yang login (tidak boleh diubah)
         $validated['ponpes_id'] = $userPonpesId;
 
         // Handle image upload
-        if ($request->hasFile('image')) {
+        $imageTypes = ['carousel', 'about_founder', 'about_leader', 'gallery', 'testimony', 'cta', 'about_vision', 'about_mission', 'program_list'];
+
+        if (in_array($contentType, $imageTypes) && $request->hasFile('image')) {
             // Delete old image if exists
             if ($landingContent->image && Storage::disk('public')->exists($landingContent->image)) {
                 Storage::disk('public')->delete($landingContent->image);
@@ -346,181 +476,184 @@ class LandingContentController extends Controller
 
             $imagePath = $request->file('image')->store('landing-content', 'public');
             $validated['image'] = $imagePath;
-        } elseif ($request->content_type == 'footer' || $request->content_type == 'section_title') {
-            // Hapus image jika tipe tidak memerlukan gambar
-            $validated['image'] = null;
         }
 
         $validated['is_active'] = $request->has('is_active');
 
-        $landingContent->update($validated);
+        try {
+            $landingContent->update($validated);
 
-        return redirect()->route('admin.landing-content.index')
-            ->with('success', ucfirst(str_replace('_', ' ', $request->content_type)) . ' berhasil diperbarui.');
+            $contentTypeNames = [
+                'carousel' => 'Carousel',
+                'about_founder' => 'Founder/Pendiri',
+                'about_leader' => 'Leader/Pengurus',
+                'about_vision' => 'Visi',
+                'about_mission' => 'Misi',
+                'program_list' => 'Program',
+                'gallery' => 'Galeri',
+                'testimony' => 'Testimoni',
+                'cta' => 'Call to Action',
+            ];
+
+            return redirect()->route('admin.landing-content.index')
+                ->with('success', $contentTypeNames[$contentType] . ' berhasil diperbarui.');
+                
+        } catch (\Exception $e) {
+            \Log::error('Error updating landing content: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(LandingContent $landingContent)
+    public function destroy($id, Request $request)
     {
+        $landingContent = LandingContent::where('id_content', $id)->firstOrFail();
+
         // Check ownership
-        if (!$this->checkOwnership($landingContent)) {
+        if (!$this->checkLandingContentOwnership($landingContent)) {
             abort(403, 'Unauthorized action.');
         }
 
-        // Delete image if exists
-        if ($landingContent->image && Storage::disk('public')->exists($landingContent->image)) {
-            Storage::disk('public')->delete($landingContent->image);
+        try {
+            // Hapus gambar jika ada
+            if ($landingContent->image && Storage::disk('public')->exists($landingContent->image)) {
+                Storage::disk('public')->delete($landingContent->image);
+            }
+
+            $contentTypeNames = [
+                'carousel' => 'Carousel',
+                'about_founder' => 'Founder/Pendiri',
+                'about_leader' => 'Leader/Pengurus',
+                'about_vision' => 'Visi',
+                'about_mission' => 'Misi',
+                'program_list' => 'Program',
+                'gallery' => 'Galeri',
+                'testimony' => 'Testimoni',
+                'cta' => 'Call to Action',
+            ];
+
+            $contentTypeName = $contentTypeNames[$landingContent->content_type] 
+                ?? $landingContent->content_type;
+
+            $landingContent->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => $contentTypeName . ' berhasil dihapus.'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error deleting landing content: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus data'
+            ], 500);
         }
-
-        $landingContent->delete();
-
-        return redirect()->route('admin.landing-content.index')
-            ->with('success', 'Konten landing page berhasil dihapus.');
     }
 
     /**
-     * Update display order via AJAX
+     * Toggle active status
      */
-    public function updateOrder(Request $request)
+    public function toggleActive(Request $request, $id)
     {
-        $userPonpesId = $this->getUserPonpesId();
+        $landingContent = LandingContent::where('id_content', $id)->firstOrFail();
 
-        $request->validate([
-            'items' => 'required|array',
-            'items.*.id' => 'required|exists:landing_content,id_content,ponpes_id,' . $userPonpesId,
-            'items.*.order' => 'required|integer',
-        ]);
-
-        foreach ($request->items as $item) {
-            LandingContent::where('id_content', $item['id'])
-                ->where('ponpes_id', $userPonpesId)
-                ->update(['display_order' => $item['order']]);
+        if (!$this->checkOwnership($landingContent)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
         }
 
-        return response()->json(['success' => true]);
+        try {
+            $newActive = (int) $request->input('is_active') === 1;
+
+            $landingContent->update([
+                'is_active' => $newActive
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'is_active' => $newActive
+            ]);
+
+        } catch (\Throwable $e) {
+            \Log::error('Toggle status error: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error'
+            ], 500);
+        }
     }
 
     /**
-     * Get content detail
+     * Return content detail as JSON for client-side verification
      */
     public function getContentDetail($id)
     {
-        $userPonpesId = $this->getUserPonpesId();
-        $content = LandingContent::with('ponpes')
-            ->where('id_content', $id)
-            ->where('ponpes_id', $userPonpesId)
-            ->firstOrFail();
+        $landingContent = LandingContent::findOrFail($id);
 
-        return response()->json([
-            'id_content' => $content->id_content,
-            'title' => $content->title,
-            'subtitle' => $content->subtitle,
-            'description' => $content->description,
-            'position' => $content->position,
-            'url' => $content->url,
-            'image' => $content->image,
-            'image_url' => $content->image ? Storage::url($content->image) : null,
-            'content_type' => $content->content_type,
-            'is_active' => $content->is_active,
-            'display_order' => $content->display_order,
-            'created_at_formatted' => $content->created_at->format('d M Y H:i'),
-            'updated_at_formatted' => $content->updated_at->format('d M Y H:i'),
-            'ponpes' => $content->ponpes ? [
-                'id_ponpes' => $content->ponpes->id_ponpes,
-                'nama_ponpes' => $content->ponpes->nama_ponpes
-            ] : null
-        ]);
-    }
-
-    public function apiDetail($id)
-    {
-        return $this->getContentDetail($id);
-    }
-
-    /**
-     * Toggle status aktivasi
-     */
-    public function toggleStatus(Request $request, $id)
-    {
-        $userPonpesId = $this->getUserPonpesId();
-        $content = LandingContent::where('id_content', $id)
-            ->where('ponpes_id', $userPonpesId)
-            ->firstOrFail();
-
-        $request->validate([
-            'is_active' => 'required|boolean'
-        ]);
-
-        $content->update([
-            'is_active' => $request->is_active
-        ]);
-
-        return response()->json(['success' => true]);
-    }
-
-    /**
-     * Update order single
-     */
-    public function updateOrderSingle(Request $request, $id)
-    {
-        $userPonpesId = $this->getUserPonpesId();
-        $content = LandingContent::where('id_content', $id)
-            ->where('ponpes_id', $userPonpesId)
-            ->firstOrFail();
-
-        $request->validate([
-            'display_order' => 'required|integer|min:1'
-        ]);
-
-        $content->update([
-            'display_order' => $request->display_order
-        ]);
-
-        return response()->json(['success' => true]);
-    }
-
-    /**
-     * Get detail for preview
-     */
-    public function detail($id)
-    {
-        $userPonpesId = $this->getUserPonpesId();
-        $content = LandingContent::with('ponpes')
-            ->where('id_content', $id)
-            ->where('ponpes_id', $userPonpesId)
-            ->firstOrFail();
-
-        return response()->json([
-            'id_content' => $content->id_content,
-            'title' => $content->title,
-            'subtitle' => $content->subtitle,
-            'description' => $content->description,
-            'position' => $content->position,
-            'url' => $content->url,
-            'image' => $content->image,
-            'image_url' => $content->image ? Storage::url($content->image) : null,
-            'content_type' => $content->content_type,
-            'is_active' => $content->is_active,
-            'display_order' => $content->display_order,
-            'created_at' => $content->created_at->format('d M Y H:i'),
-            'created_at_formatted' => $content->created_at->format('d M Y H:i'),
-            'updated_at_formatted' => $content->updated_at->format('d M Y H:i'),
-            'ponpes' => $content->ponpes ? [
-                'id_ponpes' => $content->ponpes->id_ponpes,
-                'nama_ponpes' => $content->ponpes->nama_ponpes
-            ] : null
-        ]);
-    }
-
-    public function show(LandingContent $landingContent)
-    {
         // Check ownership
-        if (!$this->checkOwnership($landingContent)) {
-            abort(403, 'Unauthorized action.');
+        if (!$this->checkOwnership('landing_contents', $id)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        return view('admin.landing-content.show', compact('landingContent'));
+        return response()->json([
+            'id_content' => $landingContent->id_content,
+            'is_active' => $landingContent->is_active ? 1 : 0,
+            'display_order' => $landingContent->display_order,
+            'title' => $landingContent->title,
+        ]);
     }
+
+    /**
+     * Reorder display order
+     */
+    public function reorder(Request $request)
+    {
+        $request->validate([
+            'items' => 'required|array',
+        ]);
+
+        try {
+            foreach ($request->items as $item) {
+
+                if (
+                    !isset($item['id']) ||
+                    !isset($item['order']) ||
+                    !is_numeric($item['order'])
+                ) {
+                    continue;
+                }
+
+                $updateData = [
+                    'display_order' => (int) $item['order'],
+                ];
+
+                if (isset($item['is_active'])) {
+                    $updateData['is_active'] = (int) $item['is_active'] === 1;
+                }
+
+                LandingContent::where('id_content', $item['id'])
+                    ->update($updateData);
+            }
+
+            return response()->json([
+                'success' => true
+            ]);
+
+        } catch (\Throwable $e) {
+            \Log::error('REORDER ERROR: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error'
+            ], 500);
+        }
+    }
+
 }

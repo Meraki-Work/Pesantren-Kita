@@ -5,7 +5,7 @@
 <div class="flex">
     <x-sidemenu title="PesantrenKita" class="h-full min-h-screen" />
     <!-- Main Content -->
-    <main class="flex-1 p-4 overflow-y-auto">
+    <main class="flex-1 px-6 pt-4 pb-6 overflow-y-auto">
         <!-- Navbar -->
         <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
             <div class="container-fluid">
@@ -21,29 +21,6 @@
                 </div>
             </div>
         </nav>
-
-        <!-- Mobile Sidebar -->
-        <div class="collapse d-md-none" id="sidebarMobile">
-            <div class="bg-dark p-3">
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link text-white" href="{{ route('admin.dashboard') }}">
-                            <i class="bi bi-speedometer2 me-2"></i>Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-white" href="{{ route('admin.ponpes.index') }}">
-                            <i class="bi bi-house-door me-2"></i>Pesantren
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-white" href="{{ route('admin.landing-content.index') }}">
-                            <i class="bi bi-window me-2"></i>Landing Page
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
 
         <!-- Page Content -->
         <div class="p-4">
@@ -61,7 +38,7 @@
             </div>
             @endif
 
-            @yield('content')
+            @yield('page-content')
         </div>
     </main>
 </div>

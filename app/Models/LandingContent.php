@@ -7,12 +7,24 @@ use Illuminate\Database\Eloquent\Model;
 class LandingContent extends Model
 {
     protected $table = 'landing_content';
+
     protected $primaryKey = 'id_content';
-    
+
+    public $incrementing = true;
+
+    protected $keyType = 'int';
+
     protected $fillable = [
-        'ponpes_id', 'content_type', 'title', 'subtitle',
-        'description', 'image', 'position', 'url',
-        'display_order', 'is_active'
+        'ponpes_id',
+        'content_type',
+        'title',
+        'subtitle',
+        'description',
+        'image',
+        'position',
+        'url',
+        'display_order',
+        'is_active'
     ];
 
     public function ponpes()
