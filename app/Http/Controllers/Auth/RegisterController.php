@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 
 class RegisterController extends Controller
 {
@@ -19,6 +20,10 @@ class RegisterController extends Controller
      */
     public function showRegistrationForm()
     {
+        // Hapus sesi sebelumnya jika ada
+        Session::forget('registration_pending');
+        Session::forget('pending_user_id');
+
         return view('auth.registrasi');
     }
 
@@ -61,6 +66,8 @@ class RegisterController extends Controller
      */
     public function store(Request $request)
     {
+        DB::beginTransaction();
+
         try {
             // HAPUS FIELD YANG TIDAK DIPERLUKAN
             $data = $request->all();
@@ -88,6 +95,8 @@ class RegisterController extends Controller
 
             // HANDLE PONDOK PESANTREN
             $ponpesId = null;
+            $isNewPonpes = false;
+            $newPonpesName = null;
 
             if ($data['ponpes_option'] === 'existing') {
                 $ponpesId = $this->verifyManualPonpesId($data['manual_ponpes_id']);
@@ -98,6 +107,8 @@ class RegisterController extends Controller
                 }
             } else {
                 $ponpesId = $this->createNewPonpes(trim($data['new_ponpes_name']));
+                $isNewPonpes = true;
+                $newPonpesName = trim($data['new_ponpes_name']);
             }
 
             // GENERATE OTP
@@ -116,12 +127,24 @@ class RegisterController extends Controller
                 'status' => 'pending', // ✅ TAMBAH FIELD STATUS
             ]);
 
-            // ✅ KIRIM OTP VIA BREVO API
+            // ✅ BUAT SUBSCRIPTION GRATIS
             $this->createFreeSubscription($ponpesId);
 
-            // Kirim OTP via Brevo API
+            // ✅ SIMPAN DATA UNTUK CLEANUP JIKA GAGAL
+            Session::put('registration_pending', true);
+            Session::put('pending_user_id', $user->id_user);
+            Session::put('pending_ponpes_id', $ponpesId);
+            Session::put('is_new_ponpes', $isNewPonpes);
+            if ($isNewPonpes) {
+                Session::put('new_ponpes_name', $newPonpesName);
+            }
+            Session::put('registration_time', now()->timestamp);
+
+            // ✅ KIRIM OTP VIA BREVO API
             $brevo = new \App\Services\BrevoApiService();
             $emailResult = $brevo->sendOtp($user->email, $otp);
+
+            DB::commit();
 
             if ($emailResult['status'] === 'success') {
                 return redirect()->route('verify.form')->with([
@@ -144,7 +167,12 @@ class RegisterController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Registration error: ' . $e->getMessage());
+
+            // Hapus sesi jika ada
+            Session::forget('registration_pending');
+            Session::forget('pending_user_id');
 
             return back()->withErrors([
                 'error' => 'Terjadi kesalahan saat registrasi. Silakan coba lagi.'
@@ -153,27 +181,464 @@ class RegisterController extends Controller
     }
 
     /**
-     * Kirim OTP dengan multiple fallback
+     * Buat pondok pesantren baru
      */
-    private function sendOtpWithFallback($email, $otp, $username)
+    private function createNewPonpes($namaPonpes)
+    {
+        $ponpesId = 'ponpes_' . Str::random(16);
+
+        while (DB::table('ponpes')->where('id_ponpes', $ponpesId)->exists()) {
+            $ponpesId = 'ponpes_' . Str::random(16);
+        }
+
+        DB::table('ponpes')->insert([
+            'id_ponpes' => $ponpesId,
+            'nama_ponpes' => $namaPonpes,
+            'alamat' => null,
+            'tahun_berdiri' => null,
+            'telp' => null,
+            'email' => null,
+            'logo_ponpes' => null,
+            'jumlah_santri' => 0,
+            'jumlah_staf' => 0,
+            'pimpinan' => null,
+            'status' => 'Aktif',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $ponpesId;
+    }
+
+    /**
+     * Verifikasi ID Ponpes manual
+     */
+    private function verifyManualPonpesId($manualPonpesId)
+    {
+        $cleanId = trim($manualPonpesId);
+
+        if (empty($cleanId)) {
+            return null;
+        }
+
+        $ponpes = DB::table('ponpes')
+            ->where('id_ponpes', $cleanId)
+            ->where('status', 'Aktif')
+            ->first();
+
+        return $ponpes ? $cleanId : null;
+    }
+
+    /**
+     * Proses verifikasi OTP dengan cleanup jika gagal
+     */
+    /**
+     * Proses verifikasi OTP dengan cleanup jika gagal
+     */
+    /**
+ * Proses verifikasi OTP dengan cleanup jika gagal
+ */
+public function verifyOtp(Request $request)
+{
+    try {
+        // PERBAIKI VALIDASI: Gunakan input dari form
+        $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|string|size:6',
+        ]);
+
+        // ✅ CEK APAKAH INI MASIH DALAM SESI REGISTRASI
+        if (!Session::get('registration_pending') || !Session::get('pending_user_id')) {
+            // Jika session hilang, hapus data yang mungkin masih ada
+            $this->cleanupFailedRegistration();
+
+            return redirect()->route('registrasi.index')->withErrors([
+                'error' => 'Sesi registrasi telah berakhir. Silakan registrasi ulang.'
+            ]);
+        }
+
+        // ✅ DAPATKAN EMAIL DARI SESSION JIKA REQUEST KOSONG
+        $email = $request->email ?? session('email');
+
+        if (empty($email)) {
+            return back()->withErrors([
+                'email' => 'Email tidak ditemukan. Silakan coba lagi.'
+            ])->withInput();
+        }
+
+        // ✅ CARI USER YANG MASIH PENDING
+        $user = User::where('email', $email)
+            ->where('otp_code', $request->otp)
+            ->where('otp_expired_at', '>', now())
+            ->where('status', 'pending')
+            ->where('id_user', Session::get('pending_user_id')) // Pastikan user sesuai sesi
+            ->first();
+
+        if (!$user) {
+            Log::warning('OTP verification failed', [
+                'email' => $email,
+                'user_id' => Session::get('pending_user_id'),
+                'otp_provided' => $request->otp
+            ]);
+            
+            // ❌ OTP SALAH - HAPUS USER DAN DATA TERKAIT
+            $this->cleanupFailedRegistration();
+
+            return redirect()->route('registrasi.index')->withErrors([
+                'error' => 'Kode OTP salah atau sudah kedaluwarsa. Silakan registrasi ulang.'
+            ]);
+        }
+
+        // Gunakan DB::transaction untuk update user
+        DB::transaction(function () use ($user) {
+            // ✅ UPDATE USER MENJADI AKTIF
+            $user->update([
+                'otp_code' => null,
+                'otp_expired_at' => null,
+                'email_verified_at' => now(),
+                'status' => 'active',
+            ]);
+        });
+
+        // ✅ HAPUS SESI REGISTRASI
+        Session::forget('registration_pending');
+        Session::forget('pending_user_id');
+        Session::forget('pending_ponpes_id');
+        Session::forget('is_new_ponpes');
+        Session::forget('registration_time');
+
+        // ✅ AUTO LOGIN SETELAH VERIFIKASI
+        auth()->login($user);
+
+        return redirect()->route('dashboard')->with([
+            'success' => 'Verifikasi berhasil! Selamat datang di PesantrenKita.'
+        ]);
+    } catch (\Exception $e) {
+        Log::error('OTP verification error: ' . $e->getMessage());
+
+        // Log detail error untuk debugging
+        Log::error('OTP Request Data:', [
+            'email' => $request->email,
+            'otp' => $request->otp,
+            'session_email' => session('email'),
+            'session_pending_user_id' => Session::get('pending_user_id')
+        ]);
+
+        return back()->withErrors([
+            'error' => 'Terjadi kesalahan saat verifikasi. Silakan coba lagi.'
+        ])->withInput();
+    }
+}
+    /**
+     * Debug method untuk memeriksa data yang akan dihapus
+     */
+    public function debugCleanupData()
     {
         try {
-            // ✅ COBA KIRIM EMAIL
-            Mail::to($email)->send(new OtpMail($otp));
+            $userId = Session::get('pending_user_id');
+            $ponpesId = Session::get('pending_ponpes_id');
 
-            Log::info('OTP email sent successfully to: ' . $email);
-            return ['success' => true, 'method' => 'email'];
+            $userData = null;
+            $ponpesData = null;
+            $subscriptionData = null;
+
+            if ($userId) {
+                $userData = User::where('id_user', $userId)->first();
+            }
+
+            if ($ponpesId) {
+                $ponpesData = DB::table('ponpes')->where('id_ponpes', $ponpesId)->first();
+                $subscriptionData = DB::table('subscriptions')
+                    ->where('ponpes_id', $ponpesId)
+                    ->get();
+            }
+
+            return response()->json([
+                'session_data' => [
+                    'pending_user_id' => $userId,
+                    'pending_ponpes_id' => $ponpesId,
+                    'is_new_ponpes' => Session::get('is_new_ponpes'),
+                    'registration_pending' => Session::get('registration_pending')
+                ],
+                'user_data' => $userData,
+                'ponpes_data' => $ponpesData,
+                'subscription_data' => $subscriptionData,
+                'all_users_in_ponpes' => $ponpesId ?
+                    User::where('ponpes_id', $ponpesId)->pluck('id_user', 'email') : null
+            ]);
         } catch (\Exception $e) {
-            Log::warning('Email failed, trying fallback methods: ' . $e->getMessage());
-
-            // ✅ FALLBACK 1: SIMPAN OTP KE LOG FILE
-            $this->saveOtpToLog($email, $otp, $username);
-
-            // ✅ FALLBACK 2: SIMPAN OTP KE FILE TXT
-            $this->saveOtpToFile($email, $otp, $username);
-
-            return ['success' => false, 'method' => 'fallback'];
+            return response()->json(['error' => $e->getMessage()]);
         }
+    }
+
+    /**
+ * Hapus data user dan ponpes jika registrasi gagal (NO TRANSACTION VERSION)
+ */
+private function cleanupFailedRegistration()
+{
+    $userId = Session::get('pending_user_id');
+    $ponpesId = Session::get('pending_ponpes_id');
+    $isNewPonpes = Session::get('is_new_ponpes');
+
+    Log::info('Cleanup started (NO TRANSACTION):', [
+        'user_id' => $userId,
+        'ponpes_id' => $ponpesId,
+        'is_new_ponpes' => $isNewPonpes
+    ]);
+
+    try {
+        // 1. Hapus user tanpa transaction
+        if ($userId) {
+            $userDeleted = DB::table('user')
+                ->where('id_user', $userId)
+                ->where('status', 'pending')
+                ->delete();
+            
+            Log::info("NO TRANSACTION User deletion: deleted {$userDeleted} row(s) for user ID: {$userId}");
+        }
+
+        // 2. Hapus ponpes baru jika tidak ada user lain
+        if ($isNewPonpes && $ponpesId) {
+            // Cek apakah masih ada user lain di ponpes ini
+            $otherUsersCount = DB::table('user')
+                ->where('ponpes_id', $ponpesId)
+                ->count();
+
+            Log::info("NO TRANSACTION Other users in ponpes {$ponpesId}: {$otherUsersCount}");
+
+            if ($otherUsersCount === 0) {
+                // Hapus subscription
+                $subscriptionsDeleted = DB::table('subscriptions')
+                    ->where('ponpes_id', $ponpesId)
+                    ->delete();
+
+                Log::info("NO TRANSACTION Subscriptions deleted: {$subscriptionsDeleted} for ponpes: {$ponpesId}");
+
+                // Hapus ponpes
+                $ponpesDeleted = DB::table('ponpes')
+                    ->where('id_ponpes', $ponpesId)
+                    ->delete();
+
+                Log::info("NO TRANSACTION Ponpes deleted: {$ponpesDeleted} for ponpes ID: {$ponpesId}");
+                
+                // Verifikasi penghapusan
+                $verifyPonpes = DB::table('ponpes')->where('id_ponpes', $ponpesId)->exists();
+                Log::info("NO TRANSACTION Verify ponpes exists after deletion: " . ($verifyPonpes ? 'YES' : 'NO'));
+            } else {
+                Log::info("NO TRANSACTION Ponpes {$ponpesId} not deleted because it has {$otherUsersCount} other user(s)");
+            }
+        }
+
+        Log::info('NO TRANSACTION Cleanup completed successfully');
+        
+    } catch (\Exception $e) {
+        Log::error('NO TRANSACTION Failed to cleanup registration data: ' . $e->getMessage());
+        Log::error('NO TRANSACTION Error details:', ['trace' => $e->getTraceAsString()]);
+    } finally {
+        // Hapus sesi REGARDLESS of success or failure
+        $this->clearRegistrationSession();
+    }
+}
+
+    /**
+     * Clear all registration session data
+     */
+    private function clearRegistrationSession()
+    {
+        Session::forget('registration_pending');
+        Session::forget('pending_user_id');
+        Session::forget('pending_ponpes_id');
+        Session::forget('is_new_ponpes');
+        Session::forget('registration_time');
+        Session::forget('new_ponpes_name');
+
+        Log::info('Registration session cleared');
+    }
+
+    /**
+     * Check session status API
+     */
+    public function checkSessionStatus()
+    {
+        if (!Session::get('registration_pending')) {
+            return response()->json(['valid' => false]);
+        }
+
+        // Cek waktu expired
+        $registrationTime = Session::get('registration_time');
+        $expiryTime = $registrationTime + (15 * 60); // 15 menit
+
+        if (now()->timestamp > $expiryTime) {
+            // Sesi expired, hapus data
+            $this->cleanupFailedRegistration();
+            return response()->json(['valid' => false]);
+        }
+
+        return response()->json(['valid' => true]);
+    }
+
+    /**
+     * Middleware untuk membersihkan data expired
+     */
+    public function checkExpiredRegistration()
+    {
+        if (Session::get('registration_pending') && Session::get('registration_time')) {
+            $registrationTime = Session::get('registration_time');
+            $expiryTime = $registrationTime + (15 * 60); // 15 menit
+
+            if (now()->timestamp > $expiryTime) {
+                // Sesi expired, hapus data
+                $this->cleanupFailedRegistration();
+
+                return redirect()->route('registrasi.index')->withErrors([
+                    'error' => 'Sesi registrasi telah berakhir. Silakan registrasi ulang.'
+                ]);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Menampilkan form verifikasi OTP dengan pengecekan expired
+     */
+    public function verifyForm()
+    {
+        // Cek expired registration
+        $expiredCheck = $this->checkExpiredRegistration();
+        if ($expiredCheck) {
+            return $expiredCheck;
+        }
+
+        if (!Session::get('registration_pending')) {
+            return redirect()->route('registrasi.index')->withErrors([
+                'error' => 'Sesi telah berakhir. Silakan registrasi ulang.'
+            ]);
+        }
+
+        return view('auth.verify-otp', [
+            'email' => session('email'),
+            'otp_display' => session('otp_display')
+        ]);
+    }
+
+    /**
+     * Resend OTP dengan pengecekan sesi
+     */
+    public function resendOtp(Request $request)
+    {
+        // Cek expired registration
+        $expiredCheck = $this->checkExpiredRegistration();
+        if ($expiredCheck) {
+            return $expiredCheck;
+        }
+
+        try {
+            $request->validate([
+                'email' => 'required|email',
+            ]);
+
+            // ✅ VERIFIKASI SESI
+            if (!Session::get('pending_user_id')) {
+                return back()->withErrors([
+                    'email' => 'Sesi tidak valid. Silakan registrasi ulang.'
+                ]);
+            }
+
+            // ✅ HANYA CARI USER YANG MASIH PENDING DAN SESUAI SESSION
+            $user = User::where('email', $request->email)
+                ->where('id_user', Session::get('pending_user_id'))
+                ->where('status', 'pending')
+                ->first();
+
+            if (!$user) {
+                // User tidak ditemukan, cleanup
+                $this->cleanupFailedRegistration();
+
+                return redirect()->route('registrasi.index')->withErrors([
+                    'email' => 'Sesi telah berakhir. Silakan registrasi ulang.'
+                ]);
+            }
+
+            // GENERATE OTP BARU
+            $otp = rand(100000, 999999);
+
+            $user->update([
+                'otp_code' => $otp,
+                'otp_expired_at' => now()->addMinutes(10),
+            ]);
+
+            // KIRIM OTP BARU via Brevo API
+            $brevo = new \App\Services\BrevoApiService();
+            $emailResult = $brevo->sendOtp($user->email, $otp);
+
+            if ($emailResult['status'] === 'success') {
+                return back()->with([
+                    'success' => 'Kode OTP baru telah dikirim ke email Anda.'
+                ]);
+            } else {
+                // fallback
+                $this->saveOtpToFallback($user->email, $otp, $user->username, $emailResult['message']);
+
+                return back()->with([
+                    'otp_display' => $otp,
+                    'warning' => 'Email tidak terkirim. Catat kode OTP berikut: ' . $otp
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Resend OTP error: ' . $e->getMessage());
+
+            return back()->withErrors([
+                'error' => 'Terjadi kesalahan saat mengirim ulang OTP.'
+            ]);
+        }
+    }
+
+    /**
+     * Kirim OTP dengan multiple fallback
+     */
+    private function sendOtpWithRetry($email, $otp, $username)
+    {
+        $maxRetries = 2;
+
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                Log::info("Attempt {$attempt} to send OTP to: {$email}");
+
+                Mail::to($email)->send(new OtpMail($otp));
+
+                Log::info("✅ OTP email sent successfully to: {$email} on attempt {$attempt}");
+                return ['success' => true, 'attempt' => $attempt];
+            } catch (\Exception $e) {
+                Log::warning("Attempt {$attempt} failed for {$email}: " . $e->getMessage());
+
+                // Jika ini attempt terakhir, simpan ke fallback
+                if ($attempt === $maxRetries) {
+                    $this->saveOtpToFallback($email, $otp, $username, $e->getMessage());
+                    return ['success' => false, 'error' => $e->getMessage()];
+                }
+
+                // Tunggu sebentar sebelum retry
+                sleep(2);
+            }
+        }
+
+        return ['success' => false, 'error' => 'All attempts failed'];
+    }
+
+    /**
+     * Simpan OTP ke fallback methods
+     */
+    private function saveOtpToFallback($email, $otp, $username, $errorMessage)
+    {
+        // Simpan ke log
+        $this->saveOtpToLog($email, $otp, $username);
+
+        // Simpan ke file txt
+        $this->saveOtpToFile($email, $otp, $username);
+
+        // Log tambahan alasan gagal
+        Log::warning("OTP fallback aktif. Karena email gagal dikirim: {$errorMessage}");
     }
 
     /**
@@ -206,94 +671,6 @@ class RegisterController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to save OTP to file: ' . $e->getMessage());
         }
-    }
-
-    public function verifyOtp(Request $request)
-    {
-        try {
-            $request->validate([
-                'email' => 'required|email',
-                'otp' => 'required|digits:6',
-            ]);
-
-            // ✅ CARI USER YANG MASIH PENDING
-            $user = User::where('email', $request->email)
-                ->where('otp_code', $request->otp)
-                ->where('otp_expired_at', '>', now())
-                ->where('status', 'pending') // ✅ HANYA USER PENDING
-                ->first();
-
-            if (!$user) {
-                return back()->withErrors([
-                    'otp' => 'Kode OTP salah, sudah kedaluwarsa, atau akun sudah diverifikasi.'
-                ])->withInput();
-            }
-
-            // ✅ UPDATE USER MENJADI AKTIF
-            $user->update([
-                'otp_code' => null,
-                'otp_expired_at' => null,
-                'email_verified_at' => now(),
-                'status' => 'active', // ✅ SEKARANG USER AKTIF
-            ]);
-
-            // ✅ AUTO LOGIN SETELAH VERIFIKASI
-            auth()->login($user);
-
-            return redirect()->route('dashboard')->with([
-                'success' => 'Verifikasi berhasil! Selamat datang di PesantrenKita.'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('OTP verification error: ' . $e->getMessage());
-
-            return back()->withErrors([
-                'error' => 'Terjadi kesalahan saat verifikasi. Silakan coba lagi.'
-            ])->withInput();
-        }
-    }
-
-    private function verifyManualPonpesId($manualPonpesId)
-    {
-        $cleanId = trim($manualPonpesId);
-
-        if (empty($cleanId)) {
-            return null;
-        }
-
-        $ponpes = DB::table('ponpes')
-            ->where('id_ponpes', $cleanId)
-            ->where('status', 'Aktif')
-            ->first();
-
-        return $ponpes ? $cleanId : null;
-    }
-
-    /**
-     * Buat pondok pesantren baru
-     */
-    private function createNewPonpes($namaPonpes)
-    {
-        $ponpesId = 'ponpes_' . Str::random(16);
-
-        while (DB::table('ponpes')->where('id_ponpes', $ponpesId)->exists()) {
-            $ponpesId = 'ponpes_' . Str::random(16);
-        }
-
-        DB::table('ponpes')->insert([
-            'id_ponpes' => $ponpesId,
-            'nama_ponpes' => $namaPonpes,
-            'alamat' => null,
-            'tahun_berdiri' => null,
-            'telp' => null,
-            'email' => null,
-            'logo_ponpes' => null,
-            'jumlah_santri' => 0,
-            'jumlah_staf' => 0,
-            'pimpinan' => null,
-            'status' => 'Aktif',
-        ]);
-
-        return $ponpesId;
     }
 
     /**
@@ -332,111 +709,61 @@ class RegisterController extends Controller
     }
 
     /**
-     * Menampilkan form verifikasi OTP
+     * Cleanup expired registrations
      */
-    public function verifyForm()
+    public function cleanupExpiredRegistrations()
     {
-        if (!session('email')) {
-            return redirect()->route('registrasi.index')->withErrors([
-                'error' => 'Sesi telah berakhir. Silakan registrasi ulang.'
-            ]);
-        }
+        try {
+            $expiredTime = now()->subMinutes(20); // 20 menit yang lalu
 
-        return view('auth.verify-otp', [
-            'email' => session('email'),
-            'otp_display' => session('otp_display')
-        ]);
-    }
+            // Cari user pending yang sudah expired
+            $expiredUsers = User::where('status', 'pending')
+                ->where('created_at', '<', $expiredTime)
+                ->get();
 
-    private function sendOtpWithRetry($email, $otp, $username)
-    {
-        $maxRetries = 2;
+            foreach ($expiredUsers as $user) {
+                DB::transaction(function () use ($user) {
+                    $ponpesId = $user->ponpes_id;
 
-        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
-            try {
-                Log::info("Attempt {$attempt} to send OTP to: {$email}");
+                    // Hapus user
+                    $user->delete();
 
-                Mail::to($email)->send(new OtpMail($otp));
+                    // Cek apakah ponpes baru dan tidak ada user lain
+                    $otherUsers = User::where('ponpes_id', $ponpesId)->count();
 
-                Log::info("✅ OTP email sent successfully to: {$email} on attempt {$attempt}");
-                return ['success' => true, 'attempt' => $attempt];
-            } catch (\Exception $e) {
-                Log::warning("Attempt {$attempt} failed for {$email}: " . $e->getMessage());
+                    if ($otherUsers === 0) {
+                        // Hapus subscription
+                        DB::table('subscriptions')->where('ponpes_id', $ponpesId)->delete();
 
-                // Jika ini attempt terakhir, simpan ke fallback
-                if ($attempt === $maxRetries) {
-                    $this->saveOtpToFallback($email, $otp, $username, $e->getMessage());
-                    return ['success' => false, 'error' => $e->getMessage()];
-                }
+                        // Hapus ponpes jika baru dibuat (cek berdasarkan waktu)
+                        $ponpes = DB::table('ponpes')->where('id_ponpes', $ponpesId)->first();
 
-                // Tunggu sebentar sebelum retry
-                sleep(2);
+                        if ($ponpes && $ponpes->created_at > now()->subDay()) {
+                            DB::table('ponpes')->where('id_ponpes', $ponpesId)->delete();
+                        }
+                    }
+
+                    Log::info("Cleanup expired registration for user: {$user->email}");
+                });
             }
-        }
 
-        return ['success' => false, 'error' => 'All attempts failed'];
+            return count($expiredUsers) . " expired registrations cleaned up";
+        } catch (\Exception $e) {
+            Log::error('Failed to cleanup expired registrations: ' . $e->getMessage());
+            return 'Cleanup failed: ' . $e->getMessage();
+        }
     }
 
     /**
-     * Resend OTP
+     * Untuk testing - tampilkan semua user pending
      */
-    public function resendOtp(Request $request)
+    public function showPendingRegistrations()
     {
-        try {
-            $request->validate([
-                'email' => 'required|email',
-            ]);
+        $pendingUsers = User::where('status', 'pending')->get();
 
-            // ✅ HANYA CARI USER YANG MASIH PENDING
-            $user = User::where('email', $request->email)
-                ->where('status', 'pending')
-                ->first();
-
-            if (!$user) {
-                return back()->withErrors([
-                    'email' => 'Email tidak ditemukan atau sudah diverifikasi.'
-                ]);
-            }
-
-            // GENERATE OTP BARU
-            $otp = rand(100000, 999999);
-
-            $user->update([
-                'otp_code' => $otp,
-                'otp_expired_at' => now()->addMinutes(10),
-            ]);
-
-            // KIRIM OTP BARU
-            $emailResult = $this->sendOtpWithRetry($user->email, $otp, $user->username);
-
-            if ($emailResult['success']) {
-                return back()->with([
-                    'success' => 'Kode OTP baru telah dikirim ke email Anda.'
-                ]);
-            } else {
-                return back()->with([
-                    'otp_display' => $otp,
-                    'warning' => 'Email tidak terkirim. Catat kode OTP berikut: ' . $otp
-                ]);
-            }
-        } catch (\Exception $e) {
-            Log::error('Resend OTP error: ' . $e->getMessage());
-
-            return back()->withErrors([
-                'error' => 'Terjadi kesalahan saat mengirim ulang OTP.'
-            ]);
-        }
-    }
-
-    private function saveOtpToFallback($email, $otp, $username, $errorMessage)
-    {
-        // Simpan ke log
-        $this->saveOtpToLog($email, $otp, $username);
-
-        // Simpan ke file txt
-        $this->saveOtpToFile($email, $otp, $username);
-
-        // Log tambahan alasan gagal
-        Log::warning("OTP fallback aktif. Karena email gagal dikirim: {$errorMessage}");
+        return response()->json([
+            'count' => $pendingUsers->count(),
+            'users' => $pendingUsers
+        ]);
     }
 }

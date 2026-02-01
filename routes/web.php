@@ -137,12 +137,20 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 
+    if (app()->environment('local')) {
+        Route::get('/debug/cleanup-data', [RegisterController::class, 'debugCleanupData'])
+            ->name('debug.cleanup.data');
+    }
+
     // Registration
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('registrasi.index');
     Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
     Route::get('/verify-otp', [RegisterController::class, 'verifyForm'])->name('verify.form');
     Route::post('/verify-otp', [RegisterController::class, 'verifyOtp'])->name('verify.otp');
     Route::post('/resend-otp', [RegisterController::class, 'resendOtp'])->name('resend.otp');
+    // Route ini wajib ada untuk session check
+
+    Route::get('/verify/session-check', [RegisterController::class, 'checkSessionStatus'])->name('verify.session-check');
 
     // ✅ SIMPAN - Rute baru yang sudah diperbaiki
     Route::get('/lupa-katasandi', [ResetPasswordController::class, 'showForm'])->name('password.reset.form');
