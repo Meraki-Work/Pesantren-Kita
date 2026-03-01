@@ -276,6 +276,8 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{keuangan}/edit', [KeuanganController::class, 'edit'])->name('keuangan.edit');
             Route::put('/{keuangan}', [KeuanganController::class, 'update'])->name('keuangan.update');
             Route::delete('/{keuangan}', [KeuanganController::class, 'destroy'])->name('keuangan.destroy');
+            Route::get('/keuangan/export', [KeuanganController::class, 'export'])
+    ->name('keuangan.export');
 
             Route::get('/import', [KeuanganController::class, 'importForm'])->name('keuangan.import.form');
             Route::post('/import', [KeuanganController::class, 'import'])->name('keuangan.import.process');
