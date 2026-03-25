@@ -544,11 +544,10 @@ class DashboardController extends Controller
         $query->orderBy('tanggal', 'desc')
               ->orderBy('jam', 'desc');
 
-        // Pagination
-        $absensi = $query->paginate(15)->withQueryString();
+        $absensi = $query->paginate(15)->appends(request()->query());
 
         // Format data untuk view
-        $formattedAbsensi = $absensi->map(function ($item) {
+        $formattedAbsensi = collect($absensi->items())->map(function ($item) {
             return (object) [
                 'id_absensi' => $item->id_absensi,
                 'tanggal' => Carbon::parse($item->tanggal)->translatedFormat('d F Y'),

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Keuangan;
 use App\Models\Kategori;
+use App\Exports\KeuanganExport;
 use App\Imports\KeuanganImport;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -884,6 +885,22 @@ public function index(Request $request)
 
             $query = $this->applyDateFilter($query, $filter);
             $data = $query->orderBy('tanggal', 'asc')->get();
+
+            // Download Excel langsung
+        return Excel::download(
+            new KeuanganExport($userPonpesId, $filter),
+            'laporan-keuangan.xlsx'
+        );
+        } catch (\Exception $e) {
+        Log::error('Error exporting keuangan data', [
+            'user_id' => Auth::id(),
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return redirect()->back()->with('error', 'Terjadi kesalahan saat mengekspor data keuangan.');
+
+  
 
             // Format data untuk export
             $exportData = $data->map(function ($item) {

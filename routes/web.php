@@ -34,7 +34,8 @@ use App\Http\Controllers\Admin\PonpesController;
 use App\Http\Controllers\Super\PonpesController as SuperPonpesController;
 use App\Http\Controllers\Super\UserController as SuperUserController;
 use App\Http\Controllers\Super\LogController as SuperLogController;
-
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\RiwayatController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -157,7 +158,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 // ==================== PROTECTED ROUTES (MEMBUTUHKAN AUTHENTIKASI) ====================
 
 Route::middleware(['auth'])->group(function () {
-    
+
     // ============================
     // DASHBOARD (Semua Role)
     // ============================
@@ -174,6 +175,25 @@ Route::middleware(['auth'])->group(function () {
     // ============================
     // ADMINISTRASI (Admin & Super)
     // ============================
+
+
+
+    Route::middleware(['auth'])->group(function () {
+        Route::resource('users', UserController::class);
+    });
+
+    Route::middleware(['auth', 'role:superadmin'])->prefix('super')->name('super.')->group(function () {
+
+        // Rute untuk Pondok Pesantren
+        Route::resource('ponpes', PonpesController::class);
+
+        // Rute untuk Manajemen User
+        Route::resource('users', UserController::class);
+
+        // Rute untuk Log Sistem (biasanya hanya index/show)
+        Route::resource('logs', RiwayatController::class)->only(['index', 'show']);
+    });
+
     Route::middleware(['role:Admin,Super'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', function () {
             return view('admin.dashboard');
@@ -357,7 +377,7 @@ Route::middleware(['auth'])->group(function () {
     // ============================
     // SUPER ADMIN ONLY
     // ============================
-    
+
     // ============================
     // SUBSCRIPTION (Semua Role yang Aktif)
     // ============================
@@ -389,7 +409,7 @@ Route::middleware(['auth'])->group(function () {
     // ============================
     // API ROUTES (dengan proteksi role)
     // ============================
-    
+
     // Inventaris API (Admin, Pengajar, Keuangan)
     Route::middleware(['role:Admin,Pengajar,Keuangan,Super'])->prefix('api/inventaris')->group(function () {
         Route::get('/chart-data', [InventarisController::class, 'getChartData']);
@@ -480,6 +500,282 @@ if (app()->environment('local')) {
         ];
     });
 }
+
+// ==================== PROTECTED ROUTES (MEMBUTUHKAN AUTHENTIKASI) ====================
+
+Route::middleware(['auth'])->group(function () {
+
+    // Dashboard Routes
+    Route::prefix('dashboard')->group(function () {
+        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::post('/absensi', [DashboardController::class, 'store'])->name('dashboard.absensi.store');
+        Route::get('/absensi', [DashboardController::class, 'getAbsensi'])->name('dashboard.absensi');
+        Route::get('/absensi/all', [DashboardController::class, 'getAllAbsensi'])->name('dashboard.absensi.all');
+        Route::get('/absensi/check', [DashboardController::class, 'checkTodayAbsensi'])->name('dashboard.absensi.check');
+        Route::get('/prestasi', [DashboardController::class, 'getGrafikPrestasi'])->name('dashboard.prestasi');
+
+
+        // FIXED ROUTE
+        Route::get('/absensi/riwayat', [DashboardController::class, 'riwayat'])->name('dashboard.absensi.riwayat');
+    });
+
+    // Keuangan Routes
+    Route::prefix('keuangan')
+        ->middleware('feature:keuangan')
+        ->group(function () {
+            Route::get('/', [KeuanganController::class, 'index'])->name('keuangan.index');
+            Route::get('/create', [KeuanganController::class, 'create'])->name('keuangan.create');
+            Route::post('/', [KeuanganController::class, 'store'])->name('keuangan.store');
+            Route::get('/{keuangan}/edit', [KeuanganController::class, 'edit'])->name('keuangan.edit');
+            Route::put('/{keuangan}', [KeuanganController::class, 'update'])->name('keuangan.update');
+            Route::delete('/{keuangan}', [KeuanganController::class, 'destroy'])->name('keuangan.destroy');
+            Route::get('/keuangan/export', [KeuanganController::class, 'export'])
+                ->name('keuangan.export');
+
+            Route::get('/import', [KeuanganController::class, 'importForm'])->name('keuangan.import.form');
+            Route::post('/import', [KeuanganController::class, 'import'])->name('keuangan.import.process');
+            Route::get('/import/template', [KeuanganController::class, 'downloadTemplate'])->name('keuangan.import.template');
+        });
+
+    // Cash Routes
+    Route::get('/cash', [CashController::class, 'index'])->name('cash');
+
+Route::middleware(['auth', 'role:superadmin'])->prefix('super')->name('super.')->group(function () {
+
+    // Rute untuk Pondok Pesantren
+    Route::resource('ponpes', PonpesController::class);
+
+    // Rute untuk Manajemen User with model binding
+    Route::resource('users', UserController::class)->parameters([
+        'users' => 'user'
+    ]);
+    
+    // Bulk action untuk users
+    Route::post('users/bulk-action', [UserController::class, 'bulkAction'])->name('bulk-action');
+    Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+    Route::post('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+    Route::get('users/export/csv', [UserController::class, 'export'])->name('users.export');
+    Route::get('users/group-by-ponpes', [UserController::class, 'groupByPonpes'])->name('users.group-by-ponpes');
+
+    // Rute untuk Log Sistem
+    Route::resource('logs', RiwayatController::class)->only(['index', 'show']);
+});
+    // Sanksi Routes
+    Route::prefix('sanksi')
+        ->middleware('feature:sanksi')
+        ->group(function () {
+            // Halaman utama sanksi - Ganti jadi '/'
+            Route::get('/', [SanksiController::class, 'index'])->name('sanksi.index');
+            Route::get('/create', [SanksiController::class, 'create'])->name('sanksi.create');
+            Route::post('/', [SanksiController::class, 'store'])->name('sanksi.store');
+            Route::get('/{sanksi}', [SanksiController::class, 'show'])->name('sanksi.show');
+            Route::get('/{sanksi}/edit', [SanksiController::class, 'edit'])->name('sanksi.edit');
+            Route::put('/{sanksi}', [SanksiController::class, 'update'])->name('sanksi.update');
+            Route::delete('/{sanksi}', [SanksiController::class, 'destroy'])->name('sanksi.destroy');
+
+            // Route untuk update status (jika diperlukan)
+            Route::patch('/{sanksi}/status', [SanksiController::class, 'updateStatus'])->name('sanksi.status');
+        });
+
+    // Kelas Routes
+    Route::prefix('kelas')
+        ->group(function () {
+            Route::get('/create', [KelasController::class, 'create'])->name('kelas.create');
+            Route::post('/store', [KelasController::class, 'store'])->name('kelas.store');
+            Route::get('/', [KelasController::class, 'index'])->name('kelas.index');
+            Route::get('/{id}/edit', [KelasController::class, 'edit'])->name('kelas.edit');
+            Route::put('/{id}', [KelasController::class, 'update'])->name('kelas.update');
+            Route::delete('/{id}', [KelasController::class, 'destroy'])->name('kelas.destroy');
+            Route::get('/api/get-kelas', [KelasController::class, 'getKelasByPonpes'])->name('kelas.api');
+        });
+
+    // Kompetensi Routes
+    Route::prefix('kompetensi')
+        ->group(function () {
+            Route::get('/', [KompetensiController::class, 'index'])->name('kompetensi.index');
+            Route::post('/store', [KompetensiController::class, 'store'])->name('kompetensi.store');
+            Route::get('/{id}/edit', [KompetensiController::class, 'edit'])->name('kompetensi.edit');
+            Route::put('/{id}', [KompetensiController::class, 'update'])->name('kompetensi.update');
+            Route::delete('/{id}', [KompetensiController::class, 'destroy'])->name('kompetensi.destroy');
+            Route::get('/santri/{santriId}', [KompetensiController::class, 'getBySantri'])->name('kompetensi.by-santri');
+            Route::get('/kelas/{kelasId}', [KompetensiController::class, 'getByKelas'])->name('kompetensi.by-kelas');
+        });
+
+    // Pencapaian Routes
+    Route::prefix('pencapaian')->group(function () {
+        Route::get('/{id}/edit', [PencapaianController::class, 'edit'])->name('pencapaian.edit');
+        Route::put('/{id}', [PencapaianController::class, 'update'])->name('pencapaian.update');
+        Route::delete('/{id}', [PencapaianController::class, 'destroy'])->name('pencapaian.destroy');
+        Route::get('/chart-data', [PencapaianController::class, 'getChartData'])->name('pencapaian.chart-data');
+    });
+
+    // Laundry Routes
+    Route::prefix('laundry')
+        ->middleware('feature:laundry')
+        ->group(function () {
+            Route::get('/', [LaundryController::class, 'index'])->name('laundry.index');
+            Route::post('/', [LaundryController::class, 'store'])->name('laundry.store');
+            Route::get('/{id}/edit', [LaundryController::class, 'edit'])->name('laundry.edit');
+            Route::put('/{id}', [LaundryController::class, 'update'])->name('laundry.update');
+            Route::delete('/{id}', [LaundryController::class, 'destroy'])->name('laundry.destroy');
+            Route::get('/insert-example', [LaundryController::class, 'insertExampleData']);
+            Route::get('/statistics', [LaundryController::class, 'getStatistics'])->name('laundry.statistics');
+        });
+
+    // Kategori Routes
+    Route::prefix('kategori')->group(function () {
+        Route::get('/', [KategoriController::class, 'index'])->name('kategori.index');
+        Route::get('/create', [KategoriController::class, 'create'])->name('kategori.create');
+        Route::post('/', [KategoriController::class, 'store'])->name('kategori.store');
+        Route::get('/{id}/edit', [KategoriController::class, 'edit'])->name('kategori.edit');
+        Route::put('/{id}', [KategoriController::class, 'update'])->name('kategori.update');
+        Route::delete('/{id}', [KategoriController::class, 'destroy'])->name('kategori.destroy');
+    });
+
+    // Kategori Test Route
+    Route::get('/kategori-test', function () {
+        try {
+            $userPonpesId = Auth::user()->ponpes_id;
+            $data = \App\Models\Kategori::where('ponpes_id', $userPonpesId)
+                ->select('id_kategori', 'nama_kategori')
+                ->limit(5)
+                ->get();
+
+            return response()->json(['data' => $data, 'count' => count($data)]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()]);
+        }
+    });
+
+    // Modal Routes
+    Route::get('/modal/{type}', function ($type) {
+        $allowedModals = ['create_kelas', 'create_santri'];
+
+        if (!in_array($type, $allowedModals)) {
+            abort(404, 'Modal tidak ditemukan');
+        }
+
+        $viewPath = "pages.modal.{$type}";
+        if (!view()->exists($viewPath)) {
+            abort(404, "View {$viewPath} tidak ditemukan");
+        }
+
+        return view($viewPath);
+    })->name('modal.load');
+
+    // Santri Routes - SEMUA ROUTE DALAM SATU GROUP
+    Route::prefix('santri')
+        ->middleware('feature:santri')
+        ->group(function () {
+            // Halaman utama biodata santri
+            Route::get('/', [SantriController::class, 'index'])->name('santri.index');
+
+            // Halaman manajemen kompetensi (BARU)
+            Route::get('/kompetensi', [SantriController::class, 'kompetensi'])->name('santri.kompetensi.index');
+
+            // CRUD Santri
+            Route::get('/create', [SantriController::class, 'create'])->name('santri.create');
+            Route::post('/', [SantriController::class, 'store'])->name('santri.store');
+            Route::get('/{id}/edit', [SantriController::class, 'edit'])->name('santri.edit');
+            Route::put('/{id}', [SantriController::class, 'update'])->name('santri.update');
+            Route::delete('/{id}', [SantriController::class, 'destroy'])->name('santri.destroy');
+
+            // API Routes untuk Santri
+            Route::post('/check-unique', [SantriController::class, 'checkUnique'])->name('santri.check-unique');
+            Route::get('/api/santri-data', [SantriController::class, 'getSantriByPonpes'])->name('santri.api');
+
+            // 🔥 PERBAIKAN: Ubah nama route untuk API kompetensi
+            Route::get('/{id}/kompetensi', function ($id) {
+                $kompetensi = DB::table('pencapaian as p')
+                    ->join('santri as s', 's.id_santri', '=', 'p.id_santri')
+                    ->where('s.id_santri', $id)
+                    ->select('p.judul', 'p.deskripsi', 'p.tipe', 'p.tanggal', 'p.skor')
+                    ->orderBy('p.tanggal', 'desc')
+                    ->get();
+
+                return response()->json($kompetensi);
+            })->name('santri.kompetensi.api'); // 🔥 UBAH NAMA ROUTE INI
+
+            // 🔥 OPTIONAL: Tambahkan route untuk chart data
+            Route::get('/chart-data', [SantriController::class, 'getChartData'])->name('santri.chart.data');
+        });
+
+    // Inventaris Routes
+    Route::prefix('inventaris')
+        ->group(function () {
+            Route::get('/', [InventarisController::class, 'index'])->name('inventaris.index');
+            Route::get('/create', [InventarisController::class, 'create'])->name('inventaris.create');
+            Route::post('/', [InventarisController::class, 'store'])->name('inventaris.store');
+            Route::get('/{id}/edit', [InventarisController::class, 'edit'])->name('inventaris.edit');
+            Route::put('/{id}', [InventarisController::class, 'update'])->name('inventaris.update');
+            Route::delete('/{id}', [InventarisController::class, 'destroy'])->name('inventaris.destroy');
+            Route::get('/{id}', [InventarisController::class, 'show'])->name('inventaris.show');
+            Route::get('/export/export', [InventarisController::class, 'export'])->name('inventaris.export');
+        });
+
+    // Inventaris API Routes
+    Route::prefix('api/inventaris')->group(function () {
+        Route::get('/chart-data', [InventarisController::class, 'getChartData']);
+        Route::get('/stats', [InventarisController::class, 'getStats']);
+    });
+
+    // ================================================================
+    // 🔥 PERBAIKAN PENTING: NOTULEN ROUTES YANG SUDAH DIPERBAIKI
+    // ================================================================
+    Route::prefix('notulen')
+        ->middleware('feature:notulensi')
+        ->group(function () {
+            // 1. Rute spesifik (TANPA parameter) diletakkan SEBELUM rute parameter
+            Route::get('/notulensi', [NotulenController::class, 'index'])->name('notulen.index');
+            Route::get('/create', [NotulenController::class, 'create'])->name('notulen.create');
+            Route::post('/', [NotulenController::class, 'store'])->name('notulen.store');
+
+            // 2. Rute API (jika ada) diletakkan di sini
+            Route::delete('/gambar/{id}', [NotulenController::class, 'hapusGambar'])->name('notulen.hapus-gambar');
+            Route::post('/{id}/tambah-gambar', [NotulenController::class, 'tambahGambar'])->name('notulen.tambah-gambar');
+            Route::get('/{id}/export', [NotulenController::class, 'export'])->name('notulen.export');
+
+            // 3. Rute parameter diletakkan SETELAH rute spesifik
+            Route::get('/{id}', [NotulenController::class, 'show'])->name('notulen.show');
+            Route::get('/{id}/edit', [NotulenController::class, 'edit'])->name('notulen.edit');
+            Route::put('/{id}', [NotulenController::class, 'update'])->name('notulen.update');
+            Route::delete('/{id}', [NotulenController::class, 'destroy'])->name('notulen.destroy');
+        });
+
+    // Notulen API Routes
+    Route::get('/api/notulen/stats', [NotulenController::class, 'getStats']);
+
+    // Test Route untuk Debugging (opsional)
+    Route::get('/test-check-unique', function () {
+        try {
+            $userPonpesId = Auth::user()->ponpes_id;
+            $testNisn = '00172432149';
+
+            $exists = \App\Models\Santri::where('nisn', $testNisn)
+                ->where('ponpes_id', $userPonpesId)
+                ->exists();
+
+            return response()->json([
+                'test_data' => [
+                    'user_ponpes_id' => $userPonpesId,
+                    'test_nisn' => $testNisn,
+                    'exists' => $exists,
+                    'total_santri' => \App\Models\Santri::where('ponpes_id', $userPonpesId)->count()
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()]);
+        }
+    });
+
+    // Kepegawaian Routes
+    Route::prefix('kepegawaian')->name('kepegawaian.')->group(function () {
+        Route::get('/', [KepegawaianController::class, 'index'])->name('index');
+        Route::post('/', [KepegawaianController::class, 'store'])->name('store');
+        Route::put('/{id}', [KepegawaianController::class, 'update'])->name('update');
+        Route::delete('/{id}', [KepegawaianController::class, 'destroy'])->name('destroy');
+    });
+});
 
 // ==================== FALLBACK ROUTE ====================
 Route::fallback(function () {
