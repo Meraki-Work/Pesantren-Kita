@@ -11,13 +11,143 @@ use Illuminate\Http\JsonResponse;
 class DashboardController extends Controller
 {
     /**
+     * Constructor untuk inisialisasi
+     */
+    public function __construct()
+    {
+        // Jalankan pengecekan absensi otomatis setiap kali controller diakses
+        $this->checkAndMarkAutoAlfa();
+    }
+
+    /**
+     * Otomatis menandai alfa untuk user yang tidak absen
+     */
+    private function checkAndMarkAutoAlfa()
+    {
+        // Hanya jalankan sekali per hari per user
+        $cacheKey = 'auto_alfa_check_' . Auth::id() . '_' . Carbon::today()->toDateString();
+        
+        if (!cache()->has($cacheKey)) {
+            $this->processAutoAlfa();
+            cache()->put($cacheKey, true, now()->addHours(23)); // Cache untuk 23 jam
+        }
+    }
+
+    /**
+     * Proses penandaan alfa otomatis
+     */
+    private function processAutoAlfa()
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return;
+        }
+
+        $today = Carbon::today('Asia/Jakarta')->toDateString();
+        $now = Carbon::now('Asia/Jakarta');
+        
+        // Waktu batas akhir untuk absen (17:00 WIB)
+        $cutoffTime = Carbon::createFromTime(17, 0, 0, 'Asia/Jakarta');
+
+        // Cek apakah sudah lewat jam 17:00
+        if ($now->greaterThan($cutoffTime)) {
+            // Cek apakah user sudah absen hari ini
+            $hasAbsenToday = DB::table('absensi')
+                ->where('user_id', $user->id_user)
+                ->where('ponpes_id', $user->ponpes_id)
+                ->whereDate('tanggal', $today)
+                ->exists();
+
+            // Jika belum absen dan sudah lewat jam 17:00, tandai sebagai alfa
+            if (!$hasAbsenToday) {
+                DB::table('absensi')->insert([
+                    'ponpes_id'   => $user->ponpes_id,
+                    'user_id'     => $user->id_user,
+                    'tanggal'     => $today,
+                    'jam'         => '17:00:00',
+                    'status'      => 'Alpa',
+                    'keterangan'  => 'Auto: Tidak absen sampai batas waktu',
+                    'created_at'  => now(),
+                    'updated_at'  => now(),
+                ]);
+
+                \Illuminate\Support\Facades\Log::info('Auto Alfa marked', [
+                    'user_id' => $user->id_user,
+                    'username' => $user->username,
+                    'date' => $today,
+                    'time' => $now->toTimeString()
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Scheduled task untuk penandaan alfa massal
+     */
+    public static function scheduleAutoAlfa()
+    {
+        $today = Carbon::today('Asia/Jakarta')->toDateString();
+        
+        // Ambil semua user aktif
+        $activeUsers = DB::table('user')
+            ->where('status', 'active')
+            ->whereNotNull('ponpes_id')
+            ->get(['id_user', 'ponpes_id', 'username']);
+
+        $markedCount = 0;
+        
+        foreach ($activeUsers as $user) {
+            // Cek apakah user sudah absen hari ini
+            $hasAbsen = DB::table('absensi')
+                ->where('user_id', $user->id_user)
+                ->where('ponpes_id', $user->ponpes_id)
+                ->whereDate('tanggal', $today)
+                ->exists();
+
+            // Jika belum absen, tandai sebagai alfa
+            if (!$hasAbsen) {
+                // Cek apakah sudah ada record alfa untuk hari ini (untuk menghindari duplikat)
+                $hasAlfa = DB::table('absensi')
+                    ->where('user_id', $user->id_user)
+                    ->where('ponpes_id', $user->ponpes_id)
+                    ->whereDate('tanggal', $today)
+                    ->where('status', 'Alpa')
+                    ->where('keterangan', 'like', 'Auto:%')
+                    ->exists();
+
+                if (!$hasAlfa) {
+                    DB::table('absensi')->insert([
+                        'ponpes_id'   => $user->ponpes_id,
+                        'user_id'     => $user->id_user,
+                        'tanggal'     => $today,
+                        'jam'         => '17:00:00',
+                        'status'      => 'Alpa',
+                        'keterangan'  => 'Auto: Tidak absen sampai batas waktu',
+                        'created_at'  => now(),
+                        'updated_at'  => now(),
+                    ]);
+
+                    $markedCount++;
+                    \Illuminate\Support\Facades\Log::info('Scheduled Auto Alfa marked', [
+                        'user_id' => $user->id_user,
+                        'username' => $user->username,
+                        'date' => $today
+                    ]);
+                }
+            }
+        }
+
+        return "Auto alfa check completed. Marked {$markedCount} users from " . count($activeUsers) . " active users";
+    }
+
+    /**
      * Menyimpan absensi hari ini
      */
     public function store(Request $request): JsonResponse
     {
         $request->validate([
             'status' => 'required|in:Hadir,Izin,Sakit,Alpa',
-            'keterangan' => 'nullable|string|max:255',
+            'keterangan' => 'nullable|string|max:500',
         ]);
 
         // ================================
@@ -60,20 +190,48 @@ class DashboardController extends Controller
         }
 
         // ================================
+        // HAPUS AUTO ALFA JIKA ADA
+        // ================================
+        DB::table('absensi')
+            ->where('user_id', $userId)
+            ->where('ponpes_id', $userPonpesId)
+            ->where('tanggal', $tanggalHariIni)
+            ->where('status', 'Alpa')
+            ->where('keterangan', 'like', 'Auto:%')
+            ->delete();
+
+        // ================================
         // SIMPAN ABSENSI
         // ================================
-        DB::table('absensi')->insert([
+        $absensiId = DB::table('absensi')->insertGetId([
             'ponpes_id'   => $userPonpesId,
             'user_id'     => $userId,
             'tanggal'     => $tanggalHariIni,
             'jam'         => $jamSekarang,
             'status'      => $request->status,
             'keterangan'  => $request->keterangan ?? '-',
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
+
+        // Log aktivitas
+        \Illuminate\Support\Facades\Log::info('Absensi stored', [
+            'user_id' => $userId,
+            'username' => $user->username,
+            'status' => $request->status,
+            'tanggal' => $tanggalHariIni,
+            'jam' => $jamSekarang
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Absensi berhasil disimpan!'
+            'message' => 'Absensi berhasil disimpan!',
+            'data' => [
+                'id_absensi' => $absensiId,
+                'tanggal' => $tanggalHariIni,
+                'jam' => $jamSekarang,
+                'status' => $request->status
+            ]
         ]);
     }
 
@@ -84,22 +242,53 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        $data = DB::table('absensi as a')
-            ->select('a.id_absensi', 'a.jam', 'a.tanggal', 'a.status', 'a.keterangan')
-            ->where('a.user_id', $user->id_user)
-            ->where('a.ponpes_id', $user->ponpes_id)
-            ->whereIn('a.id_absensi', function ($query) use ($user) {
+        $data = DB::table('absensi')
+            ->select('id_absensi', 'jam', 'tanggal', 'status', 'keterangan')
+            ->where('user_id', $user->id_user)
+            ->where('ponpes_id', $user->ponpes_id)
+            ->whereIn('id_absensi', function ($query) use ($user) {
                 $query->selectRaw('MAX(id_absensi)')
                     ->from('absensi')
                     ->where('user_id', $user->id_user)
                     ->where('ponpes_id', $user->ponpes_id)
                     ->groupBy('tanggal');
             })
-            ->orderByDesc('a.tanggal')
+            ->orderByDesc('tanggal')
             ->limit(6)
             ->get();
 
-        return response()->json(['success' => true, 'data' => $data]);
+        // Format tanggal dan jam
+        $formattedData = $data->map(function ($item) {
+            return [
+                'id_absensi' => $item->id_absensi,
+                'tanggal' => Carbon::parse($item->tanggal)->translatedFormat('d F Y'),
+                'hari' => Carbon::parse($item->tanggal)->translatedFormat('l'),
+                'jam' => $item->jam ? Carbon::parse($item->jam)->format('H:i') : '-',
+                'status' => $item->status,
+                'keterangan' => $item->keterangan ?? '-',
+                'status_color' => $this->getStatusColor($item->status)
+            ];
+        });
+
+        return response()->json([
+            'success' => true, 
+            'data' => $formattedData
+        ]);
+    }
+
+    /**
+     * Helper: Get status color
+     */
+    private function getStatusColor($status)
+    {
+        $colors = [
+            'Hadir' => 'success',
+            'Izin' => 'info',
+            'Sakit' => 'warning',
+            'Alpa' => 'danger'
+        ];
+        
+        return $colors[$status] ?? 'secondary';
     }
 
     /**
@@ -115,9 +304,17 @@ class DashboardController extends Controller
             ->where('ponpes_id', $user->ponpes_id)
             ->get()
             ->groupBy('tanggal')
-            ->map(fn($item) => $item->pluck('status')->toArray());
+            ->map(function ($items) {
+                return [
+                    'status' => $items->first()->status,
+                    'color' => $this->getStatusColor($items->first()->status)
+                ];
+            });
 
-        return response()->json($absensi);
+        return response()->json([
+            'success' => true,
+            'data' => $absensi
+        ]);
     }
 
     /**
@@ -172,6 +369,33 @@ class DashboardController extends Controller
             ->limit(4)
             ->get();
 
+        // Cek absensi hari ini
+        $todayAbsensi = DB::table('absensi')
+            ->where('user_id', $user->id_user)
+            ->where('ponpes_id', $user->ponpes_id)
+            ->whereDate('tanggal', Carbon::today())
+            ->first();
+
+        // Data untuk chart absensi bulan ini
+        $bulanIni = Carbon::now()->month;
+        $tahunIni = Carbon::now()->year;
+        
+        $absensiBulanIni = DB::table('absensi')
+            ->select('status', DB::raw('COUNT(*) as total'))
+            ->where('user_id', $user->id_user)
+            ->where('ponpes_id', $user->ponpes_id)
+            ->whereMonth('tanggal', $bulanIni)
+            ->whereYear('tanggal', $tahunIni)
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        // Persentase kehadiran
+        $hariKerjaBulanIni = $this->hitungHariKerja($bulanIni, $tahunIni);
+        $hadirBulanIni = $absensiBulanIni['Hadir'] ?? 0;
+        $persentaseKehadiran = $hariKerjaBulanIni > 0 
+            ? round(($hadirBulanIni / $hariKerjaBulanIni) * 100, 1) 
+            : 0;
+
         return view('pages.dashboard', compact(
             'jumlahHadir',
             'jumlahIzin',
@@ -179,7 +403,12 @@ class DashboardController extends Controller
             'jumlahAlpa',
             'kelas',
             'akademikTerbaik',
-            'tahfidzTerbaik'
+            'tahfidzTerbaik',
+            'todayAbsensi',
+            'absensiBulanIni',
+            'persentaseKehadiran',
+            'hariKerjaBulanIni',
+            'hadirBulanIni'
         ));
     }
 
@@ -211,7 +440,10 @@ class DashboardController extends Controller
             $result[$type] = $data[$type] ?? 0;
         }
 
-        return response()->json($result);
+        return response()->json([
+            'success' => true,
+            'data' => $result
+        ]);
     }
 
     /**
@@ -228,11 +460,24 @@ class DashboardController extends Controller
             ->where('tanggal', $tanggalHariIni)
             ->first();
 
-        return response()->json([
+        $response = [
             'already_absened' => $absensiHariIni !== null,
-            'status' => $absensiHariIni?->status,
-            'keterangan' => $absensiHariIni?->keterangan
-        ]);
+            'is_auto_alfa' => false
+        ];
+
+        if ($absensiHariIni) {
+            $response['status'] = $absensiHariIni->status;
+            $response['keterangan'] = $absensiHariIni->keterangan;
+            $response['jam'] = $absensiHariIni->jam ? Carbon::parse($absensiHariIni->jam)->format('H:i') : null;
+            
+            // Cek apakah ini auto alfa
+            if (strpos($absensiHariIni->keterangan ?? '', 'Auto:') !== false) {
+                $response['is_auto_alfa'] = true;
+                $response['can_update'] = true; // User bisa update auto alfa
+            }
+        }
+
+        return response()->json($response);
     }
 
     /**
@@ -240,131 +485,430 @@ class DashboardController extends Controller
      */
     public function riwayat(Request $request)
     {
-        $currentUser = Auth::user();
-        $selectedUserId = $request->query('user_id');
+        $user = Auth::user();
+        $userPonpesId = $user->ponpes_id;
+        $userId = $user->id_user;
 
-        /**
-         * ========================
-         * CASE ADMIN
-         * ========================
-         */
-        if ($currentUser->role === 'Admin') {
-
-            // ADMIN hanya melihat Pengajar & Keuangan dari ponpes sendiri
-            $users = DB::table('user as u')
-                ->join('ponpes as p', 'u.ponpes_id', '=', 'p.id_ponpes')
-                ->select('u.id_user', 'u.username', 'u.role', 'p.nama_ponpes', 'u.email')
-                ->where('u.ponpes_id', $currentUser->ponpes_id)   // << PROTEKSI PONPES
-                ->whereIn('u.role', ['Pengajar', 'Keuangan'])     // << BATAS ROLE
-                ->get();
-
-            // Admin belum memilih user → kosongkan tampilan
-            if (!$selectedUserId) {
-                return view('pages.riwayat', [
-                    'currentUser' => $currentUser,
-                    'selectedUser' => null,
-                    'users' => $users,
-                    'jumlahHadir' => 0,
-                    'jumlahIzin' => 0,
-                    'jumlahSakit' => 0,
-                    'jumlahAlpa' => 0,
-                    'absensiPerTanggal' => [],
-                    'month' => date('m'),
-                    'year' => date('Y')
-                ]);
-            }
-
-            // Admin memilih user → cek apakah dalam ponpes yang sama
-            $selectedUser = DB::table('user')
-                ->where('id_user', $selectedUserId)
-                ->where('ponpes_id', $currentUser->ponpes_id) // << PROTEKSI
-                ->first();
-
-            if (!$selectedUser) {
-                abort(403, "Anda tidak memiliki akses.");
-            }
-
-            $ponpesId = $selectedUser->ponpes_id;
-
-            // Hitung absensi user yang dipilih
-            $counts = DB::table('absensi')
-                ->select('status', DB::raw('COUNT(*) as total'))
-                ->where('user_id', $selectedUserId)
-                ->where('ponpes_id', $ponpesId)
-                ->groupBy('status')
-                ->pluck('total', 'status');
-
-            $jumlahHadir = $counts['Hadir'] ?? 0;
-            $jumlahIzin  = $counts['Izin']  ?? 0;
-            $jumlahSakit = $counts['Sakit'] ?? 0;
-            $jumlahAlpa  = $counts['Alpa']  ?? 0;
-
-            $month = $request->query('month', date('m'));
-            $year  = $request->query('year', date('Y'));
-
-            $absensiPerTanggal = DB::table('absensi')
-                ->where('user_id', $selectedUserId)
-                ->where('ponpes_id', $ponpesId)
-                ->whereMonth('tanggal', $month)
-                ->whereYear('tanggal', $year)
-                ->pluck('status', 'tanggal');
-
-            return view('pages.riwayat', compact(
-                'currentUser',
-                'users',
-                'selectedUser',
-                'jumlahHadir',
-                'jumlahIzin',
-                'jumlahSakit',
-                'jumlahAlpa',
-                'absensiPerTanggal',
-                'month',
-                'year'
-            ));
-        }
-
-        /**
-         * ========================
-         * CASE PENGAJAR / KEUANGAN
-         * ========================
-         */
-        $selectedUser = $currentUser;
-        $userId = $currentUser->id_user;
-        $ponpesId = $currentUser->ponpes_id;
-
-        $counts = DB::table('absensi')
+        // Hitung statistik
+        $stats = DB::table('absensi')
             ->select('status', DB::raw('COUNT(*) as total'))
+            ->where('ponpes_id', $userPonpesId)
             ->where('user_id', $userId)
-            ->where('ponpes_id', $ponpesId)
             ->groupBy('status')
             ->pluck('total', 'status');
 
-        $jumlahHadir = $counts['Hadir'] ?? 0;
-        $jumlahIzin  = $counts['Izin']  ?? 0;
-        $jumlahSakit = $counts['Sakit'] ?? 0;
-        $jumlahAlpa  = $counts['Alpa'] ?? 0;
+        $totalAbsensi = array_sum($stats->toArray());
+        $hadir = $stats['Hadir'] ?? 0;
+        $izin = $stats['Izin'] ?? 0;
+        $sakit = $stats['Sakit'] ?? 0;
+        $alpa = $stats['Alpa'] ?? 0;
 
-        $month = $request->query('month', date('m'));
-        $year  = $request->query('year', date('Y'));
-
-        $absensiPerTanggal = DB::table('absensi')
+        // Hitung persentase kehadiran bulan ini
+        $bulanIni = Carbon::now()->month;
+        $tahunIni = Carbon::now()->year;
+        
+        $hariKerjaBulanIni = $this->hitungHariKerja($bulanIni, $tahunIni);
+        $hadirBulanIni = DB::table('absensi')
+            ->where('ponpes_id', $userPonpesId)
             ->where('user_id', $userId)
-            ->where('ponpes_id', $ponpesId)
-            ->whereMonth('tanggal', $month)
-            ->whereYear('tanggal', $year)
-            ->pluck('status', 'tanggal');
+            ->where('status', 'Hadir')
+            ->whereMonth('tanggal', $bulanIni)
+            ->whereYear('tanggal', $tahunIni)
+            ->count();
+        
+        $persentaseKehadiran = $hariKerjaBulanIni > 0 
+            ? round(($hadirBulanIni / $hariKerjaBulanIni) * 100, 1) 
+            : 0;
+
+        // Query dengan filter
+        $query = DB::table('absensi')
+            ->where('ponpes_id', $userPonpesId)
+            ->where('user_id', $userId);
+
+        // Filter bulan
+        if ($request->has('month') && $request->month != '') {
+            $query->whereMonth('tanggal', $request->month);
+        }
+
+        // Filter tahun
+        if ($request->has('year') && $request->year != '') {
+            $query->whereYear('tanggal', $request->year);
+        }
+
+        // Filter status
+        if ($request->has('status') && $request->status != '') {
+            $query->where('status', $request->status);
+        }
+
+        // Order by
+        $query->orderBy('tanggal', 'desc')
+              ->orderBy('jam', 'desc');
+
+        // Pagination
+        $absensi = $query->paginate(15)->withQueryString();
+
+        // Format data untuk view
+        $formattedAbsensi = $absensi->map(function ($item) {
+            return (object) [
+                'id_absensi' => $item->id_absensi,
+                'tanggal' => Carbon::parse($item->tanggal)->translatedFormat('d F Y'),
+                'hari' => Carbon::parse($item->tanggal)->translatedFormat('l'),
+                'jam' => $item->jam ? Carbon::parse($item->jam)->format('H:i') : '-',
+                'status' => $item->status,
+                'status_color' => $this->getStatusColor($item->status),
+                'keterangan' => $item->keterangan ?? '-',
+                'is_auto_alfa' => strpos($item->keterangan ?? '', 'Auto:') !== false,
+                'created_at' => Carbon::parse($item->created_at)->translatedFormat('d/m/Y H:i')
+            ];
+        });
 
         return view('pages.riwayat', [
-            'currentUser' => $currentUser,
-            'selectedUser' => $selectedUser,
-            'users' => null,
-            'jumlahHadir' => $jumlahHadir,
-            'jumlahIzin' => $jumlahIzin,
-            'jumlahSakit' => $jumlahSakit,
-            'jumlahAlpa' => $jumlahAlpa,
-            'absensiPerTanggal' => $absensiPerTanggal,
-            'month' => $month,
-            'year' => $year
+            'absensi' => $absensi,
+            'formattedAbsensi' => $formattedAbsensi,
+            'totalAbsensi' => $totalAbsensi,
+            'hadir' => $hadir,
+            'izin' => $izin,
+            'sakit' => $sakit,
+            'alpa' => $alpa,
+            'persentaseKehadiran' => $persentaseKehadiran,
+            'hadirBulanIni' => $hadirBulanIni,
+            'hariKerjaBulanIni' => $hariKerjaBulanIni,
+            'filter' => [
+                'month' => $request->month,
+                'year' => $request->year,
+                'status' => $request->status
+            ]
         ]);
+    }
+
+    /**
+     * Hitung jumlah hari kerja dalam bulan tertentu
+     */
+    private function hitungHariKerja($month, $year)
+    {
+        $daysInMonth = Carbon::create($year, $month, 1)->daysInMonth;
+        $workingDays = 0;
+        
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $date = Carbon::create($year, $month, $day);
+            // Hitung hari Senin-Jumat (1-5)
+            if ($date->dayOfWeek >= 1 && $date->dayOfWeek <= 5) {
+                $workingDays++;
+            }
+        }
+        
+        return $workingDays;
+    }
+
+    /**
+     * API untuk mendapatkan detail absensi
+     */
+    public function getAbsensiDetail($id): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            
+            $absensi = DB::table('absensi')
+                ->where('id_absensi', $id)
+                ->where('ponpes_id', $user->ponpes_id)
+                ->where('user_id', $user->id_user)
+                ->first();
+
+            if (!$absensi) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data absensi tidak ditemukan'
+                ], 404);
+            }
+
+            $responseData = [
+                'id_absensi' => $absensi->id_absensi,
+                'tanggal' => $absensi->tanggal,
+                'tanggal_formatted' => Carbon::parse($absensi->tanggal)->translatedFormat('d F Y'),
+                'hari' => Carbon::parse($absensi->tanggal)->translatedFormat('l'),
+                'jam' => $absensi->jam ? Carbon::parse($absensi->jam)->format('H:i') : '-',
+                'status' => $absensi->status,
+                'status_color' => $this->getStatusColor($absensi->status),
+                'keterangan' => $absensi->keterangan ?? '-',
+                'is_auto_alfa' => strpos($absensi->keterangan ?? '', 'Auto:') !== false,
+                'created_at' => $absensi->created_at,
+                'created_at_formatted' => Carbon::parse($absensi->created_at)->translatedFormat('d F Y H:i'),
+                'updated_at' => $absensi->updated_at,
+                'updated_at_formatted' => Carbon::parse($absensi->updated_at)->translatedFormat('d F Y H:i'),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $responseData
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error getting absensi detail: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API untuk checkout (keluar)
+     */
+    public function checkout(Request $request, $id): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $now = Carbon::now('Asia/Jakarta');
+            
+            // Validasi: Hanya bisa checkout pada hari yang sama
+            $absensi = DB::table('absensi')
+                ->where('id_absensi', $id)
+                ->where('ponpes_id', $user->ponpes_id)
+                ->where('user_id', $user->id_user)
+                ->first();
+
+            if (!$absensi) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data absensi tidak ditemukan'
+                ], 404);
+            }
+
+            if ($absensi->tanggal != Carbon::today()->toDateString()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Checkout hanya dapat dilakukan untuk absensi hari ini'
+                ], 400);
+            }
+
+            if ($absensi->status != 'Hadir') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Checkout hanya dapat dilakukan untuk status Hadir'
+                ], 400);
+            }
+
+            // Update checkout time
+            DB::table('absensi')
+                ->where('id_absensi', $id)
+                ->where('ponpes_id', $user->ponpes_id)
+                ->where('user_id', $user->id_user)
+                ->update([
+                    'updated_at' => $now,
+                    'keterangan' => ($absensi->keterangan ?? '') . ' [Checkout: ' . $now->format('H:i') . ']'
+                ]);
+
+            \Illuminate\Support\Facades\Log::info('Checkout successful', [
+                'user_id' => $user->id_user,
+                'absensi_id' => $id,
+                'time' => $now->toTimeString()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checkout berhasil',
+                'data' => [
+                    'checkout_time' => $now->format('H:i'),
+                    'updated_at' => $now->toDateTimeString()
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error during checkout: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal melakukan checkout: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API untuk update status absensi (khusus Auto Alfa)
+     */
+    public function updateAbsensi(Request $request, $id): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'status' => 'required|in:Hadir,Izin,Sakit',
+                'keterangan' => 'nullable|string|max:500',
+            ]);
+
+            $user = Auth::user();
+            $today = Carbon::today()->toDateString();
+
+            // Cek apakah absensi adalah auto alfa hari ini
+            $absensi = DB::table('absensi')
+                ->where('id_absensi', $id)
+                ->where('ponpes_id', $user->ponpes_id)
+                ->where('user_id', $user->id_user)
+                ->where('tanggal', $today)
+                ->where('status', 'Alpa')
+                ->where('keterangan', 'like', 'Auto:%')
+                ->first();
+
+            if (!$absensi) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Hanya Auto Alfa hari ini yang dapat diupdate'
+                ], 400);
+            }
+
+            // Update status dan waktu
+            $now = Carbon::now('Asia/Jakarta');
+            $jamSekarang = $now->toTimeString();
+            
+            DB::table('absensi')
+                ->where('id_absensi', $id)
+                ->where('ponpes_id', $user->ponpes_id)
+                ->where('user_id', $user->id_user)
+                ->update([
+                    'status' => $validated['status'],
+                    'jam' => $jamSekarang,
+                    'keterangan' => 'Diupdate dari Auto Alfa: ' . ($validated['keterangan'] ?? 'Tidak ada keterangan'),
+                    'updated_at' => $now,
+                ]);
+
+            \Illuminate\Support\Facades\Log::info('Absensi updated from auto alfa', [
+                'user_id' => $user->id_user,
+                'absensi_id' => $id,
+                'old_status' => 'Alpa',
+                'new_status' => $validated['status'],
+                'time' => $jamSekarang
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status absensi berhasil diperbarui',
+                'data' => [
+                    'status' => $validated['status'],
+                    'jam' => $jamSekarang,
+                    'tanggal' => $today
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error updating absensi: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui absensi: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API untuk menghapus absensi (hanya untuk admin atau yang bersangkutan)
+     */
+    public function deleteAbsensi($id): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            
+            // Cek apakah user adalah admin atau pemilik absensi
+            $absensi = DB::table('absensi')
+                ->where('id_absensi', $id)
+                ->first();
+
+            if (!$absensi) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data absensi tidak ditemukan'
+                ], 404);
+            }
+
+            // Hanya admin atau pemilik yang bisa menghapus
+            $isAdmin = in_array($user->role, ['Admin', 'Super']);
+            $isOwner = $absensi->user_id == $user->id_user;
+            
+            if (!$isAdmin && !$isOwner) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki izin untuk menghapus absensi ini'
+                ], 403);
+            }
+
+            // Tidak bisa menghapus absensi hari ini
+            if ($absensi->tanggal == Carbon::today()->toDateString()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak dapat menghapus absensi hari ini'
+                ], 400);
+            }
+
+            DB::table('absensi')
+                ->where('id_absensi', $id)
+                ->delete();
+
+            \Illuminate\Support\Facades\Log::info('Absensi deleted', [
+                'user_id' => $user->id_user,
+                'deleted_by' => $user->username,
+                'absensi_id' => $id,
+                'absensi_owner' => $absensi->user_id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Absensi berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error deleting absensi: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus absensi: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API untuk statistik absensi bulanan
+     */
+    public function getMonthlyStats(Request $request): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $month = $request->get('month', Carbon::now()->month);
+            $year = $request->get('year', Carbon::now()->year);
+
+            $stats = DB::table('absensi')
+                ->select('status', DB::raw('COUNT(*) as total'))
+                ->where('user_id', $user->id_user)
+                ->where('ponpes_id', $user->ponpes_id)
+                ->whereMonth('tanggal', $month)
+                ->whereYear('tanggal', $year)
+                ->groupBy('status')
+                ->pluck('total', 'status');
+
+            $total = array_sum($stats->toArray());
+            $hadir = $stats['Hadir'] ?? 0;
+            $izin = $stats['Izin'] ?? 0;
+            $sakit = $stats['Sakit'] ?? 0;
+            $alpa = $stats['Alpa'] ?? 0;
+
+            $hariKerja = $this->hitungHariKerja($month, $year);
+            $persentaseKehadiran = $hariKerja > 0 
+                ? round(($hadir / $hariKerja) * 100, 1) 
+                : 0;
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total' => $total,
+                    'hadir' => $hadir,
+                    'izin' => $izin,
+                    'sakit' => $sakit,
+                    'alpa' => $alpa,
+                    'persentase_kehadiran' => $persentaseKehadiran,
+                    'hari_kerja' => $hariKerja,
+                    'bulan' => Carbon::create($year, $month, 1)->translatedFormat('F Y')
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error getting monthly stats: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil statistik bulanan: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
