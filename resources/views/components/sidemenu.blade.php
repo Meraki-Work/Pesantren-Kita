@@ -6,7 +6,7 @@
     class="fixed inset-y-0 left-0 z-40 w-56 transform -translate-x-full transition-transform duration-300 ease-in-out 
            bg-gradient-to-b from-emerald-900 to-emerald-700 text-white flex flex-col rounded-e-md 
            md:translate-x-0 md:relative md:rounded-none md:w-56">
-    
+
     <!-- Header dengan user info -->
     <div class="p-4 border-b border-gray-700">
         <div class="flex items-center space-x-3">
@@ -19,13 +19,13 @@
                 <p class="font-medium truncate">{{ Auth::user()->username }}</p>
                 <p class="text-xs text-gray-300 mt-1">
                     @php
-                        $roleColors = [
-                            'Admin' => 'bg-red-500',
-                            'Pengajar' => 'bg-blue-500',
-                            'Keuangan' => 'bg-yellow-500',
-                            'Super' => 'bg-purple-500'
-                        ];
-                        $roleColor = $roleColors[Auth::user()->role] ?? 'bg-gray-500';
+                    $roleColors = [
+                    'Admin' => 'bg-red-500',
+                    'Pengajar' => 'bg-blue-500',
+                    'Keuangan' => 'bg-yellow-500',
+                    'Super' => 'bg-purple-500'
+                    ];
+                    $roleColor = $roleColors[Auth::user()->role] ?? 'bg-gray-500';
                     @endphp
                     <span class="px-2 py-1 {{ $roleColor }} rounded-full text-xs">
                         {{ Auth::user()->role }}
@@ -43,6 +43,14 @@
 
     <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
         <!-- Menu untuk semua role -->
+
+
+        <!-- Menu berdasarkan role -->
+        @php
+        $userRole = Auth::user()->role;
+        @endphp
+
+        @if(in_array($userRole, ['Admin', 'Pengajar','Keuangan']))
         <div class="my-4 form-label text-gray-300 uppercase text-xs tracking-wider">Utama</div>
 
         <a href="{{ route('dashboard') }}"
@@ -52,14 +60,10 @@
                 : 'bg-emerald-800/50 hover:bg-emerald-600 hover:text-white' }} ">
             <i class="fas fa-home w-5 mr-2 text-center"></i>Dashboard
         </a>
-
-        <!-- Menu berdasarkan role -->
-        @php
-            $userRole = Auth::user()->role;
-        @endphp
+        @endif
 
         <!-- Menu untuk Admin dan Super -->
-        @if(in_array($userRole, ['Admin', 'Super']))
+        @if(in_array($userRole, ['Admin']))
         <div class="my-4 form-label text-gray-300 uppercase text-xs tracking-wider">Administrasi</div>
 
         <a href="{{ route('kepegawaian.index') }}"
@@ -197,7 +201,20 @@
                 : 'bg-purple-800/50 hover:bg-purple-600 hover:text-white' }}">
             <i class="fas fa-users-cog w-5 mr-2 text-center"></i>Manajemen User
         </a>
-
+        <a href="{{ route('super.langganan.index') }}"
+            class="flex items-center px-3 py-2 rounded transition 
+            {{ request()->routeIs('super.langganan.*') 
+        ? 'bg-purple-600 text-white' 
+        : 'bg-purple-800/50 hover:bg-purple-600 hover:text-white' }}">
+            <i class="fas fa-users-cog w-5 mr-2 text-center"></i>Manajemen Langganan
+        </a>
+        <a href="{{ route('super.plan.index') }}"
+            class="flex items-center px-3 py-2 rounded transition 
+            {{ request()->routeIs('super.plan.*') 
+        ? 'bg-purple-600 text-white' 
+        : 'bg-purple-800/50 hover:bg-purple-600 hover:text-white' }}">
+            <i class="fas fa-users-cog w-5 mr-2 text-center"></i>Manajemen Plan
+        </a>
         <a href="{{ route('super.logs.index') }}"
             class="flex items-center px-3 py-2 rounded transition 
             {{ request()->routeIs('super.logs.index') 
@@ -224,12 +241,12 @@
         <div class="mb-3 text-xs text-gray-400 space-y-1">
             <!-- Perbaikan: Gunakan helper Carbon untuk parsing tanggal -->
             @php
-                $createdAt = Auth::user()->created_at;
-                // Jika created_at adalah string, convert ke Carbon
-                if (is_string($createdAt)) {
-                    $createdAt = \Carbon\Carbon::parse($createdAt);
-                }
-                $loginDate = $createdAt ? $createdAt->format('d M Y') : 'N/A';
+            $createdAt = Auth::user()->created_at;
+            // Jika created_at adalah string, convert ke Carbon
+            if (is_string($createdAt)) {
+            $createdAt = \Carbon\Carbon::parse($createdAt);
+            }
+            $loginDate = $createdAt ? $createdAt->format('d M Y') : 'N/A';
             @endphp
             <p class="flex items-center">
                 <i class="fas fa-calendar-plus w-4 mr-2"></i>
@@ -244,11 +261,11 @@
                 {{ Auth::user()->email ?? 'No email' }}
             </p>
         </div>
-        
+
         <form method="POST" action="{{ route('logout') }}">
             @csrf
-            <button type="submit" 
-                    class="w-full flex items-center justify-center px-3 py-2 rounded 
+            <button type="submit"
+                class="w-full flex items-center justify-center px-3 py-2 rounded 
                            bg-red-600 hover:bg-red-700 text-white transition-colors duration-200">
                 <i class="fas fa-sign-out-alt mr-2"></i>Logout
             </button>

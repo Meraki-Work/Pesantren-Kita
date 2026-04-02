@@ -34,8 +34,10 @@ use App\Http\Controllers\Admin\PonpesController;
 use App\Http\Controllers\Super\PonpesController as SuperPonpesController;
 use App\Http\Controllers\Super\UserController as SuperUserController;
 use App\Http\Controllers\Super\LogController as SuperLogController;
+use App\Http\Controllers\Super\LanggananController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RiwayatController;
+use App\Http\Controllers\Super\PlanManagementController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -180,18 +182,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['auth'])->group(function () {
         Route::resource('users', UserController::class);
-    });
-
-    Route::middleware(['auth', 'role:superadmin'])->prefix('super')->name('super.')->group(function () {
-
-        // Rute untuk Pondok Pesantren
-        Route::resource('ponpes', PonpesController::class);
-
-        // Rute untuk Manajemen User
-        Route::resource('users', UserController::class);
-
-        // Rute untuk Log Sistem (biasanya hanya index/show)
-        Route::resource('logs', RiwayatController::class)->only(['index', 'show']);
     });
 
     Route::middleware(['role:Admin,Super'])->prefix('admin')->name('admin.')->group(function () {
@@ -540,26 +530,40 @@ Route::middleware(['auth'])->group(function () {
     // Cash Routes
     Route::get('/cash', [CashController::class, 'index'])->name('cash');
 
-Route::middleware(['auth', 'role:superadmin'])->prefix('super')->name('super.')->group(function () {
+    Route::middleware(['auth', 'role:superadmin'])->prefix('super')->name('super.')->group(function () {
 
-    // Rute untuk Pondok Pesantren
-    Route::resource('ponpes', PonpesController::class);
+        Route::get('plan/{id}/features', [PlanManagementController::class, 'getFeatures'])->name('plan.features');
 
-    // Rute untuk Manajemen User with model binding
-    Route::resource('users', UserController::class)->parameters([
-        'users' => 'user'
-    ]);
-    
-    // Bulk action untuk users
-    Route::post('users/bulk-action', [UserController::class, 'bulkAction'])->name('bulk-action');
-    Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
-    Route::post('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
-    Route::get('users/export/csv', [UserController::class, 'export'])->name('users.export');
-    Route::get('users/group-by-ponpes', [UserController::class, 'groupByPonpes'])->name('users.group-by-ponpes');
+        // Plan Management
+        Route::resource('plan', PlanManagementController::class);
+        Route::post('plan/{id}/toggle-status', [PlanManagementController::class, 'toggleStatus'])->name('plan.toggle-status');
+        Route::get('plan/export/csv', [PlanManagementController::class, 'export'])->name('plan.export');
 
-    // Rute untuk Log Sistem
-    Route::resource('logs', RiwayatController::class)->only(['index', 'show']);
-});
+        // Langganan Management
+        Route::resource('langganan', LanggananController::class);
+        Route::get('langganan/export/csv', [LanggananController::class, 'export'])->name('langganan.export');
+        Route::post('langganan/{id}/renew', [LanggananController::class, 'renew'])->name('langganan.renew');
+
+        Route::resource('langganan', LanggananController::class);
+
+        // Rute untuk Pondok Pesantren
+        Route::resource('ponpes', PonpesController::class);
+
+        // Rute untuk Manajemen User with model binding
+        Route::resource('users', UserController::class)->parameters([
+            'users' => 'user'
+        ]);
+
+        // Bulk action untuk users
+        Route::post('users/bulk-action', [UserController::class, 'bulkAction'])->name('bulk-action');
+        Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::post('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+        Route::get('users/export/csv', [UserController::class, 'export'])->name('users.export');
+        Route::get('users/group-by-ponpes', [UserController::class, 'groupByPonpes'])->name('users.group-by-ponpes');
+
+        // Rute untuk Log Sistem
+        Route::resource('logs', RiwayatController::class)->only(['index', 'show']);
+    });
     // Sanksi Routes
     Route::prefix('sanksi')
         ->middleware('feature:sanksi')

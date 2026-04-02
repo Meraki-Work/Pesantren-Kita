@@ -3,7 +3,10 @@
 @section('title', 'Kelola Pesantren')
 
 @section('content')
-<div class="min-h-screen bg-gray-50">
+<div class="flex bg-gray-100 min-h-screen">
+    <x-sidemenu title="PesantrenKita" class="h-full" />
+
+    <main class="flex-1 overflow-y-auto">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Header -->
         <div class="mb-8">
@@ -224,6 +227,7 @@
         </div>
         @endif
     </div>
+    </main>
 </div>
 
 @push('styles')
